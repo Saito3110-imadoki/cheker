@@ -4,24 +4,41 @@
 
 | キー名 | 取得元 | 用途 |
 |--------|--------|------|
-| `SPREADSHEET_ID` | Google Sheets URL | スプレッドシートID |
-| `GOOGLE_SERVICE_ACCOUNT_JSON` | Google Cloud Console | Sheets読み書き |
+| `NOTION_TOKEN` | Notion Developers | Notionデータベース読み書き |
+| `NOTION_DATABASE_ID` | Notion データベース URL | 投稿管理DB |
 | `X_API_KEY` | X Developer Portal | X (Twitter) 投稿 |
 | `X_API_KEY_SECRET` | X Developer Portal | X (Twitter) 投稿 |
 | `X_ACCESS_TOKEN` | X Developer Portal | X (Twitter) 投稿 |
 | `X_ACCESS_TOKEN_SECRET` | X Developer Portal | X (Twitter) 投稿 |
 | `THREADS_USER_ID` | Meta for Developers | Threads 投稿 |
 | `THREADS_ACCESS_TOKEN` | Meta for Developers | Threads 投稿 |
-| `SHEET_NAME` | （任意）シート名 | デフォルト: Sheet1 |
 
 ---
 
-## 1. X (Twitter) API キーの取得
+## 1. Notion API キーの取得
+
+1. https://www.notion.so/my-integrations にアクセス
+2. 「新しいインテグレーション」を作成
+3. 「シークレット」をコピー → `NOTION_TOKEN`
+4. 投稿管理データベースのURLから `NOTION_DATABASE_ID` を取得
+   - URL例: `https://notion.so/xxxxxxxx?v=yyyyyyyy`
+   - `?v=` の前の32文字が `NOTION_DATABASE_ID`
+5. Notionデータベースのページで `・・・` → 「接続」→ 作成したインテグレーションを選択
+
+**Notionデータベースの列設定:**
+- `投稿文`（タイトルまたはテキスト）: 投稿する本文
+- `投稿日時`（日付）: 投稿予定日時
+- `媒体`（セレクト）: `X` / `Threads` / `両方`
+- `ステータス`（セレクト）: `未投稿`（初期値）/ `投稿済`（自動更新）/ `エラー`（自動更新）
+
+---
+
+## 2. X (Twitter) API キーの取得
 
 1. https://developer.twitter.com/en/portal/dashboard にアクセス
 2. 「+ Create Project」でプロジェクト作成
 3. App Settings → User authentication settings → Edit
-   - App permissions: **Read and write**
+   - App permissions: **Read and write**（読む・書く）
    - Type of App: **Web App, Automated App or Bot**
    - Callback URL: `https://localhost`
 4. Keys and Tokens タブから以下を取得・コピー:
@@ -32,7 +49,7 @@
 
 ---
 
-## 2. Meta Threads API キーの取得
+## 3. Meta Threads API キーの取得
 
 1. https://developers.facebook.com/ でアプリ作成（タイプ: ビジネス）
 2. 左メニュー「製品を追加」→「Threads API」→「設定」
@@ -48,44 +65,50 @@ curl -i -X GET \
 
 ---
 
-## 3. Google Sheets API セットアップ
+## 4. GitHub Secrets の設定
 
-1. https://console.cloud.google.com/ でプロジェクト作成
-2. 「APIとサービス」→「ライブラリ」で以下を有効化:
-   - **Google Sheets API**
-   - **Google Drive API**
-3. 「認証情報」→「サービスアカウント」を作成（ロール: 編集者）
-4. サービスアカウント → 「キー」タブ → JSON形式でダウンロード
-5. **スプレッドシートをサービスアカウントのメールと共有**（編集者権限）
+1. GitHubリポジトリを開く → 「Settings」タブ
+2. 左メニュー「Secrets and variables」→「Actions」
+3. 「New repository secret」ボタンを押す
+4. 以下を1つずつ登録:
 
----
-
-## 4. スプレッドシートの準備
-
-1行目にヘッダーを入力:
-```
-A1: 投稿日時   B1: 投稿文   C1: 媒体   D1: ステータス
-```
-
-2行目以降にデータを入力:
-```
-A2: 2024/01/15 10:00   B2: 投稿テスト本文   C2: 両方   D2: 未投稿
-```
-
-- **媒体の値**: `X` / `Threads` / `両方`
-- **ステータスの値**: `未投稿`（初期値）/ `投稿済`（自動更新）/ `エラー`（自動更新）
-- **SPREADSHEET_ID**: スプレッドシートURLの `/d/` と `/edit` の間の文字列
+| Name（名前） | Secret（値） |
+|-------------|-------------|
+| `NOTION_TOKEN` | Notionインテグレーションのシークレット |
+| `NOTION_DATABASE_ID` | NotionデータベースのID |
+| `X_API_KEY` | X API Key |
+| `X_API_KEY_SECRET` | X API Key Secret |
+| `X_ACCESS_TOKEN` | X Access Token |
+| `X_ACCESS_TOKEN_SECRET` | X Access Token Secret |
+| `THREADS_USER_ID` | ThreadsユーザーID（未設定なら空でOK） |
+| `THREADS_ACCESS_TOKEN` | Threadsアクセストークン（未設定なら空でOK） |
 
 ---
 
-## 5. GitHub Secrets の設定
+## 5. 動作確認
 
-GitHub リポジトリ → Settings → Secrets and variables → Actions → New repository secret
+1. GitHubリポジトリ → 「Actions」タブ
+2. 左メニュー「SNS Auto Post」を選択
+3. 「Run workflow」→「Run workflow」ボタンで手動実行
+4. 実行ログを確認して「投稿済」になっていれば成功！
 
-上記の全キーを登録してください。
+**自動実行スケジュール:** 毎時0分（UTC）= 日本時間 毎時9分
 
 ---
 
-## 6. 動作確認
+## ローカルでのテスト実行
 
-GitHub リポジトリ → Actions →「SNS Auto Post」→「Run workflow」で手動実行できます。
+```bash
+# sns_schedulerフォルダに移動
+cd sns_scheduler
+
+# 依存ライブラリをインストール
+pip install -r requirements.txt
+
+# .envファイルを作成（.env.exampleをコピーして値を入力）
+cp .env.example .env
+# .envにAPIキーを記入してから実行
+
+# スクリプト実行
+python poster.py
+```

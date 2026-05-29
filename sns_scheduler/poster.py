@@ -1,66 +1,125 @@
 """
 SNS投稿自動化スクリプト
-Google Sheetsに登録された投稿を指定日時にX/Threadsへ自動投稿する
+Notionデータベースから「未投稿」レコードを取得し、
+指定日時にX（Twitter）・Threadsへ自動投稿する
 """
 
 import os
-import json
+import sys
 import time
 import requests
 import tweepy
 from datetime import datetime, timezone, timedelta
-from google.oauth2.service_account import Credentials
-from googleapiclient.discovery import build
+from notion_client import Client
+from dotenv import load_dotenv
 
-# ── 設定 ──────────────────────────────────────────────
+load_dotenv()
+
+# ── タイムゾーン設定 ──────────────────────────────────
 JST = timezone(timedelta(hours=9))
-SHEET_ID = os.environ["SPREADSHEET_ID"]
-SHEET_NAME = os.environ.get("SHEET_NAME", "Sheet1")
-# スプレッドシート列インデックス（0始まり）
-COL_DATETIME = 0   # A: 投稿日時
-COL_TEXT     = 1   # B: 投稿文
-COL_PLATFORM = 2   # C: 媒体（X / Threads / 両方）
-COL_STATUS   = 3   # D: ステータス
+
+# ── Notion 設定 ───────────────────────────────────────
+NOTION_TOKEN       = os.environ["NOTION_TOKEN"]
+NOTION_DATABASE_ID = os.environ["NOTION_DATABASE_ID"]
+
+# Notionのプロパティ名（データベースの列名と一致させる）
+PROP_TEXT     = "投稿文"
+PROP_DATETIME = "投稿日時"
+PROP_PLATFORM = "媒体"
+PROP_STATUS   = "ステータス"
 
 STATUS_PENDING = "未投稿"
 STATUS_DONE    = "投稿済"
 STATUS_ERROR   = "エラー"
 
-DATETIME_FORMATS = ["%Y/%m/%d %H:%M", "%Y-%m-%d %H:%M"]
+PLATFORM_X       = "X"
+PLATFORM_THREADS = "Threads"
+PLATFORM_BOTH    = "両方"
 
 
-# ── Google Sheets クライアント ─────────────────────────
-def get_sheets_service():
-    creds_json = os.environ["GOOGLE_SERVICE_ACCOUNT_JSON"]
-    creds_info = json.loads(creds_json)
-    creds = Credentials.from_service_account_info(
-        creds_info,
-        scopes=["https://www.googleapis.com/auth/spreadsheets"],
+# ── Notion ヘルパー ───────────────────────────────────
+def get_notion_client() -> Client:
+    return Client(auth=NOTION_TOKEN)
+
+
+def fetch_pending_posts(notion: Client) -> list[dict]:
+    """ステータスが「未投稿」かつ投稿日時が現在以前のレコードを取得"""
+    now_utc = datetime.now(timezone.utc).isoformat()
+
+    response = notion.databases.query(
+        database_id=NOTION_DATABASE_ID,
+        filter={
+            "and": [
+                {
+                    "property": PROP_STATUS,
+                    "select": {"equals": STATUS_PENDING},
+                },
+                {
+                    "property": PROP_DATETIME,
+                    "date": {"on_or_before": now_utc},
+                },
+            ]
+        },
+        sorts=[
+            {"property": PROP_DATETIME, "direction": "ascending"}
+        ],
     )
-    return build("sheets", "v4", credentials=creds).spreadsheets()
+    return response.get("results", [])
 
 
-def fetch_rows(service):
-    """シート全行を取得（ヘッダー除く）"""
-    result = service.values().get(
-        spreadsheetId=SHEET_ID,
-        range=f"{SHEET_NAME}!A2:D",
-    ).execute()
-    return result.get("values", [])
+def extract_text(page: dict) -> str:
+    """投稿文プロパティからテキストを取得"""
+    prop = page["properties"].get(PROP_TEXT, {})
+
+    # Title 型
+    if prop.get("type") == "title":
+        parts = prop.get("title", [])
+        return "".join(p["plain_text"] for p in parts)
+
+    # Rich text 型
+    if prop.get("type") == "rich_text":
+        parts = prop.get("rich_text", [])
+        return "".join(p["plain_text"] for p in parts)
+
+    return ""
 
 
-def update_status(service, row_index: int, status: str):
-    """D列のステータスを更新。row_index は0始まり（ヘッダー除く）"""
-    row_num = row_index + 2  # ヘッダー行(1) + 0始まりオフセット
-    service.values().update(
-        spreadsheetId=SHEET_ID,
-        range=f"{SHEET_NAME}!D{row_num}",
-        valueInputOption="RAW",
-        body={"values": [[status]]},
-    ).execute()
+def extract_platform(page: dict) -> str:
+    """媒体プロパティからプラットフォーム名を取得"""
+    prop = page["properties"].get(PROP_PLATFORM, {})
+    if prop.get("type") == "select":
+        sel = prop.get("select")
+        return sel["name"] if sel else ""
+    return ""
 
 
-# ── X (Twitter) 投稿 ──────────────────────────────────
+def extract_datetime(page: dict) -> datetime | None:
+    """投稿日時プロパティからdatetimeを取得（JST）"""
+    prop = page["properties"].get(PROP_DATETIME, {})
+    if prop.get("type") == "date":
+        date_obj = prop.get("date")
+        if date_obj and date_obj.get("start"):
+            dt = datetime.fromisoformat(date_obj["start"])
+            # タイムゾーン情報がなければJSTとみなす
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=JST)
+            return dt
+    return None
+
+
+def update_status(notion: Client, page_id: str, status: str):
+    """Notionのステータスを更新"""
+    notion.pages.update(
+        page_id=page_id,
+        properties={
+            PROP_STATUS: {
+                "select": {"name": status}
+            }
+        },
+    )
+
+
+# ── X（Twitter）投稿 ──────────────────────────────────
 def post_to_x(text: str) -> bool:
     client = tweepy.Client(
         consumer_key=os.environ["X_API_KEY"],
@@ -78,7 +137,7 @@ def post_to_threads(text: str) -> bool:
     token   = os.environ["THREADS_ACCESS_TOKEN"]
     base    = f"https://graph.threads.net/v1.0/{user_id}"
 
-    # ステップ1: メディアコンテナ作成
+    # Step 1: メディアコンテナ作成
     r = requests.post(
         f"{base}/threads",
         params={
@@ -91,13 +150,16 @@ def post_to_threads(text: str) -> bool:
     r.raise_for_status()
     container_id = r.json()["id"]
 
-    # Threads APIは作成後少し待ってから公開が必要
+    # Threads API は作成後に少し待つ必要がある
     time.sleep(5)
 
-    # ステップ2: 公開
+    # Step 2: 公開
     r = requests.post(
         f"{base}/threads_publish",
-        params={"creation_id": container_id, "access_token": token},
+        params={
+            "creation_id": container_id,
+            "access_token": token,
+        },
         timeout=30,
     )
     r.raise_for_status()
@@ -105,79 +167,76 @@ def post_to_threads(text: str) -> bool:
 
 
 # ── メイン処理 ────────────────────────────────────────
-def parse_datetime(value: str) -> datetime | None:
-    for fmt in DATETIME_FORMATS:
-        try:
-            dt = datetime.strptime(value.strip(), fmt)
-            return dt.replace(tzinfo=JST)
-        except ValueError:
-            continue
-    return None
-
-
-def should_post(scheduled: datetime, now: datetime) -> bool:
-    """スケジュール時刻が現在時刻以前かつ1時間以内"""
-    return scheduled <= now and (now - scheduled).total_seconds() < 3600
-
-
 def run():
     now = datetime.now(JST)
     print(f"[{now.strftime('%Y-%m-%d %H:%M')} JST] 実行開始")
 
-    service = get_sheets_service()
-    rows = fetch_rows(service)
+    notion = get_notion_client()
 
-    posted = 0
-    errors = 0
+    try:
+        posts = fetch_pending_posts(notion)
+    except Exception as e:
+        print(f"Notion からの取得に失敗しました: {e}", file=sys.stderr)
+        sys.exit(1)
 
-    for i, row in enumerate(rows):
-        # 列が足りない行はスキップ
-        if len(row) < 4:
+    if not posts:
+        print("投稿対象なし。終了します。")
+        return
+
+    print(f"投稿対象: {len(posts)} 件")
+
+    posted_count = 0
+    error_count  = 0
+
+    for page in posts:
+        page_id  = page["id"]
+        text     = extract_text(page)
+        platform = extract_platform(page)
+        sched_dt = extract_datetime(page)
+
+        label = text[:30] + ("..." if len(text) > 30 else "")
+        print(f"\n  ページID: {page_id}")
+        print(f"  投稿文  : {label}")
+        print(f"  媒体    : {platform}")
+        print(f"  予定日時: {sched_dt}")
+
+        if not text:
+            print("  → 投稿文が空のためスキップ")
+            continue
+        if platform not in (PLATFORM_X, PLATFORM_THREADS, PLATFORM_BOTH):
+            print(f"  → 媒体の値が不正のためスキップ（値: {platform!r}）")
             continue
 
-        status = row[COL_STATUS].strip()
-        if status != STATUS_PENDING:
-            continue
-
-        dt_str   = row[COL_DATETIME]
-        text     = row[COL_TEXT].strip()
-        platform = row[COL_PLATFORM].strip()
-
-        scheduled = parse_datetime(dt_str)
-        if scheduled is None:
-            print(f"  行{i+2}: 日時フォーマット不正 → スキップ ({dt_str!r})")
-            continue
-
-        if not should_post(scheduled, now):
-            continue
-
-        print(f"  行{i+2}: 投稿開始 [{platform}] {text[:30]}...")
-
-        success_x       = True
-        success_threads = True
+        ok_x       = True
+        ok_threads = True
 
         try:
-            if platform in ("X", "両方"):
-                success_x = post_to_x(text)
-                print(f"    X → {'OK' if success_x else 'NG'}")
+            if platform in (PLATFORM_X, PLATFORM_BOTH):
+                ok_x = post_to_x(text)
+                print(f"  X       : {'✓ 投稿成功' if ok_x else '✗ 投稿失敗'}")
 
-            if platform in ("Threads", "両方"):
-                success_threads = post_to_threads(text)
-                print(f"    Threads → {'OK' if success_threads else 'NG'}")
+            if platform in (PLATFORM_THREADS, PLATFORM_BOTH):
+                ok_threads = post_to_threads(text)
+                print(f"  Threads : {'✓ 投稿成功' if ok_threads else '✗ 投稿失敗'}")
 
-            if success_x and success_threads:
-                update_status(service, i, STATUS_DONE)
-                posted += 1
+            if ok_x and ok_threads:
+                update_status(notion, page_id, STATUS_DONE)
+                print("  ステータス → 投稿済")
+                posted_count += 1
             else:
-                update_status(service, i, STATUS_ERROR)
-                errors += 1
+                update_status(notion, page_id, STATUS_ERROR)
+                print("  ステータス → エラー")
+                error_count += 1
 
         except Exception as e:
-            print(f"    エラー: {e}")
-            update_status(service, i, STATUS_ERROR)
-            errors += 1
+            print(f"  エラー発生: {e}", file=sys.stderr)
+            try:
+                update_status(notion, page_id, STATUS_ERROR)
+            except Exception:
+                pass
+            error_count += 1
 
-    print(f"完了: 投稿済={posted}, エラー={errors}")
+    print(f"\n完了 — 投稿済: {posted_count} 件 / エラー: {error_count} 件")
 
 
 if __name__ == "__main__":

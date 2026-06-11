@@ -1,0 +1,17 @@
+{
+  "company_name": "株式会社サンプル",
+  "company_slug": "sample-corp",
+  "secrets": {
+    "NOTION_TOKEN": "ntn_xxxxxxxxxxxxxxxxxx",
+    "NOTION_DATABASE_ID": "",
+    "X_API_KEY": "xxxxxxxxxxxxxxxxxxxxxxxxx",
+    "X_API_KEY_SECRET": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "X_ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "X_ACCESS_TOKEN_SECRET": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "ANTHROPIC_API_KEY": "sk-ant-xxxxxxxxxxxxxxxxxx",
+    "LINE_CHANNEL_ACCESS_TOKEN": "xxxxxxxxxxxxxxxxxx",
+    "LINE_USER_ID": "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "THREADS_USER_ID": "",
+    "THREADS_ACCESS_TOKEN": ""
+  }
+}

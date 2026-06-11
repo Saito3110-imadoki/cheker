@@ -52,7 +52,7 @@ def fetch_pending_posts(notion: Client) -> list[dict]:
             "and": [
                 {
                     "property": PROP_STATUS,
-                    "select": {"equals": STATUS_PENDING},
+                    "multi_select": {"contains": STATUS_PENDING},
                 },
                 {
                     "property": PROP_DATETIME,
@@ -90,6 +90,9 @@ def extract_platform(page: dict) -> str:
     if prop.get("type") == "select":
         sel = prop.get("select")
         return sel["name"] if sel else ""
+    if prop.get("type") == "multi_select":
+        items = prop.get("multi_select", [])
+        return items[0]["name"] if items else ""
     return ""
 
 
@@ -113,7 +116,7 @@ def update_status(notion: Client, page_id: str, status: str):
         page_id=page_id,
         properties={
             PROP_STATUS: {
-                "select": {"name": status}
+                "multi_select": [{"name": status}]
             }
         },
     )

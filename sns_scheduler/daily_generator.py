@@ -139,7 +139,7 @@ B. 個人の思い・意見投稿（2件）
 
     message = ai_client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=2000,
+        max_tokens=4000,
         messages=[{"role": "user", "content": prompt}],
     )
 

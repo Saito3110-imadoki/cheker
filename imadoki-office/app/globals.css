@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #07070f;
+  --surface: #0f0f1a;
+  --border: rgba(255,255,255,0.07);
+  --primary: #6366f1;
+  --primary-glow: rgba(99,102,241,0.3);
+}
+
+body {
+  background: var(--bg);
+  color: #e2e2f0;
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 6px var(--primary-glow); }
+  50% { box-shadow: 0 0 22px rgba(99,102,241,0.7); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-pulse-glow { animation: pulse-glow 2.5s ease-in-out infinite; }
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-fade-up { animation: fade-up 0.4s ease-out both; }
+.animate-spin-slow { animation: spin-slow 8s linear infinite; }
+
+.glass {
+  background: rgba(255,255,255,0.025);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+}
+.glass-hover {
+  transition: all 0.2s ease;
+}
+.glass-hover:hover {
+  background: rgba(99,102,241,0.07);
+  border-color: rgba(99,102,241,0.35);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #818cf8, #a78bfa, #f472b6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ai-online {
+  width: 8px;
+  height: 8px;
+  background: #22c55e;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #22c55e;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 2px; }

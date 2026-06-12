@@ -9,39 +9,65 @@ export default function OfficePage() {
   const [messages, setMessages] = useState<ChatMessage[]>(chatMessages);
   const [input, setInput] = useState('');
   const [selectedDept, setSelectedDept] = useState('全体');
+  const [sending, setSending] = useState(false);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+  const handleSend = async () => {
+    if (!input.trim() || sending) return;
+    const userText = input;
     const newMsg: ChatMessage = {
       id: `m-${Date.now()}`,
       from: 'ceo',
-      content: input,
+      content: userText,
       time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
       isAI: false,
     };
     setMessages(prev => [...prev, newMsg]);
     setInput('');
+    setSending(true);
 
-    // AI auto-response
-    setTimeout(() => {
-      const aiResponder = members.filter(m => m.isAI && m.status === 'online')[
-        Math.floor(Math.random() * members.filter(m => m.isAI && m.status === 'online').length)
-      ];
-      const responses = [
-        `承知しました。「${input.slice(0, 20)}...」について分析を開始します。`,
-        `データを確認しました。最適なアプローチを提案できます。`,
-        `タスクを受け付けました。処理中です...✅`,
-        `了解です。関連データを収集・整理してレポートを作成します。`,
-      ];
-      const aiMsg: ChatMessage = {
-        id: `m-${Date.now()}-ai`,
-        from: aiResponder.id,
-        content: responses[Math.floor(Math.random() * responses.length)],
-        time: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }),
-        isAI: true,
-      };
-      setMessages(prev => [...prev, aiMsg]);
-    }, 1000);
+    const onlineAI = members.filter(m => m.isAI && (m.status === 'online' || m.status === 'busy'));
+    const aiResponder = onlineAI[Math.floor(Math.random() * onlineAI.length)];
+    const aiMsgId = `m-${Date.now()}-ai`;
+    const aiTime = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+
+    setMessages(prev => [...prev, {
+      id: aiMsgId,
+      from: aiResponder.id,
+      content: '...',
+      time: aiTime,
+      isAI: true,
+    }]);
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: userText,
+          agentId: aiResponder.id,
+          context: `チャンネル: ${selectedDept}チャンネル, 役職: ${aiResponder.role}`,
+        }),
+      });
+
+      if (!res.ok || !res.body) throw new Error('API error');
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        accumulated += decoder.decode(value, { stream: true });
+        setMessages(prev => prev.map(m => m.id === aiMsgId ? { ...m, content: accumulated } : m));
+      }
+    } catch {
+      setMessages(prev => prev.map(m =>
+        m.id === aiMsgId ? { ...m, content: '申し訳ありません。現在応答できません。しばらくしてからお試しください。' } : m
+      ));
+    }
+
+    setSending(false);
   };
 
   const onlineMembers = members.filter(m => m.status === 'online' || m.status === 'busy');
@@ -143,8 +169,9 @@ export default function OfficePage() {
                 type="text"
                 value={input}
                 onChange={e => setInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleSend()}
+                onKeyDown={e => e.key === 'Enter' && !sending && handleSend()}
                 placeholder="AIチームにメッセージを送信... (Enterで送信)"
+                disabled={sending}
                 className="flex-1 rounded-lg px-4 py-2.5 text-sm text-white outline-none"
                 style={{
                   background: 'rgba(255,255,255,0.05)',
@@ -153,10 +180,11 @@ export default function OfficePage() {
               />
               <button
                 onClick={handleSend}
+                disabled={sending}
                 className="px-4 py-2.5 rounded-lg text-sm font-medium text-white transition-all"
-                style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}
+                style={{ background: sending ? 'rgba(99,102,241,0.3)' : 'linear-gradient(135deg, #6366f1, #a855f7)', opacity: sending ? 0.7 : 1 }}
               >
-                送信
+                {sending ? '⏳' : '送信'}
               </button>
             </div>
             <p className="text-xs mt-2" style={{ color: '#374151' }}>

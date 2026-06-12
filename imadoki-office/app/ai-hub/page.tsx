@@ -39,9 +39,37 @@ export default function AIHubPage() {
     if (!prompt.trim()) return;
     setLoading(true);
     setResponse('');
-    await new Promise(r => setTimeout(r, 1500));
-    const agentResponses = demoResponses[selectedAgent.id] || ['タスクを受け付けました。処理を開始します...'];
-    setResponse(agentResponses[Math.floor(Math.random() * agentResponses.length)]);
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: prompt,
+          agentId: selectedAgent.id,
+          context: `あなたの役職: ${selectedAgent.role}, 部署: ${selectedAgent.department}`,
+        }),
+      });
+
+      if (!res.ok || !res.body) {
+        throw new Error('API error');
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        accumulated += decoder.decode(value, { stream: true });
+        setResponse(accumulated);
+      }
+    } catch {
+      const fallback = demoResponses[selectedAgent.id];
+      setResponse(fallback ? fallback[0] : 'タスクを受け付けました。処理を開始します...');
+    }
+
     setLoading(false);
   };
 

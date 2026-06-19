@@ -24,6 +24,16 @@ from pathlib import Path
 from notion_client import Client
 from dotenv import load_dotenv
 
+# playwright版インフォグラフィック（利用可能な場合に優先使用）
+_SCRIPT_DIR = Path(__file__).parent
+if str(_SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPT_DIR))
+try:
+    from infographic import generate_infographic as _gen_web
+    _HAS_WEB_RENDERER = True
+except Exception:
+    _HAS_WEB_RENDERER = False
+
 warnings.filterwarnings('ignore')
 load_dotenv()
 
@@ -496,7 +506,13 @@ def run():
         filename = f"{date_str}-{i+1}.png"
         out_path = IMAGE_DIR / filename
         print(f"  画像生成中 [{i+1}]: {post.get('theme', '')}")
-        ok = generate_chart_image(post["chart"], out_path)
+        # playwright優先、失敗時はmatplotlibにフォールバック
+        ok = (_HAS_WEB_RENDERER and _gen_web(post["chart"], out_path)) \
+             or generate_chart_image(post["chart"], out_path)
+        if _HAS_WEB_RENDERER and ok:
+            print("    レンダラー: playwright (高解像度)")
+        elif ok:
+            print("    レンダラー: matplotlib (フォールバック)")
         if ok:
             if GITHUB_REPOSITORY:
                 owner_repo = GITHUB_REPOSITORY  # e.g. "Saito3110-imadoki/sns-scheduler"

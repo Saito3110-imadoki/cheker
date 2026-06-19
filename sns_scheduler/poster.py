@@ -154,27 +154,22 @@ def post_to_x(text: str, image_url: str = "") -> bool:
     return response.data is not None
 
 
-# ── Imgur アップロード ────────────────────────────────────
-def upload_to_imgur(image_data: bytes) -> str:
-    """画像をImgurにアップロードして公開URLを返す"""
-    import base64
-    client_id = os.environ.get("IMGUR_CLIENT_ID", "")
-    if not client_id:
-        return ""
+# ── Telegraph アップロード ────────────────────────────────
+def upload_to_telegraph(image_data: bytes) -> str:
+    """画像をTelegraphにアップロードして公開URLを返す（登録不要・無料）"""
     try:
-        encoded = base64.b64encode(image_data).decode("utf-8")
         r = requests.post(
-            "https://api.imgur.com/3/image",
-            headers={"Authorization": f"Client-ID {client_id}"},
-            json={"image": encoded, "type": "base64"},
+            "https://telegra.ph/upload",
+            files={"file": ("image.png", image_data, "image/png")},
             timeout=30,
         )
         r.raise_for_status()
-        url = r.json()["data"]["link"]
-        print(f"  Imgur: アップロード完了 → {url}")
+        path = r.json()[0]["src"]
+        url  = f"https://telegra.ph{path}"
+        print(f"  Telegraph: アップロード完了 → {url}")
         return url
     except Exception as e:
-        print(f"  Imgur: アップロードエラー: {e}")
+        print(f"  Telegraph: アップロードエラー: {e}")
         return ""
 
 
@@ -184,15 +179,15 @@ def post_to_threads(text: str, image_url: str = "") -> bool:
     token   = os.environ["THREADS_ACCESS_TOKEN"]
     base    = f"https://graph.threads.net/v1.0/{user_id}"
 
-    # GitHubのURLはThreadsから直接アクセスできないためImgurに変換
+    # GitHubのURLはThreadsから直接アクセスできないためTelegraphに変換
     if image_url:
         image_data = download_image(image_url)
         if image_data:
-            imgur_url = upload_to_imgur(image_data)
-            if imgur_url:
-                image_url = imgur_url
+            telegraph_url = upload_to_telegraph(image_data)
+            if telegraph_url:
+                image_url = telegraph_url
             else:
-                print("  Threads: Imgur未設定のためテキストのみで投稿")
+                print("  Threads: 画像アップロード失敗のためテキストのみで投稿")
                 image_url = ""
 
     if image_url:

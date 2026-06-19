@@ -91,23 +91,46 @@ def _t(ax, x, y, s, size=10, color=C_TEXT, bold=False, ha='left', va='center'):
 
 
 # ── チャート描画 ──────────────────────────────────────────
+# Canvas: 12 × 6.75 (16:9), dpi=200 → 2400×1350px
+_CW, _CH = 12.0, 6.75
+
+
+def _split_label(text: str, max_chars: int = 12) -> list[str]:
+    """長いラベルを複数行に分割"""
+    if len(text) <= max_chars:
+        return [text]
+    mid = len(text) // 2
+    return [text[:mid], text[mid:]]
+
+
 def _draw_bar(ax, chart: dict):
     labels  = chart.get("labels", [])
     values  = chart.get("values", [])
     unit    = chart.get("unit", "")
     max_val = max(values) if values else 1
-    bar_h   = 0.55
-    bar_max = 7.0
+    n       = len(labels)
+
+    x_start = 2.8
+    bar_max = 8.2
+    y_top   = 4.9
+    step    = min((y_top - 0.9) / max(n, 1), 1.0)
+    bar_h   = step * 0.52
 
     for i, (label, val) in enumerate(zip(labels, values)):
-        y     = 3.5 - i * 0.85
+        y     = y_top - (i + 0.5) * step
         bar_w = bar_max * val / max_val
-        ax.add_patch(FancyBboxPatch((1.5, y - bar_h/2), bar_max, bar_h,
-            boxstyle="round,pad=0.05", lw=0, facecolor='#1E293B'))
-        ax.add_patch(FancyBboxPatch((1.5, y - bar_h/2), bar_w, bar_h,
-            boxstyle="round,pad=0.05", lw=0, facecolor=C_MAIN))
-        _t(ax, 0.3, y, label, size=10, color=C_TEXT, va='center')
-        _t(ax, 1.5 + bar_w + 0.15, y, f"{val}{unit}", size=10,
+
+        # 背景トラック
+        ax.add_patch(FancyBboxPatch((x_start, y - bar_h / 2), bar_max, bar_h,
+            boxstyle="round,pad=0.04", lw=0, facecolor='#1A2235'))
+        # 塗り棒
+        ax.add_patch(FancyBboxPatch((x_start, y - bar_h / 2), bar_w, bar_h,
+            boxstyle="round,pad=0.04", lw=0, facecolor=C_MAIN))
+
+        # 左ラベル
+        _t(ax, 0.4, y, label, size=11, color=C_TEXT, va='center')
+        # 値ラベル
+        _t(ax, x_start + bar_w + 0.22, y, f"{val}{unit}", size=12,
            color=C_ACCENT, bold=True, va='center')
 
 
@@ -116,15 +139,56 @@ def _draw_stat(ax, chart: dict):
     n     = len(stats)
     if not n:
         return
-    xs = [5.0] if n == 1 else [10.0 / (n + 1) * (i + 1) for i in range(n)]
 
-    for x, stat in zip(xs, stats):
-        ax.add_patch(plt.Circle((x, 2.7), 1.3, color='#1E1B4B', zorder=1))
-        ax.add_patch(plt.Circle((x, 2.7), 1.35, color=C_MAIN,
-                                fill=False, lw=2, zorder=2))
-        _t(ax, x, 2.7, stat.get("value", ""), size=20, color=C_ACCENT,
+    # カード配置（最大3枚）
+    if n == 1:
+        cards = [(1.5, 10.5)]
+    elif n == 2:
+        cards = [(0.5, 5.6), (6.4, 11.5)]
+    else:
+        cards = [(0.3, 3.9), (4.4, 7.9), (8.5, 11.9)]
+
+    for (x0, x1), stat in zip(cards, stats[:3]):
+        cx = (x0 + x1) / 2
+        w  = x1 - x0
+
+        # カード背景
+        ax.add_patch(FancyBboxPatch((x0, 0.75), w, 4.25,
+            boxstyle="round,pad=0.15", lw=2,
+            edgecolor=C_MAIN, facecolor='#0D1B2A'))
+
+        # 上部アクセントバー
+        ax.add_patch(FancyBboxPatch((x0 + 0.08, 4.72), w - 0.16, 0.16,
+            boxstyle="round,pad=0.03", lw=0, facecolor=C_ACCENT))
+
+        # コンテキスト（小ラベル）
+        context = stat.get("context", "")
+        if context:
+            _t(ax, cx, 4.42, context, size=9.5, color=C_MUTED,
+               ha='center', va='center')
+
+        # 大きな数値
+        val      = stat.get("value", "")
+        val_size = 38 if len(val) <= 4 else (30 if len(val) <= 6 else 24)
+        val_y    = 3.15 if context else 3.3
+        _t(ax, cx, val_y, val, size=val_size, color=C_ACCENT,
            bold=True, ha='center', va='center')
-        _t(ax, x, 1.2, stat.get("label", ""), size=9.5, color=C_TEXT,
+
+        # ラベル（折り返し対応）
+        label   = stat.get("label", "")
+        label_y = val_y - 1.35
+        lines   = _split_label(label, max_chars=12)
+        for j, line in enumerate(lines[:2]):
+            _t(ax, cx, label_y - j * 0.42, line, size=12, color=C_TEXT,
+               ha='center', va='center')
+
+    # インパクト文（最下部）
+    impact = chart.get("impact", "")
+    if impact:
+        ax.add_patch(FancyBboxPatch((0.4, 0.1), 11.2, 0.52,
+            boxstyle="round,pad=0.05", lw=1,
+            edgecolor='#2D2500', facecolor='#1C1400'))
+        _t(ax, 6.0, 0.37, impact, size=10, color=C_ACCENT,
            ha='center', va='center')
 
 
@@ -134,26 +198,31 @@ def _draw_comparison(ax, chart: dict):
     left_items  = chart.get("left_items", [])
     right_items = chart.get("right_items", [])
 
-    ax.add_patch(FancyBboxPatch((0.3, 0.8), 4.0, 3.4,
-        boxstyle="round,pad=0.1", lw=1.2,
+    # 左パネル
+    ax.add_patch(FancyBboxPatch((0.3, 0.85), 5.0, 4.15,
+        boxstyle="round,pad=0.12", lw=1.5,
         edgecolor=C_BORDER, facecolor=C_SURFACE))
-    _t(ax, 2.3, 3.95, left_label, size=13, color=C_MUTED, bold=True, ha='center')
+    _t(ax, 2.8, 4.65, left_label, size=14, color=C_MUTED, bold=True, ha='center')
+    ax.plot([0.6, 5.0], [4.35, 4.35], color=C_BORDER, lw=0.7)
     for i, item in enumerate(left_items[:4]):
-        y = 3.35 - i * 0.62
-        ax.plot(0.62, y, 'o', color=C_MUTED, markersize=5)
-        _t(ax, 0.88, y, item, size=9.5, color=C_MUTED)
+        y = 3.8 - i * 0.78
+        ax.plot(0.78, y, 'o', color=C_MUTED, markersize=6)
+        _t(ax, 1.05, y, item, size=10.5, color=C_MUTED)
 
-    ax.annotate('', xy=(5.85, 2.5), xytext=(4.45, 2.5),
-        arrowprops=dict(arrowstyle='->', color=C_ACCENT, lw=3, mutation_scale=20))
+    # 矢印
+    ax.annotate('', xy=(6.8, 2.9), xytext=(5.55, 2.9),
+        arrowprops=dict(arrowstyle='->', color=C_ACCENT, lw=3.5, mutation_scale=28))
 
-    ax.add_patch(FancyBboxPatch((6.0, 0.8), 4.0, 3.4,
-        boxstyle="round,pad=0.1", lw=1.5,
-        edgecolor=C_MAIN, facecolor=C_SURFACE))
-    _t(ax, 8.0, 3.95, right_label, size=13, color=C_MAIN, bold=True, ha='center')
+    # 右パネル
+    ax.add_patch(FancyBboxPatch((7.0, 0.85), 4.7, 4.15,
+        boxstyle="round,pad=0.12", lw=2,
+        edgecolor=C_MAIN, facecolor='#0D1B2A'))
+    _t(ax, 9.35, 4.65, right_label, size=14, color=C_MAIN, bold=True, ha='center')
+    ax.plot([7.3, 11.4], [4.35, 4.35], color=C_BORDER, lw=0.7)
     for i, item in enumerate(right_items[:4]):
-        y = 3.35 - i * 0.62
-        ax.plot(6.32, y, 'o', color=C_MAIN, markersize=5)
-        _t(ax, 6.58, y, item, size=9.5, color=C_TEXT)
+        y = 3.8 - i * 0.78
+        ax.plot(7.5, y, 'o', color=C_MAIN, markersize=6)
+        _t(ax, 7.77, y, item, size=10.5, color=C_TEXT)
 
 
 def generate_chart_image(chart: dict, output_path: Path) -> bool:
@@ -164,22 +233,26 @@ def generate_chart_image(chart: dict, output_path: Path) -> bool:
         subtitle   = chart.get("subtitle", "")
         caption    = chart.get("caption", "")
 
-        fig, ax = plt.subplots(figsize=(10, 5.6))
+        fig, ax = plt.subplots(figsize=(_CW, _CH))
         fig.patch.set_facecolor(C_BASE)
         ax.set_facecolor(C_BASE)
-        ax.set_xlim(0, 10)
-        ax.set_ylim(0, 5.6)
+        ax.set_xlim(0, _CW)
+        ax.set_ylim(0, _CH)
         ax.axis('off')
 
-        # ヘッダー
-        ax.add_patch(FancyBboxPatch((0.4, 5.0), 9.2, 0.45,
+        # ヘッダー背景
+        ax.add_patch(FancyBboxPatch((0.4, 6.05), 11.2, 0.58,
             boxstyle="round,pad=0.05", lw=0, facecolor='#161B22'))
-        _t(ax, 0.6, 5.22, title, size=14, color=C_TEXT, bold=True)
-        if subtitle:
-            _t(ax, 0.4, 4.65, subtitle, size=9.5, color=C_MUTED)
-        ax.plot([0.4, 9.6], [4.45, 4.45], color=C_BORDER, lw=0.8)
-        ax.plot([0.4, 0.4], [4.45, 5.45], color=C_ACCENT, lw=4,
+        # 左アクセントバー
+        ax.plot([0.4, 0.4], [5.9, 6.65], color=C_ACCENT, lw=5,
                 solid_capstyle='round')
+        _t(ax, 0.68, 6.34, title, size=16, color=C_TEXT, bold=True)
+
+        if subtitle:
+            _t(ax, 0.5, 5.65, subtitle, size=10.5, color=C_MUTED)
+
+        # 区切り線
+        ax.plot([0.4, 11.6], [5.4, 5.4], color=C_BORDER, lw=0.8)
 
         # チャート本体
         if chart_type == "bar":
@@ -191,10 +264,10 @@ def generate_chart_image(chart: dict, output_path: Path) -> bool:
 
         # フッター
         if caption:
-            _t(ax, 0.4, 0.2, caption, size=8, color=C_MUTED)
+            _t(ax, 0.4, 0.25, caption, size=8.5, color=C_MUTED)
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        plt.savefig(output_path, dpi=120, bbox_inches='tight', facecolor=C_BASE)
+        plt.savefig(output_path, dpi=200, bbox_inches='tight', facecolor=C_BASE)
         plt.close(fig)
         return True
     except Exception as e:
@@ -281,8 +354,13 @@ def generate_posts_with_claude(
         '   {"chart_type":"bar","title":"グラフタイトル","subtitle":"補足（任意）",'
         '"labels":["項目A","項目B"],"values":[45,30],"unit":"%","caption":"出典"}\n\n'
         "② stat（数字強調）: 1〜3個の大きな数字を印象的に見せる\n"
+        "   statsの各要素に context（「従来比」「導入後」「2024年」など比較の基準を5文字以内で）を必ず入れること\n"
+        "   impactには投稿の要点を1文（30文字以内）で入れること\n"
+        "   valueは必ず数字＋単位の形式（「50倍」「67%」「1/2」「月1000件」など）にすること\n"
         '   {"chart_type":"stat","title":"グラフタイトル","subtitle":"補足（任意）",'
-        '"stats":[{"value":"67%","label":"の企業が導入"},{"value":"3倍","label":"に増加"}],'
+        '"stats":[{"value":"50倍","label":"処理速度が向上","context":"従来比"},'
+        '{"value":"1/2","label":"のトークンコスト","context":"削減率"}],'
+        '"impact":"今あるツールを使い倒すだけで劇的に変わる",'
         '"caption":"出典"}\n\n'
         "③ comparison（左右比較）: 旧来の手法 vs 新手法\n"
         '   {"chart_type":"comparison","title":"グラフタイトル","subtitle":"補足（任意）",'

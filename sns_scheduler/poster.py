@@ -154,13 +154,47 @@ def post_to_x(text: str, image_url: str = "") -> bool:
     return response.data is not None
 
 
+# ── Imgur アップロード ────────────────────────────────────
+def upload_to_imgur(image_data: bytes) -> str:
+    """画像をImgurにアップロードして公開URLを返す"""
+    import base64
+    client_id = os.environ.get("IMGUR_CLIENT_ID", "")
+    if not client_id:
+        return ""
+    try:
+        encoded = base64.b64encode(image_data).decode("utf-8")
+        r = requests.post(
+            "https://api.imgur.com/3/image",
+            headers={"Authorization": f"Client-ID {client_id}"},
+            json={"image": encoded, "type": "base64"},
+            timeout=30,
+        )
+        r.raise_for_status()
+        url = r.json()["data"]["link"]
+        print(f"  Imgur: アップロード完了 → {url}")
+        return url
+    except Exception as e:
+        print(f"  Imgur: アップロードエラー: {e}")
+        return ""
+
+
 # ── Threads 投稿 ──────────────────────────────────────────
 def post_to_threads(text: str, image_url: str = "") -> bool:
     user_id = os.environ["THREADS_USER_ID"]
     token   = os.environ["THREADS_ACCESS_TOKEN"]
     base    = f"https://graph.threads.net/v1.0/{user_id}"
 
-    # 画像ありの場合は IMAGE タイプ、なければ TEXT タイプ
+    # GitHubのURLはThreadsから直接アクセスできないためImgurに変換
+    if image_url:
+        image_data = download_image(image_url)
+        if image_data:
+            imgur_url = upload_to_imgur(image_data)
+            if imgur_url:
+                image_url = imgur_url
+            else:
+                print("  Threads: Imgur未設定のためテキストのみで投稿")
+                image_url = ""
+
     if image_url:
         params = {
             "media_type": "IMAGE",

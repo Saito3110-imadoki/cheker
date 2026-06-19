@@ -5,75 +5,153 @@ from matplotlib import font_manager
 import warnings
 warnings.filterwarnings('ignore')
 
-# 日本語フォント設定
+# ── フォント ──
 font_path = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
-font_prop = font_manager.FontProperties(fname=font_path)
-plt.rcParams['font.family'] = font_prop.get_name()
+bold_path = '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'
 font_manager.fontManager.addfont(font_path)
+FP  = font_manager.FontProperties(fname=font_path)
 
-fig, ax = plt.subplots(figsize=(10, 6))
-fig.patch.set_facecolor('#0F172A')
-ax.set_facecolor('#0F172A')
-ax.set_xlim(0, 10)
-ax.set_ylim(0, 6)
+# ── 3色ルール ──
+C_BASE    = '#0D1117'   # ベース（背景）
+C_SURFACE = '#161B22'   # カード背景
+C_MAIN    = '#818CF8'   # メインカラー（AI検索側）
+C_ACCENT  = '#FCD34D'   # アクセント（強調・矢印）
+C_TEXT    = '#E2E8F0'   # 本文テキスト
+C_MUTED   = '#64748B'   # サブテキスト（SEO側）
+C_BORDER  = '#30363D'   # ボーダー
+
+# ── キャンバス ──
+fig, ax = plt.subplots(figsize=(12, 6.72))  # 1200×672px @100dpi
+fig.patch.set_facecolor(C_BASE)
+ax.set_facecolor(C_BASE)
+ax.set_xlim(0, 12)
+ax.set_ylim(0, 6.72)
 ax.axis('off')
 
-def txt(x, y, s, size=11, color='white', bold=False, italic=False, ha='center', va='center'):
-    weight = 'bold' if bold else 'normal'
-    style  = 'italic' if italic else 'normal'
-    ax.text(x, y, s, ha=ha, va=va, fontsize=size, fontweight=weight,
-            fontstyle=style, color=color,
-            fontproperties=font_manager.FontProperties(fname=font_path))
+def t(x, y, s, size=10, color=C_TEXT, bold=False, ha='left', va='center'):
+    w = 'bold' if bold else 'normal'
+    ax.text(x, y, s, ha=ha, va=va, fontsize=size, fontweight=w,
+            color=color, fontproperties=FP)
 
-# ── タイトル ──
-txt(5, 5.65, "SEO時代 → AI検索時代　何が変わった？",
-    size=14, bold=True, color='white')
+# ══════════════════════════════════════════════
+# ① ヘッダーエリア（H1 + サブタイトル）
+# ══════════════════════════════════════════════
+# カテゴリバッジ
+badge = FancyBboxPatch((0.5, 5.9), 2.6, 0.45,
+    boxstyle="round,pad=0.05", lw=0, facecolor='#1E2749')
+ax.add_patch(badge)
+t(0.72, 6.13, "AI検索時代のコンテンツ戦略", size=8.5, color=C_MAIN)
 
-# ── 左ボックス（SEO時代）──
-ax.add_patch(FancyBboxPatch((0.3, 1.2), 3.8, 3.8,
-    boxstyle="round,pad=0.1", lw=2,
-    edgecolor='#64748B', facecolor='#1E293B'))
+# H1 タイトル（最大フォント・白・太字）
+t(0.5, 5.42, "SEO時代 → AI検索時代", size=22, color=C_TEXT, bold=True)
 
-txt(2.2, 4.72, "SEO時代", size=13, bold=True, color='#94A3B8')
+# サブタイトル（ミュート、H1の半分以下のサイズ感）
+t(0.5, 4.95, "「見つけてもらう」から「答えやすくする」戦略へ",
+  size=11, color=C_MUTED)
 
-for y, t in [(4.1, "キーワードを詰め込む"),
-             (3.5, "被リンク数を増やす"),
-             (2.9, "検索エンジンを攻略する"),
-             (2.3, "記事の量でカバー")]:
-    txt(2.2, y, "・ " + t, size=10, color='#94A3B8')
+# 区切り線
+ax.plot([0.5, 11.5], [4.68, 4.68], color=C_BORDER, lw=1.2)
 
-txt(2.2, 1.55, "「見つけてもらう」戦略",
-    size=9.5, italic=True, color='#64748B')
+# ══════════════════════════════════════════════
+# ② 左カラム — SEO時代（ミュートカラー）
+# ══════════════════════════════════════════════
+L_X, L_W = 0.5, 4.3
+card_l = FancyBboxPatch((L_X, 0.55), L_W, 3.9,
+    boxstyle="round,pad=0.1", lw=1.2,
+    edgecolor=C_BORDER, facecolor=C_SURFACE)
+ax.add_patch(card_l)
 
-# ── 矢印 ──
-ax.annotate('', xy=(5.85, 3.2), xytext=(4.15, 3.2),
-    arrowprops=dict(arrowstyle='->', color='#F59E0B', lw=3))
-txt(5.0, 3.6, "時代の転換", size=9, bold=True, color='#F59E0B')
+# H2 見出し
+t(L_X + 0.3, 4.2, "SEO時代", size=14, color=C_MUTED, bold=True)
 
-# ── 右ボックス（AI検索時代）──
-ax.add_patch(FancyBboxPatch((5.9, 1.2), 3.8, 3.8,
-    boxstyle="round,pad=0.1", lw=2,
-    edgecolor='#6366F1', facecolor='#1E1B4B'))
+# 小バッジ
+b2 = FancyBboxPatch((L_X + 0.3, 3.7), 1.5, 0.32,
+    boxstyle="round,pad=0.05", lw=0, facecolor='#1C2333')
+ax.add_patch(b2)
+t(L_X + 0.48, 3.86, "過去の戦略", size=8, color=C_MUTED)
 
-txt(7.8, 4.72, "AI検索時代", size=13, bold=True, color='#A5B4FC')
+# 区切り（カード内）
+ax.plot([L_X+0.2, L_X+L_W-0.2], [3.55, 3.55], color=C_BORDER, lw=0.8)
 
-for y, t in [(4.1, "質問に直接答える構成"),
-             (3.5, "AIが読みやすい文章"),
-             (2.9, "回答エンジンに選ばれる"),
-             (2.3, "質と構造が武器になる")]:
-    txt(7.8, y, "・ " + t, size=10, color='#C7D2FE')
+# 箇条書き（左揃え・3点に絞る）
+items_left = [
+    "キーワードを詰め込んで上位表示を狙う",
+    "被リンク数・ドメイン評価で競う",
+    "「検索エンジン」に最適化された記事量産",
+]
+for i, item in enumerate(items_left):
+    y = 3.1 - i * 0.65
+    # ドット
+    ax.plot(L_X + 0.35, y, 'o', color=C_MUTED, markersize=5)
+    t(L_X + 0.6, y, item, size=10, color=C_MUTED)
 
-txt(7.8, 1.55, "「答えやすくする」戦略",
-    size=9.5, italic=True, bold=True, color='#818CF8')
+# フッターラベル
+t(L_X + 0.3, 0.88, "戦略の核心：", size=8.5, color=C_MUTED)
+t(L_X + 0.3, 0.68, "「見つけてもらう」こと", size=10, color=C_MUTED, bold=True)
 
-# ── 下部メッセージ ──
-ax.add_patch(FancyBboxPatch((1.0, 0.1), 8.0, 0.8,
+# ══════════════════════════════════════════════
+# ③ 中央 — 遷移矢印
+# ══════════════════════════════════════════════
+ax.annotate('', xy=(6.85, 2.5), xytext=(5.15, 2.5),
+    arrowprops=dict(arrowstyle='->', color=C_ACCENT, lw=3,
+                    mutation_scale=22))
+t(5.9, 2.9, "時代の", size=9, color=C_ACCENT, ha='center')
+t(5.9, 2.65, "転換", size=9, color=C_ACCENT, bold=True, ha='center')
+
+# ══════════════════════════════════════════════
+# ④ 右カラム — AI検索時代（メインカラー）
+# ══════════════════════════════════════════════
+R_X, R_W = 7.2, 4.3
+card_r = FancyBboxPatch((R_X, 0.55), R_W, 3.9,
     boxstyle="round,pad=0.1", lw=1.5,
-    edgecolor='#F59E0B', facecolor='#1C1400'))
-txt(5.0, 0.5, "「AIに読みやすい形」にアップデートしないと埋もれる",
-    size=10.5, bold=True, color='#FCD34D')
+    edgecolor=C_MAIN, facecolor=C_SURFACE)
+ax.add_patch(card_r)
 
-plt.tight_layout()
+# H2 見出し（メインカラー）
+t(R_X + 0.3, 4.2, "AI検索時代", size=14, color=C_MAIN, bold=True)
+
+# 小バッジ（アクセント）
+b3 = FancyBboxPatch((R_X + 0.3, 3.7), 1.5, 0.32,
+    boxstyle="round,pad=0.05", lw=0, facecolor='#1C1E2C')
+ax.add_patch(b3)
+t(R_X + 0.48, 3.86, "今の戦略", size=8, color=C_ACCENT)
+
+# 区切り
+ax.plot([R_X+0.2, R_X+R_W-0.2], [3.55, 3.55], color='#2A2F50', lw=0.8)
+
+# 箇条書き
+items_right = [
+    "質問に直接答える構成・見出し設計",
+    "AIが引用しやすいシンプルな文体",
+    "「回答エンジン」に選ばれるコンテンツ",
+]
+for i, item in enumerate(items_right):
+    y = 3.1 - i * 0.65
+    ax.plot(R_X + 0.35, y, 'o', color=C_MAIN, markersize=5)
+    t(R_X + 0.6, y, item, size=10, color=C_TEXT)
+
+# フッターラベル
+t(R_X + 0.3, 0.88, "戦略の核心：", size=8.5, color=C_MAIN)
+t(R_X + 0.3, 0.68, "「答えやすくする」こと", size=10, color=C_MAIN, bold=True)
+
+# ══════════════════════════════════════════════
+# ⑤ アクセントバー — 1メッセージの強調
+# ══════════════════════════════════════════════
+accent_bar = FancyBboxPatch((0.5, 0.06), 11.0, 0.42,
+    boxstyle="round,pad=0.05", lw=0, facecolor='#2D2500')
+ax.add_patch(accent_bar)
+
+# 左アクセントライン
+ax.plot([0.5, 0.5], [0.06, 0.48], color=C_ACCENT, lw=4, solid_capstyle='round')
+
+t(0.85, 0.27,
+  "「AIに読みやすい形」へのアップデートが、これからのコンテンツ競争を制する",
+  size=10.5, color=C_ACCENT, bold=True)
+
+# ══════════════════════════════════════════════
+# 出力
+# ══════════════════════════════════════════════
+plt.tight_layout(pad=0)
 plt.savefig('/home/user/cheker/sample_post_image.png',
-            dpi=150, bbox_inches='tight', facecolor='#0F172A')
+            dpi=100, bbox_inches='tight', facecolor=C_BASE)
 print("saved")

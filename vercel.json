@@ -1,3 +1,6 @@
 {
-  "root": "imadoki-office"
+  "buildCommand": "cd imadoki-office && npm install && npm run build",
+  "outputDirectory": "imadoki-office/.next",
+  "installCommand": "echo 'skip'",
+  "framework": "nextjs"
 }

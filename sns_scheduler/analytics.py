@@ -17,6 +17,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+_SCRIPT_DIR = Path(__file__).parent
+if str(_SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPT_DIR))
+from notify import notify_error, notify_analytics_complete
+
 JST = timezone(timedelta(hours=9))
 
 # ── config.yaml 読み込み ──────────────────────────────────
@@ -154,7 +159,12 @@ def run():
     id_to_page = {tid: p for tid, p in zip(tweet_ids, pages) if tid}
 
     print("X APIでメトリクス取得中...")
-    metrics_map = fetch_tweet_metrics_batch(list(id_to_page.keys()))
+    try:
+        metrics_map = fetch_tweet_metrics_batch(list(id_to_page.keys()))
+    except Exception as e:
+        notify_error("パフォーマンス計測（analytics.py）", f"X API取得失敗: {e}")
+        print(f"X API取得失敗: {e}", file=sys.stderr)
+        sys.exit(1)
     print(f"  取得成功: {len(metrics_map)} 件")
 
     updated = 0
@@ -172,6 +182,7 @@ def run():
             print(f"  Notion更新エラー（{tweet_id}）: {e}")
 
     print(f"\n完了 — {updated} 件のメトリクスをNotionに保存しました")
+    notify_analytics_complete(updated)
 
 
 if __name__ == "__main__":

@@ -18,6 +18,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# 共通通知モジュール
+_SCRIPT_DIR = Path(__file__).parent
+if str(_SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPT_DIR))
+from notify import notify_error, notify_post_complete
+
 JST = timezone(timedelta(hours=9))
 
 # ── config.yaml 読み込み ──────────────────────────────────
@@ -319,7 +325,9 @@ def run():
                 error_count += 1
 
         except Exception as e:
+            detail = f"{text[:30]}... / {e}"
             print(f"  エラー発生: {e}", file=sys.stderr)
+            notify_error("自動投稿（poster.py）", detail)
             try:
                 update_status(notion, page_id, STATUS_ERROR)
             except Exception:
@@ -327,6 +335,7 @@ def run():
             error_count += 1
 
     print(f"\n完了 — 投稿済: {posted_count} 件 / エラー: {error_count} 件")
+    notify_post_complete(posted_count, error_count)
 
 
 if __name__ == "__main__":

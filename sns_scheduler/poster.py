@@ -55,11 +55,12 @@ def _env(name: str, prefix: str = "", required: bool = True) -> str:
 NOTION_TOKEN       = os.environ["NOTION_TOKEN"]
 NOTION_DATABASE_ID = os.environ["NOTION_DATABASE_ID"]
 
-PROP_TEXT      = _cfg("notion", "properties", "text",     default="投稿文")
-PROP_DATETIME  = _cfg("notion", "properties", "datetime", default="投稿日時")
-PROP_PLATFORM  = _cfg("notion", "properties", "platform", default="媒体")
-PROP_STATUS    = _cfg("notion", "properties", "status",   default="ステータス")
-PROP_IMAGE_URL = _cfg("notion", "properties", "image_url",default="画像URL")
+PROP_TEXT      = _cfg("notion", "properties", "text",        default="投稿文")
+PROP_DATETIME  = _cfg("notion", "properties", "datetime",    default="投稿日時")
+PROP_PLATFORM  = _cfg("notion", "properties", "platform",    default="媒体")
+PROP_STATUS    = _cfg("notion", "properties", "status",      default="ステータス")
+PROP_IMAGE_URL = _cfg("notion", "properties", "image_url",   default="画像URL")
+PROP_TWEET_ID  = _cfg("notion", "properties", "tweet_id",    default="X投稿ID")
 
 STATUS_PENDING = "未投稿"
 STATUS_DONE    = "投稿済"
@@ -132,11 +133,12 @@ def extract_image_url(page: dict) -> str:
     return ""
 
 
-def update_status(notion: Client, page_id: str, status: str):
-    notion.pages.update(
-        page_id=page_id,
-        properties={PROP_STATUS: {"multi_select": [{"name": status}]}},
-    )
+def update_status(notion: Client, page_id: str, status: str,
+                  tweet_id: str = ""):
+    props: dict = {PROP_STATUS: {"multi_select": [{"name": status}]}}
+    if tweet_id:
+        props[PROP_TWEET_ID] = {"rich_text": [{"text": {"content": tweet_id}}]}
+    notion.pages.update(page_id=page_id, properties=props)
 
 
 # ── 画像ダウンロード ──────────────────────────────────────
@@ -151,7 +153,8 @@ def download_image(url: str) -> bytes | None:
 
 
 # ── X（Twitter）投稿 ──────────────────────────────────────
-def post_to_x(text: str, image_url: str = "") -> bool:
+def post_to_x(text: str, image_url: str = "") -> str:
+    """投稿してツイートIDを返す。失敗時は空文字列。"""
     consumer_key    = os.environ["X_API_KEY"]
     consumer_secret = os.environ["X_API_KEY_SECRET"]
     access_token    = os.environ["X_ACCESS_TOKEN"]
@@ -183,7 +186,9 @@ def post_to_x(text: str, image_url: str = "") -> bool:
         text=text,
         **({"media_ids": media_ids} if media_ids else {}),
     )
-    return response.data is not None
+    if response.data:
+        return str(response.data["id"])
+    return ""
 
 
 # ── Telegraph アップロード ────────────────────────────────
@@ -291,20 +296,21 @@ def run():
             print(f"  → 媒体の値が不正のためスキップ（値: {platform!r}）")
             continue
 
-        ok_x       = True
+        tweet_id   = ""
         ok_threads = True
 
         try:
             if platform in (PLATFORM_X, PLATFORM_BOTH):
-                ok_x = post_to_x(text, image_url)
-                print(f"  X       : {'✓ 投稿成功' if ok_x else '✗ 投稿失敗'}")
+                tweet_id = post_to_x(text, image_url)
+                print(f"  X       : {'✓ 投稿成功 ID=' + tweet_id if tweet_id else '✗ 投稿失敗'}")
 
             if platform in (PLATFORM_THREADS, PLATFORM_BOTH):
                 ok_threads = post_to_threads(text, image_url)
                 print(f"  Threads : {'✓ 投稿成功' if ok_threads else '✗ 投稿失敗'}")
 
-            if ok_x and ok_threads:
-                update_status(notion, page_id, STATUS_DONE)
+            x_ok = bool(tweet_id) if platform in (PLATFORM_X, PLATFORM_BOTH) else True
+            if x_ok and ok_threads:
+                update_status(notion, page_id, STATUS_DONE, tweet_id=tweet_id)
                 print("  ステータス → 投稿済")
                 posted_count += 1
             else:

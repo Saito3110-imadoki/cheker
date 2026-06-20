@@ -16,6 +16,7 @@ import feedparser
 import tweepy
 import anthropic
 import requests
+import yaml
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch
 from matplotlib import font_manager
@@ -40,17 +41,41 @@ load_dotenv()
 
 JST = timezone(timedelta(hours=9))
 
+# ── config.yaml 読み込み ──────────────────────────────────
+_CONFIG_PATH = Path(__file__).parent / "config.yaml"
+_CFG: dict = {}
+if _CONFIG_PATH.exists():
+    try:
+        with open(_CONFIG_PATH, encoding="utf-8") as _f:
+            _CFG = yaml.safe_load(_f) or {}
+        print(f"[config] {_CONFIG_PATH.name} 読み込み完了")
+    except Exception as _ce:
+        print(f"[config] 読み込みエラー（デフォルト値を使用）: {_ce}")
+else:
+    print("[config] config.yaml が見つかりません。デフォルト値を使用します。")
+
+def _cfg(*keys, default=None):
+    """ネストしたキーを安全に取得"""
+    node = _CFG
+    for k in keys:
+        if not isinstance(node, dict):
+            return default
+        node = node.get(k)
+        if node is None:
+            return default
+    return node
+
 NOTION_TOKEN       = os.environ["NOTION_TOKEN"]
 NOTION_DATABASE_ID = os.environ["NOTION_DATABASE_ID"]
 
-PROP_TEXT      = "投稿文"
-PROP_DATETIME  = "投稿日時"
-PROP_PLATFORM  = "媒体"
-PROP_STATUS    = "ステータス"
-PROP_IMAGE_URL = "画像URL"
+PROP_TEXT      = _cfg("notion", "properties", "text",     default="投稿文")
+PROP_DATETIME  = _cfg("notion", "properties", "datetime", default="投稿日時")
+PROP_PLATFORM  = _cfg("notion", "properties", "platform", default="媒体")
+PROP_STATUS    = _cfg("notion", "properties", "status",   default="ステータス")
+PROP_IMAGE_URL = _cfg("notion", "properties", "image_url",default="画像URL")
 
-STATUS_PENDING_APPROVAL = "承認待ち"
-PLATFORM_BOTH = "両方"
+STATUS_PENDING_APPROVAL = _cfg("notion", "status",   "pending", default="承認待ち")
+PLATFORM_BOTH           = _cfg("notion", "platform", "default", default="両方")
 
 GITHUB_REPOSITORY = os.environ.get("GITHUB_REPOSITORY", "")
 IMAGE_DIR = Path("post-images")
@@ -64,17 +89,21 @@ C_TEXT    = '#E2E8F0'
 C_MUTED   = '#64748B'
 C_BORDER  = '#30363D'
 
-RSS_FEEDS = [
+RSS_FEEDS = _cfg("rss_feeds", default=[
     "https://rss.itmedia.co.jp/rss/2.0/aiplus.xml",
     "https://www.publickey1.jp/atom.xml",
     "https://b.hatena.ne.jp/hotentry/it.rss",
     "https://blog.hubspot.com/marketing/rss.xml",
     "https://buffer.com/resources/feed/",
-]
+])
 
-X_KEYWORDS = ["AI活用", "ChatGPT", "SNS運用", "WEBマーケティング"]
+X_KEYWORDS = _cfg("topics", "keywords_x", default=[
+    "AI活用", "ChatGPT", "SNS運用", "WEBマーケティング"
+])
 
-POST_TIMES_JST = ["09:00", "12:00", "18:00", "20:00", "22:00"]
+POST_TIMES_JST = _cfg("schedule", "times", default=[
+    "09:00", "12:00", "18:00", "20:00", "22:00"
+])
 
 
 # ── フォントセットアップ ──────────────────────────────────
@@ -336,9 +365,31 @@ def generate_posts_with_claude(
     trend_text = "\n".join(f"・{t}" for t in trending) or "（情報なし）"
     type_a     = count - 2
 
+    # config.yaml からスタイル情報を取得
+    target_audience = _cfg("content", "target_audience",
+                           default="中小企業経営者・マーケター・20〜40代ビジネスパーソン")
+    tone            = _cfg("content", "tone",
+                           default="親しみやすい・専門用語なし・友達に話すような口調")
+    post_min        = _cfg("content", "post_length_min", default=200)
+    post_max        = _cfg("content", "post_length_max", default=400)
+    hashtags        = _cfg("content", "hashtags_per_post", default=1)
+    emoji           = _cfg("content", "emoji_per_post", default=2)
+    forbidden_list  = _cfg("content", "forbidden", default=[
+        "カタカナ専門用語の羅列", "上から目線の表現", "箇条書きで終わる投稿"
+    ])
+    topics_list     = _cfg("topics", "primary", default=["AI活用", "SNS運用", "マーケティング"])
+    company_name    = _cfg("company", "name", default="")
+
+    forbidden_str = "・".join(forbidden_list)
+    topics_str    = "、".join(topics_list)
+    company_str   = f"（{company_name}向け）" if company_name else ""
+
     prompt = (
-        f"あなたはフォロワーから「わかりやすい」「刺さる」と言われる人気SNSライターです。\n"
-        f"以下のニュースとトレンドをヒントに、一般の人が思わず「いいね」や「保存」したくなる投稿を{count}件作成してください。\n\n"
+        f"あなたはフォロワーから「わかりやすい」「刺さる」と言われる人気SNSライターです{company_str}。\n"
+        f"ターゲット読者: {target_audience}\n"
+        f"トーン: {tone}\n"
+        f"コンテンツテーマ: {topics_str}\n\n"
+        f"以下のニュースとトレンドをヒントに、読者が思わず「いいね」や「保存」したくなる投稿を{count}件作成してください。\n\n"
         f"【参考ニュース】\n{news_text}\n\n"
         f"【参考トレンド】\n{trend_text}\n\n"
         "【投稿の種類と配分】\n"
@@ -350,12 +401,12 @@ def generate_posts_with_claude(
         "   - 自分が実際に感じた違和感・気づき・失敗\n"
         "   - 専門家っぽくなく、友達に話すような口調\n\n"
         "【文字数・形式】\n"
-        "- 各投稿200〜400文字\n"
+        f"- 各投稿{post_min}〜{post_max}文字\n"
         "- 専門用語は使わない\n"
-        "- 絵文字は1〜2個\n"
-        "- ハッシュタグは1個まで\n"
+        f"- 絵文字は{emoji}個まで\n"
+        f"- ハッシュタグは{hashtags}個まで\n"
         "- 最後に問いかけや余韻を残す\n\n"
-        "【禁止】カタカナ専門用語の羅列・上から目線・箇条書き終わり\n\n"
+        f"【禁止】{forbidden_str}\n\n"
         "【図解生成ルール】\n"
         "投稿文の中に具体的な数字（○○件、○○%、○○倍、○○万円、○○人 など）が\n"
         "1つでも含まれていれば needs_image: true にしてください。\n"
@@ -490,8 +541,9 @@ def run():
     trending = fetch_trending_tweets()
     print(f"  Xトレンド: {len(trending)}件")
 
+    posts_per_day = _cfg("content", "posts_per_day", default=5)
     print("Claude AIで投稿文生成中...")
-    posts = generate_posts_with_claude(news, trending, count=5)
+    posts = generate_posts_with_claude(news, trending, count=posts_per_day)
     print(f"  生成: {len(posts)}件")
 
     if not posts:

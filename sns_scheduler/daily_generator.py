@@ -31,7 +31,8 @@ if str(_SCRIPT_DIR) not in sys.path:
 try:
     from infographic import generate_infographic as _gen_web
     _HAS_WEB_RENDERER = True
-except Exception:
+except Exception as _e:
+    print(f"[infographic] import失敗: {type(_e).__name__}: {_e}")
     _HAS_WEB_RENDERER = False
 
 warnings.filterwarnings('ignore')
@@ -507,12 +508,15 @@ def run():
         out_path = IMAGE_DIR / filename
         print(f"  画像生成中 [{i+1}]: {post.get('theme', '')}")
         # playwright優先、失敗時はmatplotlibにフォールバック
-        ok = (_HAS_WEB_RENDERER and _gen_web(post["chart"], out_path)) \
-             or generate_chart_image(post["chart"], out_path)
-        if _HAS_WEB_RENDERER and ok:
-            print("    レンダラー: playwright (高解像度)")
-        elif ok:
-            print("    レンダラー: matplotlib (フォールバック)")
+        ok = False
+        if _HAS_WEB_RENDERER:
+            ok = _gen_web(post["chart"], out_path)
+            if ok:
+                print("    レンダラー: playwright (高解像度)")
+        if not ok:
+            ok = generate_chart_image(post["chart"], out_path)
+            if ok:
+                print("    レンダラー: matplotlib (フォールバック)")
         if ok:
             if GITHUB_REPOSITORY:
                 owner_repo = GITHUB_REPOSITORY  # e.g. "Saito3110-imadoki/sns-scheduler"

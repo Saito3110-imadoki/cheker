@@ -1,0 +1,45 @@
+# ============================================================
+#  クライアント設定ファイル：株式会社IMADOKI
+#  sns_scheduler/config.yaml の内容をここで上書きできます。
+#  設定がない項目は config.yaml のデフォルト値が使われます。
+# ============================================================
+
+# GitHub Secrets のプレフィックス（空文字 = 標準名を使用）
+# 例: "IMADOKI" → IMADOKI_X_API_KEY, IMADOKI_NOTION_TOKEN ...
+env_prefix: ""
+
+company:
+  name: 株式会社IMADOKI
+  industry: AIマーケティング・SNS運用支援
+  url: https://imadoki.co.jp
+
+content:
+  target_audience: 中小企業経営者・マーケター・20〜40代ビジネスパーソン
+  tone: 親しみやすい・専門用語なし・友達に話すような口調
+  posts_per_day: 5
+
+topics:
+  primary:
+    - AI活用
+    - SNS運用
+    - マーケティング効率化
+  keywords_x:
+    - AI活用
+    - ChatGPT
+    - SNS運用
+    - WEBマーケティング
+
+rss_feeds:
+  - https://rss.itmedia.co.jp/rss/2.0/aiplus.xml
+  - https://www.publickey1.jp/atom.xml
+  - https://b.hatena.ne.jp/hotentry/it.rss
+  - https://blog.hubspot.com/marketing/rss.xml
+  - https://buffer.com/resources/feed/
+
+schedule:
+  times:
+    - "09:00"
+    - "12:00"
+    - "18:00"
+    - "20:00"
+    - "22:00"

@@ -8,9 +8,11 @@ import os
 import sys
 import io
 import time
+import yaml
 import requests
 import tweepy
 from datetime import datetime, timezone, timedelta
+from pathlib import Path
 from notion_client import Client
 from dotenv import load_dotenv
 
@@ -18,14 +20,46 @@ load_dotenv()
 
 JST = timezone(timedelta(hours=9))
 
+# ── config.yaml 読み込み ──────────────────────────────────
+_CONFIG_PATH = Path(__file__).parent / "config.yaml"
+_CFG: dict = {}
+if _CONFIG_PATH.exists():
+    try:
+        with open(_CONFIG_PATH, encoding="utf-8") as _f:
+            _CFG = yaml.safe_load(_f) or {}
+    except Exception as _ce:
+        print(f"[config] 読み込みエラー（デフォルト値を使用）: {_ce}")
+
+
+def _cfg(*keys, default=None):
+    node = _CFG
+    for k in keys:
+        if not isinstance(node, dict):
+            return default
+        node = node.get(k)
+        if node is None:
+            return default
+    return node
+
+
+def _env(name: str, prefix: str = "", required: bool = True) -> str:
+    """env_prefix付きで環境変数を取得。prefix='CLIENT_A' → 'CLIENT_A_X_API_KEY'"""
+    key = f"{prefix}_{name}" if prefix else name
+    val = os.environ.get(key, "")
+    if required and not val:
+        raise EnvironmentError(f"環境変数 {key} が設定されていません")
+    return val
+
+
+# ── 設定値 ────────────────────────────────────────────────
 NOTION_TOKEN       = os.environ["NOTION_TOKEN"]
 NOTION_DATABASE_ID = os.environ["NOTION_DATABASE_ID"]
 
-PROP_TEXT      = "投稿文"
-PROP_DATETIME  = "投稿日時"
-PROP_PLATFORM  = "媒体"
-PROP_STATUS    = "ステータス"
-PROP_IMAGE_URL = "画像URL"
+PROP_TEXT      = _cfg("notion", "properties", "text",     default="投稿文")
+PROP_DATETIME  = _cfg("notion", "properties", "datetime", default="投稿日時")
+PROP_PLATFORM  = _cfg("notion", "properties", "platform", default="媒体")
+PROP_STATUS    = _cfg("notion", "properties", "status",   default="ステータス")
+PROP_IMAGE_URL = _cfg("notion", "properties", "image_url",default="画像URL")
 
 STATUS_PENDING = "未投稿"
 STATUS_DONE    = "投稿済"
@@ -33,7 +67,7 @@ STATUS_ERROR   = "エラー"
 
 PLATFORM_X       = "X"
 PLATFORM_THREADS = "Threads"
-PLATFORM_BOTH    = "両方"
+PLATFORM_BOTH    = _cfg("notion", "platform", "default", default="両方")
 
 
 # ── Notion ヘルパー ───────────────────────────────────────
@@ -92,7 +126,6 @@ def extract_datetime(page: dict) -> datetime | None:
 
 
 def extract_image_url(page: dict) -> str:
-    """画像URLプロパティからURLを取得"""
     prop = page["properties"].get(PROP_IMAGE_URL, {})
     if prop.get("type") == "url":
         return prop.get("url") or ""
@@ -108,7 +141,6 @@ def update_status(notion: Client, page_id: str, status: str):
 
 # ── 画像ダウンロード ──────────────────────────────────────
 def download_image(url: str) -> bytes | None:
-    """URLから画像バイナリを取得"""
     try:
         r = requests.get(url, timeout=30)
         r.raise_for_status()
@@ -156,7 +188,6 @@ def post_to_x(text: str, image_url: str = "") -> bool:
 
 # ── Telegraph アップロード ────────────────────────────────
 def upload_to_telegraph(image_data: bytes) -> str:
-    """画像をTelegraphにアップロードして公開URLを返す（登録不要・無料）"""
     try:
         r = requests.post(
             "https://telegra.ph/upload",
@@ -179,7 +210,6 @@ def post_to_threads(text: str, image_url: str = "") -> bool:
     token   = os.environ["THREADS_ACCESS_TOKEN"]
     base    = f"https://graph.threads.net/v1.0/{user_id}"
 
-    # GitHubのURLはThreadsから直接アクセスできないためTelegraphに変換
     if image_url:
         image_data = download_image(image_url)
         if image_data:
@@ -222,7 +252,7 @@ def post_to_threads(text: str, image_url: str = "") -> bool:
 # ── メイン処理 ────────────────────────────────────────────
 def run():
     now = datetime.now(JST)
-    print(f"[{now.strftime('%Y-%m-%d %H:%M')} JST] 実行開始")
+    print(f"[{now.strftime('%Y-%m-%d %H:%M')} JST] 自動投稿 実行開始")
 
     notion = get_notion_client()
 
@@ -249,8 +279,7 @@ def run():
         image_url = extract_image_url(page)
 
         label = text[:30] + ("..." if len(text) > 30 else "")
-        print(f"\n  ページID: {page_id}")
-        print(f"  投稿文  : {label}")
+        print(f"\n  投稿文  : {label}")
         print(f"  媒体    : {platform}")
         print(f"  予定日時: {sched_dt}")
         print(f"  画像URL : {image_url or '（なし）'}")

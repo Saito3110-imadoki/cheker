@@ -11,6 +11,9 @@ __pycache__/
 venv/
 env/
 
+# マルチランナーの一時設定ファイル
+sns_scheduler/_current_config.yaml
+
 # macOS
 .DS_Store
 

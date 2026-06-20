@@ -49,3 +49,9 @@ notion:
     pending: 承認待ち
   platform:
     default: 両方
+
+branding:
+  primary_color: "#ec4899"   # ピンク（ファッション系）
+  accent_color: "#f59e0b"    # ゴールド
+  logo_url: ""
+  company_name: "株式会社サンプル"

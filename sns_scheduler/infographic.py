@@ -3,6 +3,7 @@ SNS投稿用高解像度インフォグラフィック生成
 playwright + インラインHTML/CSS → 1200×630px PNG
 """
 
+import re
 from pathlib import Path
 import html as _h
 
@@ -55,6 +56,41 @@ _ICON_ROCKET = """<svg width="42" height="42" viewBox="0 0 24 24" fill="none"
 _ICONS = [_ICON_ZAP, _ICON_COINS, _ICON_TRENDING, _ICON_ROCKET]
 
 
+# ── ブランディング適用 ────────────────────────────────────
+def _apply_branding(html: str, branding: dict) -> str:
+    """生成済みHTMLにブランドカラーとウォーターマークを適用する"""
+    if not branding:
+        return html
+
+    primary = branding.get("primary_color", "").strip()
+    accent  = branding.get("accent_color", "").strip()
+
+    # 大文字小文字を統一してから置換
+    if primary:
+        html = re.sub(re.escape(_MAIN),   primary, html, flags=re.IGNORECASE)
+    if accent:
+        html = re.sub(re.escape(_ACCENT), accent,  html, flags=re.IGNORECASE)
+
+    # ウォーターマーク（右下）
+    logo_url     = branding.get("logo_url", "").strip()
+    company_name = branding.get("company_name", "").strip()
+    if logo_url or company_name:
+        inner = (
+            f'<img src="{logo_url}" '
+            f'style="height:26px;opacity:0.75;object-fit:contain;">'
+            if logo_url else
+            f'<span style="font-size:11px;color:{_MUTED};font-weight:700;'
+            f'letter-spacing:1px;opacity:0.85;">{_e(company_name)}</span>'
+        )
+        watermark = (
+            f'<div style="position:absolute;bottom:14px;right:22px;'
+            f'display:flex;align-items:center;z-index:99;">{inner}</div>'
+        )
+        html = html.replace("</div>\n</body>", f"{watermark}\n</div>\n</body>")
+
+    return html
+
+
 # ── ベースHTML ────────────────────────────────────────────
 def _base(body: str) -> str:
     return f"""<!DOCTYPE html>
@@ -70,7 +106,7 @@ body{{
   -webkit-font-smoothing:antialiased;
 }}
 </style></head><body>
-<div style="width:{W}px;height:{H}px;display:flex;flex-direction:column;">
+<div style="width:{W}px;height:{H}px;display:flex;flex-direction:column;position:relative;">
 {body}
 </div>
 </body></html>"""
@@ -243,7 +279,8 @@ def _html_comparison(chart: dict) -> str:
 
 
 # ── メイン描画関数 ────────────────────────────────────────
-def generate_infographic(chart: dict, output_path: Path) -> bool:
+def generate_infographic(chart: dict, output_path: Path,
+                         branding: dict | None = None) -> bool:
     """HTMLをplaywrightでレンダリングしPNG保存。失敗時はFalse"""
     try:
         from playwright.sync_api import sync_playwright
@@ -259,6 +296,8 @@ def generate_infographic(chart: dict, output_path: Path) -> bool:
         html = _html_comparison(chart)
     else:
         return False
+
+    html = _apply_branding(html, branding or {})
 
     try:
         output_path.parent.mkdir(parents=True, exist_ok=True)

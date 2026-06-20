@@ -562,7 +562,7 @@ def run():
         # playwright優先、失敗時はmatplotlibにフォールバック
         ok = False
         if _HAS_WEB_RENDERER:
-            ok = _gen_web(post["chart"], out_path)
+            ok = _gen_web(post["chart"], out_path, _cfg("branding"))
             if ok:
                 print("    レンダラー: playwright (高解像度)")
         if not ok:

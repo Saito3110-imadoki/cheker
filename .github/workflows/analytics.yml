@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: read
+      contents: write  # フォロワー履歴のコミットのため
 
     steps:
       - uses: actions/checkout@v4
@@ -28,10 +28,23 @@ jobs:
 
       - name: メトリクス取得・Notion更新
         env:
-          NOTION_TOKEN:          ${{ secrets.NOTION_TOKEN }}
-          NOTION_DATABASE_ID:    ${{ secrets.NOTION_DATABASE_ID }}
-          X_API_KEY:             ${{ secrets.X_API_KEY }}
-          X_API_KEY_SECRET:      ${{ secrets.X_API_KEY_SECRET }}
-          X_ACCESS_TOKEN:        ${{ secrets.X_ACCESS_TOKEN }}
-          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+          NOTION_TOKEN:              ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID:        ${{ secrets.NOTION_DATABASE_ID }}
+          X_API_KEY:                 ${{ secrets.X_API_KEY }}
+          X_API_KEY_SECRET:          ${{ secrets.X_API_KEY_SECRET }}
+          X_ACCESS_TOKEN:            ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_TOKEN_SECRET:     ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+          THREADS_USER_ID:           ${{ secrets.THREADS_USER_ID }}
+          THREADS_ACCESS_TOKEN:      ${{ secrets.THREADS_ACCESS_TOKEN }}
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_USER_ID:              ${{ secrets.LINE_USER_ID }}
         run: python sns_scheduler/analytics.py
+
+      - name: フォロワー履歴をコミット
+        run: |
+          git config user.name  "SNS Scheduler Bot"
+          git config user.email "bot@github.com"
+          git pull --rebase || true
+          git add sns_scheduler/follower_history.json 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "Update follower history $(date +%Y-%m-%d)"
+          git push || true

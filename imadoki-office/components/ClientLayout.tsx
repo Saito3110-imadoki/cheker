@@ -16,6 +16,7 @@ const navItems = [
   { href: '/projects', label: 'プロジェクト', icon: '📁' },
   { href: '/tasks', label: 'タスク', icon: '✅' },
   { href: '/ai-hub', label: 'AIハブ', icon: '🤖' },
+  { href: '/workspace', label: 'ワークスペース', icon: '🚀' },
 ];
 
 function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed: (v: boolean) => void }) {

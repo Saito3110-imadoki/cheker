@@ -6,6 +6,7 @@ import { useState } from 'react';
 
 const navItems = [
   { href: '/', label: 'ダッシュボード', icon: '📊' },
+  { href: '/ceo', label: '社長室', icon: '👔' },
   { href: '/office', label: 'バーチャルオフィス', icon: '🏢' },
   { href: '/org', label: '組織図', icon: '🌐' },
   { href: '/members', label: 'メンバー', icon: '👥' },

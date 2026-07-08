@@ -386,18 +386,25 @@ def _html_list(chart: dict) -> str:
 
 
 # ── ページバッジ（カルーセル用）──────────────────────────
-def _apply_page_badge(html: str, page: tuple | None) -> str:
-    """複数枚スライドのとき右上に「1 / 3」バッジを付ける。
-    1枚目にはスワイプを促す矢印も添える。"""
+def _apply_page_badge(html: str, page: tuple | None, role: str = "") -> str:
+    """複数枚スライドのとき右上に「起 1 / 4」バッジを付ける。
+    role には起承転結のいずれかが入る。1枚目にはスワイプを促す矢印も添える。"""
     if not page or page[1] <= 1:
         return html
     cur, total = page
     arrow = "&nbsp;→" if cur == 1 else ""
+    role_html = (
+        f'<span style="color:#ffffff;background:{_MAIN};border-radius:999px;'
+        f'padding:3px 12px;margin-right:12px;font-size:15px;">{_e(role)}</span>'
+    ) if role else ""
     badge = (
-        f'<div style="position:absolute;top:20px;right:28px;'
-        f'background:rgba(15,23,42,0.05);border:1px solid {_BORDER};'
-        f'border-radius:999px;padding:7px 18px;font-size:16px;font-weight:800;'
-        f'color:{_TEXT};letter-spacing:1px;z-index:99;">{cur} / {total}{arrow}</div>'
+        f'<div style="position:absolute;top:18px;right:28px;display:flex;'
+        f'align-items:center;background:rgba(15,23,42,0.05);'
+        f'border:1px solid {_BORDER};border-radius:999px;'
+        f'padding:6px 18px 6px {("8px" if role else "18px")};'
+        f'font-size:16px;font-weight:800;'
+        f'color:{_TEXT};letter-spacing:1px;z-index:99;">'
+        f'{role_html}{cur} / {total}{arrow}</div>'
     )
     return html.replace("</div>\n</body>", f"{badge}\n</div>\n</body>")
 
@@ -428,7 +435,7 @@ def generate_infographic(chart: dict, output_path: Path,
         return False
 
     html = _apply_branding(html, branding or {})
-    html = _apply_page_badge(html, page)
+    html = _apply_page_badge(html, page, role=str(chart.get("role", "")).strip())
 
     try:
         output_path.parent.mkdir(parents=True, exist_ok=True)

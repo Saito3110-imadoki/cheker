@@ -87,6 +87,8 @@ schedule:
 notion:
   properties:
     text: 投稿文
+    # Threads向けに書き分けた文面（テキストプロパティ）。未作成でも動作します
+    threads_text: Threads用文面
     datetime: 投稿日時
     platform: 媒体
     status: ステータス

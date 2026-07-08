@@ -61,12 +61,13 @@ def _env(name: str, prefix: str = "", required: bool = True) -> str:
 NOTION_TOKEN       = os.environ["NOTION_TOKEN"]
 NOTION_DATABASE_ID = os.environ["NOTION_DATABASE_ID"]
 
-PROP_TEXT      = _cfg("notion", "properties", "text",        default="投稿文")
-PROP_DATETIME  = _cfg("notion", "properties", "datetime",    default="投稿日時")
-PROP_PLATFORM  = _cfg("notion", "properties", "platform",    default="媒体")
-PROP_STATUS    = _cfg("notion", "properties", "status",      default="ステータス")
-PROP_IMAGE_URL = _cfg("notion", "properties", "image_url",   default="画像URL")
-PROP_TWEET_ID  = _cfg("notion", "properties", "tweet_id",    default="X投稿ID")
+PROP_TEXT         = _cfg("notion", "properties", "text",         default="投稿文")
+PROP_THREADS_TEXT = _cfg("notion", "properties", "threads_text", default="Threads用文面")
+PROP_DATETIME     = _cfg("notion", "properties", "datetime",     default="投稿日時")
+PROP_PLATFORM     = _cfg("notion", "properties", "platform",     default="媒体")
+PROP_STATUS       = _cfg("notion", "properties", "status",       default="ステータス")
+PROP_IMAGE_URL    = _cfg("notion", "properties", "image_url",    default="画像URL")
+PROP_TWEET_ID     = _cfg("notion", "properties", "tweet_id",     default="X投稿ID")
 
 STATUS_PENDING = "未投稿"
 STATUS_DONE    = "投稿済"
@@ -106,6 +107,14 @@ def extract_text(page: dict) -> str:
         return "".join(p["plain_text"] for p in prop.get("title", []))
     if prop.get("type") == "rich_text":
         return "".join(p["plain_text"] for p in prop.get("rich_text", []))
+    return ""
+
+
+def extract_threads_text(page: dict) -> str:
+    """Threads用文面を取得。未設定なら空文字列（呼び出し側でX文面にフォールバック）"""
+    prop = page["properties"].get(PROP_THREADS_TEXT, {})
+    if prop.get("type") == "rich_text":
+        return "".join(p["plain_text"] for p in prop.get("rich_text", [])).strip()
     return ""
 
 
@@ -283,17 +292,20 @@ def run():
     error_count  = 0
 
     for page in posts:
-        page_id   = page["id"]
-        text      = extract_text(page)
-        platform  = extract_platform(page)
-        sched_dt  = extract_datetime(page)
-        image_url = extract_image_url(page)
+        page_id      = page["id"]
+        text         = extract_text(page)
+        threads_text = extract_threads_text(page) or text  # 未設定ならX文面を使用
+        platform     = extract_platform(page)
+        sched_dt     = extract_datetime(page)
+        image_url    = extract_image_url(page)
 
         label = text[:30] + ("..." if len(text) > 30 else "")
         print(f"\n  投稿文  : {label}")
         print(f"  媒体    : {platform}")
         print(f"  予定日時: {sched_dt}")
         print(f"  画像URL : {image_url or '（なし）'}")
+        if threads_text != text:
+            print(f"  Threads文面: あり（{len(threads_text)}文字）")
 
         if not text:
             print("  → 投稿文が空のためスキップ")
@@ -311,7 +323,7 @@ def run():
                 print(f"  X       : {'✓ 投稿成功 ID=' + tweet_id if tweet_id else '✗ 投稿失敗'}")
 
             if platform in (PLATFORM_THREADS, PLATFORM_BOTH):
-                ok_threads = post_to_threads(text, image_url)
+                ok_threads = post_to_threads(threads_text, image_url)
                 print(f"  Threads : {'✓ 投稿成功' if ok_threads else '✗ 投稿失敗'}")
 
             x_ok = bool(tweet_id) if platform in (PLATFORM_X, PLATFORM_BOTH) else True

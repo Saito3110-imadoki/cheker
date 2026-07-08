@@ -68,11 +68,12 @@ def _cfg(*keys, default=None):
 NOTION_TOKEN       = os.environ["NOTION_TOKEN"]
 NOTION_DATABASE_ID = os.environ["NOTION_DATABASE_ID"]
 
-PROP_TEXT      = _cfg("notion", "properties", "text",     default="投稿文")
-PROP_DATETIME  = _cfg("notion", "properties", "datetime", default="投稿日時")
-PROP_PLATFORM  = _cfg("notion", "properties", "platform", default="媒体")
-PROP_STATUS    = _cfg("notion", "properties", "status",   default="ステータス")
-PROP_IMAGE_URL = _cfg("notion", "properties", "image_url",default="画像URL")
+PROP_TEXT         = _cfg("notion", "properties", "text",         default="投稿文")
+PROP_THREADS_TEXT = _cfg("notion", "properties", "threads_text", default="Threads用文面")
+PROP_DATETIME     = _cfg("notion", "properties", "datetime",     default="投稿日時")
+PROP_PLATFORM     = _cfg("notion", "properties", "platform",     default="媒体")
+PROP_STATUS       = _cfg("notion", "properties", "status",       default="ステータス")
+PROP_IMAGE_URL    = _cfg("notion", "properties", "image_url",    default="画像URL")
 
 STATUS_PENDING_APPROVAL = _cfg("notion", "status",   "pending", default="承認待ち")
 PLATFORM_BOTH           = _cfg("notion", "platform", "default", default="両方")
@@ -458,22 +459,36 @@ def generate_posts_with_claude(
         '"left_label":"従来","right_label":"新手法",'
         '"left_items":["特徴1","特徴2"],"right_items":["特徴1","特徴2"],'
         '"caption":"出典（任意）"}\n\n'
+        "【媒体別の書き分け — 各投稿につきX版とThreads版の2つを書く】\n"
+        "XとThreadsはアルゴリズムも文化も別物です。同じ内容を、それぞれに最適化して書き分けてください。\n\n"
+        "X版（text）:\n"
+        "- 情報密度を高く。断言調。リスト・番号付き手順が強い\n"
+        "- 1行目のフックで勝負。無駄な前置きゼロ\n\n"
+        "Threads版（text_threads）:\n"
+        "- 450文字以内厳守（Threadsの上限は500文字）\n"
+        "- 同じテーマを「友達に話しかける」口調に書き直す。宣伝臭・断言調はThreadsでは嫌われる\n"
+        "- 途中or最後にゆるい問いかけを入れて会話を誘発する（Threadsのアルゴリズムはリプライを最重視）\n"
+        "- リスト形式より、流れのある話し言葉。絵文字は控えめでOK\n"
+        "- X版のコピペは禁止。必ず書き直すこと\n\n"
         "【出力前のセルフチェック】\n"
         "各投稿について次を確認し、満たさない場合は書き直してから出力すること:\n"
         "1. 1行目だけ読んで、続きが読みたくなるか？\n"
         "2. この投稿を読んだ人が「保存」か「リプライ」をする理由が明確か？\n"
-        "3. 数字はすべて参考ニュースに実在するか？\n\n"
+        "3. 数字はすべて参考ニュースに実在するか？\n"
+        "4. Threads版は450文字以内で、X版と口調が変わっているか？\n\n"
         "以下のJSON形式のみを出力してください（説明文不要）:\n"
         "[\n"
-        '  {"text":"投稿文","type":"ノウハウ","theme":"テーマ","needs_image":false},\n'
-        '  {"text":"数字を含む投稿文","type":"データ","theme":"テーマ","needs_image":true,'
+        '  {"text":"X向け投稿文","text_threads":"Threads向け投稿文",'
+        '"type":"ノウハウ","theme":"テーマ","needs_image":false},\n'
+        '  {"text":"数字を含むX向け投稿文","text_threads":"Threads向け投稿文",'
+        '"type":"データ","theme":"テーマ","needs_image":true,'
         '"chart":{"chart_type":"stat","title":"...","stats":[...]}}\n'
         "]"
     )
 
     message = ai_client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=5000,
+        max_tokens=9000,
         messages=[{"role": "user", "content": prompt}],
     )
 
@@ -510,14 +525,31 @@ def save_to_notion(posts: list[dict], image_urls: dict) -> int:
             PROP_PLATFORM: {"multi_select": [{"name": PLATFORM_BOTH}]},
             PROP_STATUS:   {"multi_select": [{"name": STATUS_PENDING_APPROVAL}]},
         }
+        threads_text = (post.get("text_threads") or "").strip()
+        if threads_text:
+            properties[PROP_THREADS_TEXT] = {
+                "rich_text": [{"text": {"content": threads_text[:2000]}}]
+            }
         if i in image_urls:
             properties[PROP_IMAGE_URL] = {"url": image_urls[i]}
 
         try:
-            notion.pages.create(
-                parent={"database_id": NOTION_DATABASE_ID},
-                properties=properties,
-            )
+            try:
+                notion.pages.create(
+                    parent={"database_id": NOTION_DATABASE_ID},
+                    properties=properties,
+                )
+            except Exception as e:
+                # Notion側に「Threads用文面」プロパティが無い場合は外して再試行
+                if PROP_THREADS_TEXT in properties and PROP_THREADS_TEXT in str(e):
+                    print(f"  ※ プロパティ「{PROP_THREADS_TEXT}」が未作成のためスキップして保存します")
+                    del properties[PROP_THREADS_TEXT]
+                    notion.pages.create(
+                        parent={"database_id": NOTION_DATABASE_ID},
+                        properties=properties,
+                    )
+                else:
+                    raise
             img_mark = " 🖼" if i in image_urls else ""
             print(f"  保存: {post['text'][:40]}...{img_mark}")
             saved += 1

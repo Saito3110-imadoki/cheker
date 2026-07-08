@@ -63,6 +63,7 @@ NOTION_DATABASE_ID = os.environ["NOTION_DATABASE_ID"]
 
 PROP_TEXT         = _cfg("notion", "properties", "text",         default="投稿文")
 PROP_THREADS_TEXT = _cfg("notion", "properties", "threads_text", default="Threads用文面")
+PROP_REPLY_TEXT   = _cfg("notion", "properties", "reply_text",   default="リプライ文面")
 PROP_DATETIME     = _cfg("notion", "properties", "datetime",     default="投稿日時")
 PROP_PLATFORM     = _cfg("notion", "properties", "platform",     default="媒体")
 PROP_STATUS       = _cfg("notion", "properties", "status",       default="ステータス")
@@ -113,6 +114,14 @@ def extract_text(page: dict) -> str:
 def extract_threads_text(page: dict) -> str:
     """Threads用文面を取得。未設定なら空文字列（呼び出し側でX文面にフォールバック）"""
     prop = page["properties"].get(PROP_THREADS_TEXT, {})
+    if prop.get("type") == "rich_text":
+        return "".join(p["plain_text"] for p in prop.get("rich_text", [])).strip()
+    return ""
+
+
+def extract_reply_text(page: dict) -> str:
+    """セルフリプライ文面を取得。未設定なら空文字列（リプライなし）"""
+    prop = page["properties"].get(PROP_REPLY_TEXT, {})
     if prop.get("type") == "rich_text":
         return "".join(p["plain_text"] for p in prop.get("rich_text", [])).strip()
     return ""
@@ -206,6 +215,18 @@ def post_to_x(text: str, image_url: str = "") -> str:
     return ""
 
 
+def post_x_reply(tweet_id: str, text: str) -> bool:
+    """投稿済みツイートに自分でリプライをぶら下げる（スレッド化）"""
+    client = tweepy.Client(
+        consumer_key=os.environ["X_API_KEY"],
+        consumer_secret=os.environ["X_API_KEY_SECRET"],
+        access_token=os.environ["X_ACCESS_TOKEN"],
+        access_token_secret=os.environ["X_ACCESS_TOKEN_SECRET"],
+    )
+    response = client.create_tweet(text=text, in_reply_to_tweet_id=tweet_id)
+    return response.data is not None
+
+
 # ── Telegraph アップロード ────────────────────────────────
 def upload_to_telegraph(image_data: bytes) -> str:
     try:
@@ -295,6 +316,7 @@ def run():
         page_id      = page["id"]
         text         = extract_text(page)
         threads_text = extract_threads_text(page) or text  # 未設定ならX文面を使用
+        reply_text   = extract_reply_text(page)
         platform     = extract_platform(page)
         sched_dt     = extract_datetime(page)
         image_url    = extract_image_url(page)
@@ -321,6 +343,17 @@ def run():
             if platform in (PLATFORM_X, PLATFORM_BOTH):
                 tweet_id = post_to_x(text, image_url)
                 print(f"  X       : {'✓ 投稿成功 ID=' + tweet_id if tweet_id else '✗ 投稿失敗'}")
+
+                # セルフリプライ（失敗しても投稿自体は成功扱い）
+                if tweet_id and reply_text:
+                    try:
+                        time.sleep(3)
+                        if post_x_reply(tweet_id, reply_text):
+                            print("  X リプライ: ✓ 投稿成功")
+                        else:
+                            print("  X リプライ: ✗ 投稿失敗（本文は投稿済み）")
+                    except Exception as re_err:
+                        print(f"  X リプライ: ✗ エラー（本文は投稿済み）: {re_err}")
 
             if platform in (PLATFORM_THREADS, PLATFORM_BOTH):
                 ok_threads = post_to_threads(threads_text, image_url)

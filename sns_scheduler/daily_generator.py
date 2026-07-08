@@ -70,6 +70,7 @@ NOTION_DATABASE_ID = os.environ["NOTION_DATABASE_ID"]
 
 PROP_TEXT         = _cfg("notion", "properties", "text",         default="投稿文")
 PROP_THREADS_TEXT = _cfg("notion", "properties", "threads_text", default="Threads用文面")
+PROP_REPLY_TEXT   = _cfg("notion", "properties", "reply_text",   default="リプライ文面")
 PROP_DATETIME     = _cfg("notion", "properties", "datetime",     default="投稿日時")
 PROP_PLATFORM     = _cfg("notion", "properties", "platform",     default="媒体")
 PROP_STATUS       = _cfg("notion", "properties", "status",       default="ステータス")
@@ -361,6 +362,29 @@ def fetch_trending_tweets(max_tweets: int = 6) -> list[str]:
         return []
 
 
+# ── 曜日別コンテンツフォーカス ────────────────────────────
+_WEEKDAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+_WEEKDAY_JA   = ["月", "火", "水", "木", "金", "土", "日"]
+
+_DEFAULT_CALENDAR = {
+    "mon": "週初めの仕事モードに合わせて、今週すぐ使える実践ノウハウを厚めに",
+    "tue": "データ・数字を切り口にした発見系。図解映えするテーマを優先",
+    "wed": "週の中だるみに刺さる「あるある」の言語化・共感系",
+    "thu": "実践ノウハウ強化。月曜と違う角度のテクニック・ツール活用",
+    "fri": "週末前のゆるい本音・失敗談。1週間の振り返りに絡めた学び",
+    "sat": "ライトなライフハック・意外な小ネタ。休日のながら読みに合う軽さ",
+    "sun": "明日からの1週間に向けた前向きな行動提案・モチベートで締める",
+}
+
+
+def get_daily_focus(now: datetime) -> tuple[str, str]:
+    """今日の曜日名（日本語）とコンテンツフォーカスを返す"""
+    idx      = now.weekday()
+    key      = _WEEKDAY_KEYS[idx]
+    calendar = _cfg("schedule", "weekly_calendar", default=None) or _DEFAULT_CALENDAR
+    return _WEEKDAY_JA[idx], str(calendar.get(key, "")).strip()
+
+
 # ── 投稿実績の学習コンテキスト ────────────────────────────
 def fetch_performance_insights(max_posts: int = 20) -> str:
     """直近の投稿実績（いいね・RT・インプレッション）から、
@@ -425,7 +449,7 @@ def fetch_performance_insights(max_posts: int = 20) -> str:
 # ── Claude AI 投稿生成 ────────────────────────────────────
 def generate_posts_with_claude(
     news_items: list[str], trending: list[str], count: int = 5,
-    insights: str = "",
+    insights: str = "", weekday_ja: str = "", daily_focus: str = "",
 ) -> list[dict]:
     ai_client  = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     news_text  = "\n".join(f"・{item}" for item in news_items) or "（情報なし）"
@@ -456,6 +480,11 @@ def generate_posts_with_claude(
     topics_str     = "、".join(topics_list)
     company_str    = f"（{company_name}向け）" if company_name else ""
     insights_block = f"{insights}\n\n" if insights else ""
+    focus_block    = (
+        f"【今日のコンテンツフォーカス（{weekday_ja}曜日）】\n"
+        f"{daily_focus}\n"
+        "タイプ配分のルールは守りつつ、テーマ選定と切り口をこのフォーカスに寄せること。\n\n"
+    ) if daily_focus else ""
 
     prompt = (
         f"あなたはX・Threadsで累計10万フォロワーを獲得してきたプロのSNSマーケターです{company_str}。\n"
@@ -467,6 +496,7 @@ def generate_posts_with_claude(
         f"【参考ニュース】\n{news_text}\n\n"
         f"【参考トレンド】\n{trend_text}\n\n"
         f"{insights_block}"
+        f"{focus_block}"
         "【投稿タイプと配分】\n"
         f"A. 実践ノウハウ型（{n_a}件）— フォロワー獲得の主力。保存されることが目的\n"
         "   - 読んだ人が「明日そのままマネできる」具体的な手順・使い方・テクニック\n"
@@ -538,17 +568,24 @@ def generate_posts_with_claude(
         "- 途中or最後にゆるい問いかけを入れて会話を誘発する（Threadsのアルゴリズムはリプライを最重視）\n"
         "- リスト形式より、流れのある話し言葉。絵文字は控えめでOK\n"
         "- X版のコピペは禁止。必ず書き直すこと\n\n"
+        "【セルフリプライ（reply）— X投稿の2投稿目】\n"
+        "各投稿に、X投稿の直後に自分でぶら下げるリプライを1つ書いてください（100〜200文字）。\n"
+        "リプライはスレッドの滞在時間を伸ばし、アルゴリズム評価を上げるための本文の続きです。\n"
+        "- A/B型: 本文で書ききれなかった補足・つまずきやすいポイント・応用ワザ\n"
+        "- C/D型: 本文の裏話・もう一歩踏み込んだ本音\n"
+        "- 「詳しくはプロフィールへ」等の宣伝は禁止。純粋に価値を追加する\n\n"
         "【出力前のセルフチェック】\n"
         "各投稿について次を確認し、満たさない場合は書き直してから出力すること:\n"
         "1. 1行目だけ読んで、続きが読みたくなるか？\n"
         "2. この投稿を読んだ人が「保存」か「リプライ」をする理由が明確か？\n"
         "3. 数字はすべて参考ニュースに実在するか？\n"
-        "4. Threads版は450文字以内で、X版と口調が変わっているか？\n\n"
+        "4. Threads版は450文字以内で、X版と口調が変わっているか？\n"
+        "5. replyは本文の繰り返しではなく、新しい価値を足しているか？\n\n"
         "以下のJSON形式のみを出力してください（説明文不要）:\n"
         "[\n"
-        '  {"text":"X向け投稿文","text_threads":"Threads向け投稿文",'
+        '  {"text":"X向け投稿文","text_threads":"Threads向け投稿文","reply":"セルフリプライ",'
         '"type":"ノウハウ","theme":"テーマ","needs_image":false},\n'
-        '  {"text":"数字を含むX向け投稿文","text_threads":"Threads向け投稿文",'
+        '  {"text":"数字を含むX向け投稿文","text_threads":"Threads向け投稿文","reply":"セルフリプライ",'
         '"type":"データ","theme":"テーマ","needs_image":true,'
         '"chart":{"chart_type":"stat","title":"...","stats":[...]}}\n'
         "]"
@@ -556,7 +593,7 @@ def generate_posts_with_claude(
 
     message = ai_client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=9000,
+        max_tokens=11000,
         messages=[{"role": "user", "content": prompt}],
     )
 
@@ -598,26 +635,34 @@ def save_to_notion(posts: list[dict], image_urls: dict) -> int:
             properties[PROP_THREADS_TEXT] = {
                 "rich_text": [{"text": {"content": threads_text[:2000]}}]
             }
+        reply_text = (post.get("reply") or "").strip()
+        if reply_text:
+            properties[PROP_REPLY_TEXT] = {
+                "rich_text": [{"text": {"content": reply_text[:2000]}}]
+            }
         if i in image_urls:
             properties[PROP_IMAGE_URL] = {"url": image_urls[i]}
 
+        # 任意プロパティ（Notion側に未作成でも保存が失敗しないように、
+        # エラーに名前が含まれていたら外して再試行する）
+        optional_props = [PROP_THREADS_TEXT, PROP_REPLY_TEXT]
+
         try:
-            try:
-                notion.pages.create(
-                    parent={"database_id": NOTION_DATABASE_ID},
-                    properties=properties,
-                )
-            except Exception as e:
-                # Notion側に「Threads用文面」プロパティが無い場合は外して再試行
-                if PROP_THREADS_TEXT in properties and PROP_THREADS_TEXT in str(e):
-                    print(f"  ※ プロパティ「{PROP_THREADS_TEXT}」が未作成のためスキップして保存します")
-                    del properties[PROP_THREADS_TEXT]
+            for _attempt in range(len(optional_props) + 1):
+                try:
                     notion.pages.create(
                         parent={"database_id": NOTION_DATABASE_ID},
                         properties=properties,
                     )
-                else:
-                    raise
+                    break
+                except Exception as e:
+                    removable = [p for p in optional_props
+                                 if p in properties and p in str(e)]
+                    if not removable:
+                        raise
+                    for p in removable:
+                        print(f"  ※ プロパティ「{p}」が未作成のためスキップして保存します")
+                        del properties[p]
             img_mark = " 🖼" if i in image_urls else ""
             print(f"  保存: {post['text'][:40]}...{img_mark}")
             saved += 1
@@ -679,10 +724,16 @@ def run():
     insights = fetch_performance_insights()
     print(f"  実績学習: {'あり（プロンプトに反映）' if insights else 'データ不足のためスキップ'}")
 
+    weekday_ja, daily_focus = get_daily_focus(now)
+    if daily_focus:
+        print(f"  {weekday_ja}曜フォーカス: {daily_focus[:30]}...")
+
     posts_per_day = _cfg("content", "posts_per_day", default=5)
     print("Claude AIで投稿文生成中...")
     posts = generate_posts_with_claude(news, trending, count=posts_per_day,
-                                       insights=insights)
+                                       insights=insights,
+                                       weekday_ja=weekday_ja,
+                                       daily_focus=daily_focus)
     print(f"  生成: {len(posts)}件")
 
     if not posts:

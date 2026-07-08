@@ -278,6 +278,94 @@ def _html_comparison(chart: dict) -> str:
 {_impact_footer("", cap)}""")
 
 
+# ── flow チャート（プロセス・流れ）────────────────────────
+def _html_flow(chart: dict) -> str:
+    steps   = chart.get("steps", [])[:4]
+    impact  = chart.get("impact", "")
+    caption = chart.get("caption", "")
+    n       = len(steps)
+
+    # ステップ数に応じてサイズ調整
+    chip_fs = "15px" if n <= 3 else "14px"
+    text_fs = "16px" if n <= 3 else "14px"
+    pad     = "14px 20px" if n <= 3 else "10px 18px"
+
+    rows = []
+    for i, st in enumerate(steps):
+        label   = st.get("label", f"STEP{i+1}")
+        text    = st.get("text", "")
+        is_last = (i == n - 1)
+        # 最後のステップ（次の一歩）はアクセントカラーで強調
+        chip_bg = _ACCENT if is_last else _MAIN
+        chip_fg = "#1a1200" if is_last else "#ffffff"
+        border  = _ACCENT if is_last else _BORDER
+
+        rows.append(f"""
+<div style="display:flex;align-items:stretch;gap:16px;">
+  <div style="width:128px;flex-shrink:0;display:flex;align-items:center;
+    justify-content:center;background:{chip_bg};border-radius:10px;
+    padding:8px 6px;font-size:{chip_fs};font-weight:900;color:{chip_fg};
+    letter-spacing:1px;">{_e(label)}</div>
+  <div style="flex:1;display:flex;align-items:center;background:{_CARD};
+    border:1px solid {border};border-radius:10px;padding:{pad};
+    font-size:{text_fs};line-height:1.55;color:{_TEXT};">{_e(text)}</div>
+</div>""")
+        if not is_last:
+            rows.append(f"""
+<div style="width:128px;display:flex;justify-content:center;padding:2px 0;">
+  <svg width="18" height="14" viewBox="0 0 24 24" fill="none"
+    stroke="{_MUTED}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="12" y1="3" x2="12" y2="19"/>
+    <polyline points="5 13 12 20 19 13"/>
+  </svg>
+</div>""")
+
+    return _base(f"""
+{_header(chart.get("title",""), chart.get("subtitle",""))}
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;
+  gap:4px;padding:16px 52px;">
+  {"".join(rows)}
+</div>
+{_impact_footer(impact, caption)}""")
+
+
+# ── list チャート（ポイント解説）──────────────────────────
+def _html_list(chart: dict) -> str:
+    items   = chart.get("items", [])[:4]
+    impact  = chart.get("impact", "")
+    caption = chart.get("caption", "")
+    n       = len(items)
+
+    head_fs = "19px" if n <= 3 else "17px"
+    text_fs = "14px" if n <= 3 else "13px"
+
+    rows = []
+    for i, it in enumerate(items):
+        head = it.get("head", "")
+        text = it.get("text", "")
+        rows.append(f"""
+<div style="display:flex;align-items:center;gap:20px;background:{_CARD};
+  border:1px solid {_BORDER};border-radius:12px;padding:14px 22px;">
+  <div style="width:46px;height:46px;flex-shrink:0;border-radius:12px;
+    background:linear-gradient(135deg,{_MAIN},{_ACCENT});display:flex;
+    align-items:center;justify-content:center;font-size:22px;font-weight:900;
+    color:#ffffff;">{i+1}</div>
+  <div>
+    <div style="font-size:{head_fs};font-weight:800;color:{_TEXT};
+      margin-bottom:3px;">{_e(head)}</div>
+    <div style="font-size:{text_fs};color:{_MUTED};line-height:1.5;">{_e(text)}</div>
+  </div>
+</div>""")
+
+    return _base(f"""
+{_header(chart.get("title",""), chart.get("subtitle",""))}
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;
+  gap:12px;padding:16px 52px;">
+  {"".join(rows)}
+</div>
+{_impact_footer(impact, caption)}""")
+
+
 # ── メイン描画関数 ────────────────────────────────────────
 def generate_infographic(chart: dict, output_path: Path,
                          branding: dict | None = None) -> bool:
@@ -294,6 +382,10 @@ def generate_infographic(chart: dict, output_path: Path,
         html = _html_bar(chart)
     elif chart_type == "comparison":
         html = _html_comparison(chart)
+    elif chart_type == "flow":
+        html = _html_flow(chart)
+    elif chart_type == "list":
+        html = _html_list(chart)
     else:
         return False
 

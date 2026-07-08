@@ -71,6 +71,7 @@ NOTION_DATABASE_ID = os.environ["NOTION_DATABASE_ID"]
 PROP_TEXT         = _cfg("notion", "properties", "text",         default="投稿文")
 PROP_THREADS_TEXT = _cfg("notion", "properties", "threads_text", default="Threads用文面")
 PROP_REPLY_TEXT   = _cfg("notion", "properties", "reply_text",   default="リプライ文面")
+PROP_POST_TYPE    = _cfg("notion", "properties", "post_type",    default="投稿タイプ")
 PROP_DATETIME     = _cfg("notion", "properties", "datetime",     default="投稿日時")
 PROP_PLATFORM     = _cfg("notion", "properties", "platform",     default="媒体")
 PROP_STATUS       = _cfg("notion", "properties", "status",       default="ステータス")
@@ -324,14 +325,35 @@ def generate_chart_image(chart: dict, output_path: Path) -> bool:
 
 # ── RSS / X ──────────────────────────────────────────────
 def fetch_rss_news(max_items: int = 12) -> list[str]:
+    """RSSから新鮮な記事タイトルだけを収集する。
+    公開日時が取得できる記事は max_age_hours 以内のものだけ採用。
+    日時情報のないフィードは従来どおり先頭から採用する。"""
+    from calendar import timegm
+    import time as _time
+
+    max_age_hours = _cfg("rss_max_age_hours", default=48)
+    cutoff = _time.time() - max_age_hours * 3600
+
     items = []
     for url in RSS_FEEDS:
         try:
-            feed = feedparser.parse(url)
-            for entry in feed.entries[:3]:
+            feed  = feedparser.parse(url)
+            fresh = 0
+            stale = 0
+            for entry in feed.entries[:10]:
                 title = entry.get("title", "").strip()
-                if title:
-                    items.append(title)
+                if not title:
+                    continue
+                ts = entry.get("published_parsed") or entry.get("updated_parsed")
+                if ts and timegm(ts) < cutoff:
+                    stale += 1
+                    continue
+                items.append(title)
+                fresh += 1
+                if fresh >= 3:
+                    break
+            if stale and not fresh:
+                print(f"  RSS ({url}): {max_age_hours}時間以内の新着なし")
         except Exception as e:
             print(f"  RSS取得スキップ ({url}): {e}")
     return items[:max_items]
@@ -385,6 +407,32 @@ def get_daily_focus(now: datetime) -> tuple[str, str]:
     return _WEEKDAY_JA[idx], str(calendar.get(key, "")).strip()
 
 
+# ── 直近テーマの重複防止 ──────────────────────────────────
+def fetch_recent_themes(days: int = 7, max_items: int = 15) -> list[str]:
+    """直近N日にNotionへ保存した投稿の冒頭を取得（重複防止用）。
+    取得失敗時は空リストを返し、生成には影響しない。"""
+    try:
+        notion = Client(auth=NOTION_TOKEN)
+        since  = (datetime.now(JST) - timedelta(days=days)).isoformat()
+        resp = notion.databases.query(
+            database_id=NOTION_DATABASE_ID,
+            filter={"property": PROP_DATETIME,
+                    "date": {"on_or_after": since}},
+            sorts=[{"property": PROP_DATETIME, "direction": "descending"}],
+            page_size=max_items,
+        )
+        themes = []
+        for page in resp.get("results", []):
+            title = page["properties"].get(PROP_TEXT, {}).get("title", [])
+            text  = "".join(p["plain_text"] for p in title).replace("\n", " ")[:50]
+            if text:
+                themes.append(text)
+        return themes
+    except Exception as e:
+        print(f"  直近テーマ取得スキップ: {e}")
+        return []
+
+
 # ── 投稿実績の学習コンテキスト ────────────────────────────
 def fetch_performance_insights(max_posts: int = 20) -> str:
     """直近の投稿実績（いいね・RT・インプレッション）から、
@@ -415,10 +463,13 @@ def fetch_performance_insights(max_posts: int = 20) -> str:
             likes = props.get(PROP_LIKES, {}).get("number") or 0
             rts   = props.get(PROP_RETWEETS, {}).get("number") or 0
             imp   = props.get(PROP_IMPRESSIONS, {}).get("number") or 0
+            sel   = props.get(PROP_POST_TYPE, {}).get("select") or {}
+            ptype = sel.get("name", "")
             if text:
                 # RT > いいね > インプの順に重み付けした簡易スコア
                 rows.append({"text": text, "likes": likes, "rts": rts,
-                             "imp": imp, "score": rts * 5 + likes * 3 + imp * 0.01})
+                             "imp": imp, "type": ptype,
+                             "score": rts * 5 + likes * 3 + imp * 0.01})
 
         if len(rows) < 3:
             return ""
@@ -432,10 +483,25 @@ def fetch_performance_insights(max_posts: int = 20) -> str:
             "▼ 伸びた投稿（この切り口・書き出しの型を強化する）:",
         ]
         for r in top:
-            lines.append(f"・「{r['text']}…」→ いいね{r['likes']} / RT{r['rts']} / imp{r['imp']}")
+            tmark = f"［{r['type']}］" if r["type"] else ""
+            lines.append(f"・{tmark}「{r['text']}…」→ いいね{r['likes']} / RT{r['rts']} / imp{r['imp']}")
         lines.append("▼ 伸びなかった投稿（同じパターンを避ける）:")
         for r in bottom:
-            lines.append(f"・「{r['text']}…」→ いいね{r['likes']} / RT{r['rts']} / imp{r['imp']}")
+            tmark = f"［{r['type']}］" if r["type"] else ""
+            lines.append(f"・{tmark}「{r['text']}…」→ いいね{r['likes']} / RT{r['rts']} / imp{r['imp']}")
+
+        # タイプ別の平均いいね（タイプ情報がある場合のみ）
+        by_type: dict = {}
+        for r in rows:
+            if r["type"]:
+                by_type.setdefault(r["type"], []).append(r["likes"])
+        if by_type:
+            stats = " / ".join(
+                f"{t}型: 平均いいね{sum(v)/len(v):.1f}（{len(v)}件）"
+                for t, v in sorted(by_type.items(),
+                                   key=lambda kv: -sum(kv[1])/len(kv[1])))
+            lines.append(f"▼ タイプ別実績: {stats}")
+
         lines.append(
             "伸びた投稿に共通するフックの型・テーマ・具体性のレベルを抽出し、"
             "今日の投稿に反映すること。ただし文面の使い回しは禁止。新しいテーマで型だけ再現する。")
@@ -450,6 +516,7 @@ def fetch_performance_insights(max_posts: int = 20) -> str:
 def generate_posts_with_claude(
     news_items: list[str], trending: list[str], count: int = 5,
     insights: str = "", weekday_ja: str = "", daily_focus: str = "",
+    recent_themes: list[str] | None = None,
 ) -> list[dict]:
     ai_client  = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     news_text  = "\n".join(f"・{item}" for item in news_items) or "（情報なし）"
@@ -480,6 +547,15 @@ def generate_posts_with_claude(
     topics_str     = "、".join(topics_list)
     company_str    = f"（{company_name}向け）" if company_name else ""
     insights_block = f"{insights}\n\n" if insights else ""
+    dedup_block    = ""
+    if recent_themes:
+        theme_lines = "\n".join(f"・{t}…" for t in recent_themes)
+        dedup_block = (
+            "【直近7日間にすでに投稿したテーマ — 重複禁止】\n"
+            f"{theme_lines}\n"
+            "上記と同じテーマ・同じ切り口・同じツールの同じ使い方は禁止。\n"
+            "似たテーマを扱う場合は、必ず別の角度（対象者を変える・逆の主張・別の事例）から書くこと。\n\n"
+        )
     focus_block    = (
         f"【今日のコンテンツフォーカス（{weekday_ja}曜日）】\n"
         f"{daily_focus}\n"
@@ -496,6 +572,7 @@ def generate_posts_with_claude(
         f"【参考ニュース】\n{news_text}\n\n"
         f"【参考トレンド】\n{trend_text}\n\n"
         f"{insights_block}"
+        f"{dedup_block}"
         f"{focus_block}"
         "【投稿タイプと配分】\n"
         f"A. 実践ノウハウ型（{n_a}件）— フォロワー獲得の主力。保存されることが目的\n"
@@ -640,12 +717,15 @@ def save_to_notion(posts: list[dict], image_urls: dict) -> int:
             properties[PROP_REPLY_TEXT] = {
                 "rich_text": [{"text": {"content": reply_text[:2000]}}]
             }
+        post_type = (post.get("type") or "").strip()
+        if post_type:
+            properties[PROP_POST_TYPE] = {"select": {"name": post_type[:50]}}
         if i in image_urls:
             properties[PROP_IMAGE_URL] = {"url": image_urls[i]}
 
         # 任意プロパティ（Notion側に未作成でも保存が失敗しないように、
         # エラーに名前が含まれていたら外して再試行する）
-        optional_props = [PROP_THREADS_TEXT, PROP_REPLY_TEXT]
+        optional_props = [PROP_THREADS_TEXT, PROP_REPLY_TEXT, PROP_POST_TYPE]
 
         try:
             for _attempt in range(len(optional_props) + 1):
@@ -724,6 +804,10 @@ def run():
     insights = fetch_performance_insights()
     print(f"  実績学習: {'あり（プロンプトに反映）' if insights else 'データ不足のためスキップ'}")
 
+    print("直近テーマ取得中...")
+    recent_themes = fetch_recent_themes()
+    print(f"  重複防止: 直近{len(recent_themes)}件のテーマを回避対象に設定")
+
     weekday_ja, daily_focus = get_daily_focus(now)
     if daily_focus:
         print(f"  {weekday_ja}曜フォーカス: {daily_focus[:30]}...")
@@ -733,7 +817,8 @@ def run():
     posts = generate_posts_with_claude(news, trending, count=posts_per_day,
                                        insights=insights,
                                        weekday_ja=weekday_ja,
-                                       daily_focus=daily_focus)
+                                       daily_focus=daily_focus,
+                                       recent_themes=recent_themes)
     print(f"  生成: {len(posts)}件")
 
     if not posts:

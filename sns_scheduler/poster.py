@@ -165,6 +165,43 @@ def update_status(notion: Client, page_id: str, status: str,
     notion.pages.update(page_id=page_id, properties=props)
 
 
+# ── 文字数ガード ──────────────────────────────────────────
+# X: 重み付きカウント（半角系=1 / 全角・CJK=2）で280が上限。
+#    X Premium なら実質無制限のため、config の x_char_limit=0 でスキップ。
+# Threads: 500文字のハード上限（全プランで固定）。
+X_CHAR_LIMIT       = int(_cfg("content", "x_char_limit", default=0))
+THREADS_CHAR_LIMIT = 500
+
+
+def _x_weighted_len(text: str) -> int:
+    """Xの重み付き文字数（近似）。半角英数記号=1、それ以外=2"""
+    return sum(1 if ord(ch) <= 0x10FF else 2 for ch in text)
+
+
+def _trim_for_x(text: str, limit: int = X_CHAR_LIMIT) -> str:
+    """X向けに重み付き文字数で切り詰める。limit=0 は制限なし（Premium）"""
+    if limit <= 0 or _x_weighted_len(text) <= limit:
+        return text
+    out, w = [], 0
+    for ch in text:
+        cw = 1 if ord(ch) <= 0x10FF else 2
+        if w + cw > limit - 2:  # 末尾の「…」分を確保
+            break
+        out.append(ch)
+        w += cw
+    trimmed = "".join(out).rstrip() + "…"
+    print(f"  ⚠ X文字数超過のため切り詰め（重み{_x_weighted_len(text)}→上限{limit}）")
+    return trimmed
+
+
+def _trim_for_threads(text: str, limit: int = THREADS_CHAR_LIMIT) -> str:
+    """Threadsの500文字上限を保証する"""
+    if len(text) <= limit:
+        return text
+    print(f"  ⚠ Threads文字数超過のため切り詰め（{len(text)}→{limit}文字）")
+    return text[: limit - 1].rstrip() + "…"
+
+
 # ── 画像ダウンロード ──────────────────────────────────────
 def download_image(url: str) -> bytes | None:
     try:
@@ -314,9 +351,10 @@ def run():
 
     for page in posts:
         page_id      = page["id"]
-        text         = extract_text(page)
-        threads_text = extract_threads_text(page) or text  # 未設定ならX文面を使用
-        reply_text   = extract_reply_text(page)
+        text         = _trim_for_x(extract_text(page))
+        threads_text = _trim_for_threads(extract_threads_text(page)
+                                         or extract_text(page))  # 未設定ならX文面を使用
+        reply_text   = _trim_for_x(extract_reply_text(page))
         platform     = extract_platform(page)
         sched_dt     = extract_datetime(page)
         image_url    = extract_image_url(page)

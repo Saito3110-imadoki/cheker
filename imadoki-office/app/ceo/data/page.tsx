@@ -1,7 +1,63 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CompanyData, MonthlyPL, Client } from '@/lib/ceo-types';
+
+// CSV templates
+const PL_CSV_TEMPLATE = `month,revenue,cogs,sgaExpenses,notes
+2025-04,1500000,300000,800000,新規2社獲得
+2025-05,1800000,350000,850000,
+2025-06,2000000,400000,900000,`;
+
+const CLIENT_CSV_TEMPLATE = `name,monthlyFee,services,startDate,status,notes
+株式会社サンプル,300000,マーケ支援/SNS運用,2025-01,active,更新検討中
+有限会社テスト,150000,広告運用代行,2025-03,active,
+株式会社例示,200000,WEB制作,2024-12,at-risk,予算削減の懸念`;
+
+function downloadCSV(content: string, filename: string) {
+  const bom = '﻿';
+  const blob = new Blob([bom + content], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function parsePLCSV(text: string): MonthlyPL[] {
+  const lines = text.trim().split('\n').slice(1).filter(l => l.trim());
+  return lines.map(line => {
+    const [month, revenue, cogs, sgaExpenses, ...noteParts] = line.split(',');
+    const r = Number(revenue) || 0;
+    const c = Number(cogs) || 0;
+    const s = Number(sgaExpenses) || 0;
+    return {
+      month: month?.trim() || '',
+      revenue: r, cogs: c, sgaExpenses: s,
+      grossProfit: r - c,
+      operatingProfit: r - c - s,
+      notes: noteParts.join(',').trim(),
+    };
+  });
+}
+
+function parseClientCSV(text: string): Client[] {
+  const lines = text.trim().split('\n').slice(1).filter(l => l.trim());
+  return lines.map((line, i) => {
+    const parts = line.split(',');
+    const [name, monthlyFee, services, startDate, status, ...noteParts] = parts;
+    return {
+      id: `c-${Date.now()}-${i}`,
+      name: name?.trim() || '',
+      monthlyFee: Number(monthlyFee) || 0,
+      services: services ? services.split('/').map(s => s.trim()).filter(Boolean) : [],
+      startDate: startDate?.trim() || '',
+      status: (status?.trim() as Client['status']) || 'active',
+      notes: noteParts.join(',').trim(),
+    };
+  });
+}
 
 const emptyPL = (): MonthlyPL => {
   const now = new Date();
@@ -34,6 +90,31 @@ export default function DataPage() {
   const [data, setData] = useState<CompanyData>({ monthlyPL: [], clients: [], actionItems: [] });
   const [activeTab, setActiveTab] = useState<'pl' | 'clients'>('pl');
   const [saved, setSaved] = useState(false);
+  const [csvError, setCsvError] = useState('');
+  const plFileRef = useRef<HTMLInputElement>(null);
+  const clientFileRef = useRef<HTMLInputElement>(null);
+
+  const handleCSVUpload = (file: File, type: 'pl' | 'clients') => {
+    setCsvError('');
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const text = e.target?.result as string;
+        if (type === 'pl') {
+          const parsed = parsePLCSV(text);
+          if (parsed.length === 0) throw new Error('データが見つかりません');
+          save({ ...data, monthlyPL: [...data.monthlyPL, ...parsed] });
+        } else {
+          const parsed = parseClientCSV(text);
+          if (parsed.length === 0) throw new Error('データが見つかりません');
+          save({ ...data, clients: [...data.clients, ...parsed] });
+        }
+      } catch (err) {
+        setCsvError('CSVの読み込みに失敗しました。テンプレートの形式を確認してください。');
+      }
+    };
+    reader.readAsText(file, 'UTF-8');
+  };
 
   useEffect(() => {
     const stored = localStorage.getItem('imadoki-company-data');
@@ -108,12 +189,35 @@ export default function DataPage() {
       {/* P&L Tab */}
       {activeTab === 'pl' && (
         <div className="glass rounded-xl p-5">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <h2 className="text-sm font-bold text-white">月次損益計算書</h2>
-            <button onClick={addPL} className="text-xs px-3 py-1.5 rounded-lg text-white" style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.4)' }}>
-              + 月を追加
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => downloadCSV(PL_CSV_TEMPLATE, 'PL_template.csv')}
+                className="text-xs px-3 py-1.5 rounded-lg transition-all"
+                style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', color: '#22c55e' }}
+              >
+                📥 CSVテンプレート
+              </button>
+              <button
+                onClick={() => plFileRef.current?.click()}
+                className="text-xs px-3 py-1.5 rounded-lg transition-all"
+                style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b' }}
+              >
+                📤 CSVを読み込む
+              </button>
+              <input ref={plFileRef} type="file" accept=".csv" className="hidden"
+                onChange={e => e.target.files?.[0] && handleCSVUpload(e.target.files[0], 'pl')} />
+              <button onClick={addPL} className="text-xs px-3 py-1.5 rounded-lg text-white" style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.4)' }}>
+                + 手動追加
+              </button>
+            </div>
           </div>
+          {csvError && (
+            <div className="mb-3 px-3 py-2 rounded-lg text-xs" style={{ background: 'rgba(239,68,68,0.1)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.2)' }}>
+              ⚠️ {csvError}
+            </div>
+          )}
 
           {data.monthlyPL.length === 0 ? (
             <div className="text-center py-12">
@@ -188,14 +292,32 @@ export default function DataPage() {
       {/* Clients Tab */}
       {activeTab === 'clients' && (
         <div>
-          <div className="glass rounded-xl p-4 mb-4 flex items-center justify-between">
+          <div className="glass rounded-xl p-4 mb-4 flex items-center justify-between flex-wrap gap-2">
             <div>
               <span className="text-xs" style={{ color: '#6b7280' }}>契約中クライアント月次合計</span>
               <div className="text-xl font-bold text-white">¥{totalRevenue.toLocaleString()}</div>
             </div>
-            <button onClick={addClient} className="text-xs px-3 py-1.5 rounded-lg text-white" style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.4)' }}>
-              + クライアント追加
-            </button>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => downloadCSV(CLIENT_CSV_TEMPLATE, 'client_template.csv')}
+                className="text-xs px-3 py-1.5 rounded-lg transition-all"
+                style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', color: '#22c55e' }}
+              >
+                📥 CSVテンプレート
+              </button>
+              <button
+                onClick={() => clientFileRef.current?.click()}
+                className="text-xs px-3 py-1.5 rounded-lg transition-all"
+                style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', color: '#f59e0b' }}
+              >
+                📤 CSVを読み込む
+              </button>
+              <input ref={clientFileRef} type="file" accept=".csv" className="hidden"
+                onChange={e => e.target.files?.[0] && handleCSVUpload(e.target.files[0], 'clients')} />
+              <button onClick={addClient} className="text-xs px-3 py-1.5 rounded-lg text-white" style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.4)' }}>
+                + 手動追加
+              </button>
+            </div>
           </div>
 
           {data.clients.length === 0 ? (

@@ -1,0 +1,39 @@
+export interface MonthlyPL {
+  month: string; // "2025-06"
+  revenue: number;       // 売上
+  cogs: number;          // 原価
+  grossProfit: number;   // 粗利
+  sgaExpenses: number;   // 販管費
+  operatingProfit: number; // 営業利益
+  notes: string;
+}
+
+export interface Client {
+  id: string;
+  name: string;
+  monthlyFee: number;    // 月額
+  services: string[];    // サービス種別
+  startDate: string;
+  status: 'active' | 'at-risk' | 'churned' | 'negotiating';
+  notes: string;
+}
+
+export interface ActionItem {
+  id: string;
+  category: 'sales' | 'marketing' | 'hiring' | 'finance' | 'operations';
+  title: string;
+  description: string;
+  priority: 'high' | 'medium' | 'low';
+  expectedImpact: string;
+  deadline: string;
+  status: 'pending' | 'approved' | 'rejected' | 'done';
+  approvedAt?: string;
+  rejectedReason?: string;
+}
+
+export interface CompanyData {
+  monthlyPL: MonthlyPL[];
+  clients: Client[];
+  actionItems: ActionItem[];
+  lastAnalyzedAt?: string;
+}

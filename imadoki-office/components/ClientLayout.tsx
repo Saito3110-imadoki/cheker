@@ -7,6 +7,8 @@ import { useState } from 'react';
 const navItems = [
   { href: '/', label: 'ダッシュボード', icon: '📊' },
   { href: '/ceo', label: '社長室', icon: '👔' },
+  { href: '/ceo/data', label: 'データ入力', icon: '📥' },
+  { href: '/ceo/analysis', label: 'AI分析・承認', icon: '🔍' },
   { href: '/office', label: 'バーチャルオフィス', icon: '🏢' },
   { href: '/org', label: '組織図', icon: '🌐' },
   { href: '/members', label: 'メンバー', icon: '👥' },

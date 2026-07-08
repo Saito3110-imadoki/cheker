@@ -27,6 +27,16 @@ def _e(s: object) -> str:
     return _h.escape(str(s))
 
 
+def _hl(s: object) -> str:
+    """エスケープした上で【】で囲まれたフレーズをアクセント色の太字に変換"""
+    escaped = _h.escape(str(s))
+    return re.sub(
+        r"【(.+?)】",
+        rf'<span style="color:{_ACCENT};font-weight:800;">\1</span>',
+        escaped,
+    )
+
+
 # ── SVGアイコン（lucide-react準拠のSVGパス）────────────────
 _ICON_ZAP = """<svg width="42" height="42" viewBox="0 0 24 24" fill="none"
   stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -113,19 +123,19 @@ body{{
 
 
 def _header(title: str, subtitle: str = "") -> str:
-    sub = (f'<div style="margin-top:8px;font-size:15px;color:{_MUTED};'
+    sub = (f'<div style="margin-top:6px;font-size:17px;color:{_MUTED};'
            f'font-weight:500;">{_e(subtitle)}</div>') if subtitle else ""
     return f"""
-<div style="display:flex;align-items:flex-start;padding:36px 52px 0;flex-shrink:0;">
-  <div style="width:6px;background:linear-gradient(180deg,{_ACCENT},{_MAIN});
-    border-radius:3px;min-height:58px;margin-right:20px;flex-shrink:0;"></div>
+<div style="display:flex;align-items:flex-start;padding:30px 52px 0;flex-shrink:0;">
+  <div style="width:7px;background:linear-gradient(180deg,{_ACCENT},{_MAIN});
+    border-radius:3px;min-height:64px;margin-right:20px;flex-shrink:0;"></div>
   <div>
-    <div style="font-size:27px;font-weight:900;letter-spacing:-0.5px;
-      color:{_TEXT};">{_e(title)}</div>
+    <div style="font-size:36px;font-weight:900;letter-spacing:-0.5px;
+      color:{_TEXT};line-height:1.25;">{_e(title)}</div>
     {sub}
   </div>
 </div>
-<div style="height:1px;background:{_BORDER};margin:18px 52px 0;flex-shrink:0;"></div>"""
+<div style="height:1px;background:{_BORDER};margin:14px 52px 0;flex-shrink:0;"></div>"""
 
 
 def _impact_footer(impact: str = "", caption: str = "") -> str:
@@ -134,11 +144,11 @@ def _impact_footer(impact: str = "", caption: str = "") -> str:
         parts.append(f"""
 <div style="background:{_IMP_BG};border:1px solid {_IMP_BD};border-radius:10px;
   padding:12px 28px;margin:0 52px 12px;text-align:center;flex-shrink:0;">
-  <span style="font-size:15px;font-weight:700;color:{_ACCENT};">{_e(impact)}</span>
+  <span style="font-size:18px;font-weight:800;color:{_ACCENT};">{_e(impact)}</span>
 </div>""")
     if caption:
         parts.append(
-            f'<div style="font-size:11px;color:{_MUTED};padding:0 52px 20px;'
+            f'<div style="font-size:12px;color:{_MUTED};padding:0 52px 18px;'
             f'flex-shrink:0;">{_e(caption)}</div>')
     return "\n".join(parts)
 
@@ -285,10 +295,10 @@ def _html_flow(chart: dict) -> str:
     caption = chart.get("caption", "")
     n       = len(steps)
 
-    # ステップ数に応じてサイズ調整
-    chip_fs = "15px" if n <= 3 else "14px"
-    text_fs = "16px" if n <= 3 else "14px"
-    pad     = "14px 20px" if n <= 3 else "10px 18px"
+    # ステップ数に応じてサイズ調整（スマホ表示前提で大きめ）
+    chip_fs = "19px" if n <= 3 else "17px"
+    text_fs = "23px" if n <= 3 else "21px"
+    pad     = "16px 24px" if n <= 3 else "12px 22px"
 
     rows = []
     for i, st in enumerate(steps):
@@ -302,18 +312,23 @@ def _html_flow(chart: dict) -> str:
 
         rows.append(f"""
 <div style="display:flex;align-items:stretch;gap:16px;">
-  <div style="width:128px;flex-shrink:0;display:flex;align-items:center;
-    justify-content:center;background:{chip_bg};border-radius:10px;
-    padding:8px 6px;font-size:{chip_fs};font-weight:900;color:{chip_fg};
-    letter-spacing:1px;">{_e(label)}</div>
+  <div style="width:150px;flex-shrink:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;background:{chip_bg};
+    border-radius:12px;padding:8px 6px;">
+    <div style="font-size:12px;font-weight:700;color:{chip_fg};opacity:0.65;
+      letter-spacing:2px;line-height:1;">{i+1:02d}</div>
+    <div style="font-size:{chip_fs};font-weight:900;color:{chip_fg};
+      letter-spacing:1px;margin-top:3px;">{_e(label)}</div>
+  </div>
   <div style="flex:1;display:flex;align-items:center;background:{_CARD};
-    border:1px solid {border};border-radius:10px;padding:{pad};
-    font-size:{text_fs};line-height:1.55;color:{_TEXT};">{_e(text)}</div>
+    border:1px solid {border};border-radius:12px;padding:{pad};
+    font-size:{text_fs};font-weight:600;line-height:1.5;
+    color:{_TEXT};">{_hl(text)}</div>
 </div>""")
         if not is_last:
             rows.append(f"""
-<div style="width:128px;display:flex;justify-content:center;padding:2px 0;">
-  <svg width="18" height="14" viewBox="0 0 24 24" fill="none"
+<div style="width:150px;display:flex;justify-content:center;padding:1px 0;">
+  <svg width="20" height="15" viewBox="0 0 24 24" fill="none"
     stroke="{_MUTED}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
     <line x1="12" y1="3" x2="12" y2="19"/>
     <polyline points="5 13 12 20 19 13"/>
@@ -323,7 +338,7 @@ def _html_flow(chart: dict) -> str:
     return _base(f"""
 {_header(chart.get("title",""), chart.get("subtitle",""))}
 <div style="flex:1;display:flex;flex-direction:column;justify-content:center;
-  gap:4px;padding:16px 52px;">
+  gap:6px;padding:12px 52px;">
   {"".join(rows)}
 </div>
 {_impact_footer(impact, caption)}""")
@@ -336,31 +351,35 @@ def _html_list(chart: dict) -> str:
     caption = chart.get("caption", "")
     n       = len(items)
 
-    head_fs = "19px" if n <= 3 else "17px"
-    text_fs = "14px" if n <= 3 else "13px"
+    head_fs = "25px" if n <= 3 else "22px"
+    text_fs = "18px" if n <= 3 else "16px"
+    num_sz  = "56px" if n <= 3 else "50px"
+    num_fs  = "26px" if n <= 3 else "23px"
+    row_pad = "18px 26px" if n <= 3 else "14px 24px"
 
     rows = []
     for i, it in enumerate(items):
         head = it.get("head", "")
         text = it.get("text", "")
         rows.append(f"""
-<div style="display:flex;align-items:center;gap:20px;background:{_CARD};
-  border:1px solid {_BORDER};border-radius:12px;padding:14px 22px;">
-  <div style="width:46px;height:46px;flex-shrink:0;border-radius:12px;
+<div style="display:flex;align-items:center;gap:22px;background:{_CARD};
+  border:1px solid {_BORDER};border-radius:14px;padding:{row_pad};">
+  <div style="width:{num_sz};height:{num_sz};flex-shrink:0;border-radius:14px;
     background:linear-gradient(135deg,{_MAIN},{_ACCENT});display:flex;
-    align-items:center;justify-content:center;font-size:22px;font-weight:900;
+    align-items:center;justify-content:center;font-size:{num_fs};font-weight:900;
     color:#ffffff;">{i+1}</div>
   <div>
     <div style="font-size:{head_fs};font-weight:800;color:{_TEXT};
-      margin-bottom:3px;">{_e(head)}</div>
-    <div style="font-size:{text_fs};color:{_MUTED};line-height:1.5;">{_e(text)}</div>
+      margin-bottom:4px;line-height:1.3;">{_hl(head)}</div>
+    <div style="font-size:{text_fs};color:{_MUTED};font-weight:500;
+      line-height:1.45;">{_hl(text)}</div>
   </div>
 </div>""")
 
     return _base(f"""
 {_header(chart.get("title",""), chart.get("subtitle",""))}
 <div style="flex:1;display:flex;flex-direction:column;justify-content:center;
-  gap:12px;padding:16px 52px;">
+  gap:14px;padding:12px 52px;">
   {"".join(rows)}
 </div>
 {_impact_footer(impact, caption)}""")

@@ -1,18 +1,22 @@
 export interface MonthlyPL {
-  month: string; // "2025-06"
-  revenue: number;       // 売上
-  cogs: number;          // 原価
-  grossProfit: number;   // 粗利
-  sgaExpenses: number;   // 販管費
-  operatingProfit: number; // 営業利益
+  month: string;
+  revenue: number;          // 売上高
+  cogs: number;             // 外注費・制作費（原価）
+  grossProfit: number;      // 粗利（自動計算）
+  personnelCost: number;    // 人件費
+  adCost: number;           // 広告宣伝費
+  officeCost: number;       // 家賃・オフィス費
+  otherCost: number;        // その他経費
+  sgaExpenses: number;      // 販管費合計（自動計算）
+  operatingProfit: number;  // 営業利益（自動計算）
   notes: string;
 }
 
 export interface Client {
   id: string;
   name: string;
-  monthlyFee: number;    // 月額
-  services: string[];    // サービス種別
+  monthlyFee: number;
+  services: string[];
   startDate: string;
   status: 'active' | 'at-risk' | 'churned' | 'negotiating';
   notes: string;

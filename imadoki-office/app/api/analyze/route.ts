@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     const atRiskClients = clients.filter(c => c.status === 'at-risk');
 
     const plSummary = monthlyPL.map(m =>
-      `${m.month}: 売上¥${m.revenue.toLocaleString()} 原価¥${m.cogs.toLocaleString()} 販管費¥${m.sgaExpenses.toLocaleString()} 営業利益¥${m.operatingProfit.toLocaleString()}${m.notes ? ` (${m.notes})` : ''}`
+      `${m.month}: 売上¥${m.revenue.toLocaleString()} 外注費¥${m.cogs.toLocaleString()} 粗利¥${m.grossProfit.toLocaleString()}(${m.revenue > 0 ? Math.round(m.grossProfit/m.revenue*100) : 0}%) 人件費¥${(m.personnelCost||0).toLocaleString()} 広告費¥${(m.adCost||0).toLocaleString()} 家賃等¥${((m.officeCost||0)+(m.otherCost||0)).toLocaleString()} 営業利益¥${m.operatingProfit.toLocaleString()}(${m.revenue > 0 ? Math.round(m.operatingProfit/m.revenue*100) : 0}%)${m.notes ? ` (${m.notes})` : ''}`
     ).join('\n');
 
     const clientSummary = clients.map(c =>

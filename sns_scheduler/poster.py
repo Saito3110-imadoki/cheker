@@ -300,40 +300,50 @@ def upload_to_telegraph(image_data: bytes) -> str:
 
 # ── Threads 投稿 ──────────────────────────────────────────
 def post_to_threads(text: str, image_url: str = "") -> str:
-    """投稿して公開後のメディアIDを返す。失敗時は空文字列。"""
+    """投稿して公開後のメディアIDを返す。失敗時は空文字列。
+    画像は元URL（GitHub Pages）を直接使い、Threadsが取得できない場合のみ
+    Telegraph経由にフォールバックする（Telegraphは再圧縮で画質が落ちるため）。"""
     user_id = os.environ["THREADS_USER_ID"]
     token   = os.environ["THREADS_ACCESS_TOKEN"]
     base    = f"https://graph.threads.net/v1.0/{user_id}"
 
+    def _create_container(img_url: str) -> str:
+        if img_url:
+            params = {"media_type": "IMAGE", "image_url": img_url,
+                      "text": text, "access_token": token}
+        else:
+            params = {"media_type": "TEXT", "text": text,
+                      "access_token": token}
+        r = requests.post(f"{base}/threads", params=params, timeout=30)
+        r.raise_for_status()
+        return r.json()["id"]
+
+    container_id = ""
+    used_image   = False
+
     if image_url:
-        image_data = download_image(image_url)
-        if image_data:
-            telegraph_url = upload_to_telegraph(image_data)
+        # ① まず元URLをそのまま使う（画質劣化ゼロ）
+        try:
+            container_id = _create_container(image_url)
+            used_image   = True
+            print("  Threads: 元URLの画像を使用（高画質）")
+        except Exception as e:
+            print(f"  Threads: 元URLでの画像取得失敗 → Telegraph経由に切替: {e}")
+            # ② フォールバック: Telegraph経由（再圧縮あり）
+            image_data    = download_image(image_url)
+            telegraph_url = upload_to_telegraph(image_data) if image_data else ""
             if telegraph_url:
-                image_url = telegraph_url
-            else:
-                print("  Threads: 画像アップロード失敗のためテキストのみで投稿")
-                image_url = ""
+                try:
+                    container_id = _create_container(telegraph_url)
+                    used_image   = True
+                except Exception as e2:
+                    print(f"  Threads: Telegraph経由も失敗 → テキストのみで投稿: {e2}")
 
-    if image_url:
-        params = {
-            "media_type": "IMAGE",
-            "image_url": image_url,
-            "text": text,
-            "access_token": token,
-        }
-    else:
-        params = {
-            "media_type": "TEXT",
-            "text": text,
-            "access_token": token,
-        }
+    if not container_id:
+        container_id = _create_container("")
 
-    r = requests.post(f"{base}/threads", params=params, timeout=30)
-    r.raise_for_status()
-    container_id = r.json()["id"]
-
-    time.sleep(5)
+    # 画像付きはサーバー側の取り込みに時間がかかるため長めに待つ
+    time.sleep(10 if used_image else 5)
 
     r = requests.post(
         f"{base}/threads_publish",

@@ -303,8 +303,9 @@ def generate_infographic(chart: dict, output_path: Path,
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with sync_playwright() as p:
             browser = p.chromium.launch(args=["--no-sandbox", "--disable-dev-shm-usage"])
+            # device_scale_factor=3 → 3600×1890px の高解像度PNG
             page = browser.new_page(viewport={"width": W, "height": H},
-                                    device_scale_factor=2)
+                                    device_scale_factor=3)
             page.set_content(html, wait_until="domcontentloaded")
             page.screenshot(path=str(output_path))
             browser.close()

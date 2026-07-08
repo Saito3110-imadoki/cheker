@@ -385,10 +385,29 @@ def _html_list(chart: dict) -> str:
 {_impact_footer(impact, caption)}""")
 
 
+# ── ページバッジ（カルーセル用）──────────────────────────
+def _apply_page_badge(html: str, page: tuple | None) -> str:
+    """複数枚スライドのとき右上に「1 / 3」バッジを付ける。
+    1枚目にはスワイプを促す矢印も添える。"""
+    if not page or page[1] <= 1:
+        return html
+    cur, total = page
+    arrow = "&nbsp;→" if cur == 1 else ""
+    badge = (
+        f'<div style="position:absolute;top:20px;right:28px;'
+        f'background:rgba(255,255,255,0.07);border:1px solid {_BORDER};'
+        f'border-radius:999px;padding:7px 18px;font-size:16px;font-weight:800;'
+        f'color:{_TEXT};letter-spacing:1px;z-index:99;">{cur} / {total}{arrow}</div>'
+    )
+    return html.replace("</div>\n</body>", f"{badge}\n</div>\n</body>")
+
+
 # ── メイン描画関数 ────────────────────────────────────────
 def generate_infographic(chart: dict, output_path: Path,
-                         branding: dict | None = None) -> bool:
-    """HTMLをplaywrightでレンダリングしPNG保存。失敗時はFalse"""
+                         branding: dict | None = None,
+                         page: tuple | None = None) -> bool:
+    """HTMLをplaywrightでレンダリングしPNG保存。失敗時はFalse
+    page=(現在ページ, 総ページ数) を渡すとカルーセル用バッジを表示"""
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
@@ -409,6 +428,7 @@ def generate_infographic(chart: dict, output_path: Path,
         return False
 
     html = _apply_branding(html, branding or {})
+    html = _apply_page_badge(html, page)
 
     try:
         output_path.parent.mkdir(parents=True, exist_ok=True)

@@ -76,6 +76,7 @@ PROP_DATETIME     = _cfg("notion", "properties", "datetime",     default="投稿
 PROP_PLATFORM     = _cfg("notion", "properties", "platform",     default="媒体")
 PROP_STATUS       = _cfg("notion", "properties", "status",       default="ステータス")
 PROP_IMAGE_URL    = _cfg("notion", "properties", "image_url",    default="画像URL")
+PROP_IMAGE_URLS   = _cfg("notion", "properties", "image_urls",   default="画像URL一覧")
 PROP_LIKES        = _cfg("notion", "properties", "likes",        default="いいね数")
 PROP_RETWEETS     = _cfg("notion", "properties", "retweets",     default="RT数")
 PROP_IMPRESSIONS  = _cfg("notion", "properties", "impressions",  default="インプレッション")
@@ -670,6 +671,13 @@ def generate_posts_with_claude(
         "- A型（実践ノウハウ）: 少なくとも1件に flow または list の図解を付けること（needs_image: true）。\n"
         "  手順の流れ→ flow、コツ・ポイントの列挙→ list が向いている\n"
         "- C/D型: 原則 needs_image: false。ただし「原因→対策」のような構造が明確な場合は flow を付けてよい\n\n"
+        "【複数枚スライド（カルーセル）】\n"
+        "1枚に収まらない内容は charts 配列で2〜4枚に分割してよい（1枚でよければ配列は1個）。\n"
+        "複数枚にする場合のルール:\n"
+        "- 1枚目は「表紙」: タイムラインに表示されるのは1枚目だけ。結論と読み進めたくなる要素を置く\n"
+        "- 2枚目以降で詳細を展開（例: 1枚目 list で全体像 → 2枚目 flow で手順 → 3枚目 stat で効果）\n"
+        "- 各スライドは単体でも意味が通ること。前のスライドを読まないと分からない書き方は禁止\n"
+        "- 無理に枚数を増やさない。1枚で伝わるなら1枚が最強\n\n"
         "数字の扱い:\n"
         "- 数字を使うチャート（stat / bar）は参考ニュース由来の実在する数字のみ。捏造禁止\n"
         "- flow / list は投稿内容の構造化なので数字は不要。自由に作ってよい\n\n"
@@ -743,15 +751,19 @@ def generate_posts_with_claude(
         "[\n"
         '  {"text":"X向け投稿文","text_threads":"Threads向け投稿文","reply":"セルフリプライ",'
         '"type":"ノウハウ","theme":"テーマ","needs_image":false},\n'
+        '  {"text":"X向け投稿文","text_threads":"Threads向け投稿文","reply":"セルフリプライ",'
+        '"type":"ノウハウ","theme":"テーマ","needs_image":true,'
+        '"charts":[{"chart_type":"list","title":"...","items":[...]}]},\n'
         '  {"text":"数字を含むX向け投稿文","text_threads":"Threads向け投稿文","reply":"セルフリプライ",'
         '"type":"データ","theme":"テーマ","needs_image":true,'
-        '"chart":{"chart_type":"stat","title":"...","stats":[...]}}\n'
+        '"charts":[{"chart_type":"stat","title":"...","stats":[...]},'
+        '{"chart_type":"flow","title":"...","steps":[...]}]}\n'
         "]"
     )
 
     message = ai_client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=11000,
+        max_tokens=13000,
         messages=[{"role": "user", "content": prompt}],
     )
 
@@ -802,11 +814,19 @@ def save_to_notion(posts: list[dict], image_urls: dict) -> int:
         if post_type:
             properties[PROP_POST_TYPE] = {"select": {"name": post_type[:50]}}
         if i in image_urls:
-            properties[PROP_IMAGE_URL] = {"url": image_urls[i]}
+            urls = image_urls[i]
+            if isinstance(urls, str):  # 旧形式（単一URL）との互換
+                urls = [urls]
+            properties[PROP_IMAGE_URL] = {"url": urls[0]}
+            if len(urls) > 1:
+                properties[PROP_IMAGE_URLS] = {
+                    "rich_text": [{"text": {"content": "\n".join(urls)[:2000]}}]
+                }
 
         # 任意プロパティ（Notion側に未作成でも保存が失敗しないように、
         # エラーに名前が含まれていたら外して再試行する）
-        optional_props = [PROP_THREADS_TEXT, PROP_REPLY_TEXT, PROP_POST_TYPE]
+        optional_props = [PROP_THREADS_TEXT, PROP_REPLY_TEXT, PROP_POST_TYPE,
+                          PROP_IMAGE_URLS]
 
         try:
             for _attempt in range(len(optional_props) + 1):
@@ -906,36 +926,47 @@ def run():
         print("投稿の生成に失敗しました", file=sys.stderr)
         sys.exit(1)
 
-    # 画像生成
+    # 画像生成（charts配列 = カルーセル対応。旧形式の chart 単体も受け付ける）
     image_urls: dict = {}
     image_count = 0
+    slide_count = 0
     for i, post in enumerate(posts):
-        if not post.get("needs_image") or "chart" not in post:
+        charts = post.get("charts")
+        if not charts and isinstance(post.get("chart"), dict):
+            charts = [post["chart"]]
+        if not post.get("needs_image") or not charts:
             continue
-        filename = f"{date_str}-{i+1}.png"
-        out_path = IMAGE_DIR / filename
-        print(f"  画像生成中 [{i+1}]: {post.get('theme', '')}")
-        # playwright優先、失敗時はmatplotlibにフォールバック
-        ok = False
-        if _HAS_WEB_RENDERER:
-            ok = _gen_web(post["chart"], out_path, _cfg("branding"))
+        charts = [c for c in charts if isinstance(c, dict)][:4]
+        total  = len(charts)
+        print(f"  画像生成中 [{i+1}]: {post.get('theme', '')}（{total}枚）")
+
+        urls = []
+        for j, chart in enumerate(charts, start=1):
+            suffix   = f"-{j}" if total > 1 else ""
+            filename = f"{date_str}-{i+1}{suffix}.png"
+            out_path = IMAGE_DIR / filename
+            # playwright優先、失敗時はmatplotlibにフォールバック
+            ok = False
+            if _HAS_WEB_RENDERER:
+                ok = _gen_web(chart, out_path, _cfg("branding"), page=(j, total))
+                if ok:
+                    print(f"    [{j}/{total}] playwright (高解像度)")
+            if not ok:
+                ok = generate_chart_image(chart, out_path)
+                if ok:
+                    print(f"    [{j}/{total}] matplotlib (フォールバック)")
             if ok:
-                print("    レンダラー: playwright (高解像度)")
-        if not ok:
-            ok = generate_chart_image(post["chart"], out_path)
-            if ok:
-                print("    レンダラー: matplotlib (フォールバック)")
-        if ok:
-            if GITHUB_REPOSITORY:
-                owner_repo = GITHUB_REPOSITORY  # e.g. "Saito3110-imadoki/sns-scheduler"
-                owner, repo = owner_repo.split("/", 1)
-                url = (f"https://{owner}.github.io/{repo}/post-images/{filename}")
-            else:
-                url = str(out_path)
-            image_urls[i] = url
+                if GITHUB_REPOSITORY:
+                    owner, repo = GITHUB_REPOSITORY.split("/", 1)
+                    urls.append(f"https://{owner}.github.io/{repo}/post-images/{filename}")
+                else:
+                    urls.append(str(out_path))
+                slide_count += 1
+
+        if urls:
+            image_urls[i] = urls
             image_count += 1
-            print(f"    保存先: {out_path}")
-    print(f"  画像生成: {image_count}件")
+    print(f"  画像生成: {image_count}投稿 / 計{slide_count}枚")
 
     print("Notionに保存中...")
     saved = save_to_notion(posts, image_urls)

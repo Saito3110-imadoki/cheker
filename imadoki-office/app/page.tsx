@@ -1,6 +1,9 @@
 'use client';
 
-import { members, projects, tasks, kpiData, chatMessages } from '@/lib/data';
+import { useState, useEffect } from 'react';
+import { members as defaultMembers, projects, tasks, chatMessages } from '@/lib/data';
+import { CompanyData } from '@/lib/ceo-types';
+import { Member } from '@/lib/data';
 
 function KpiCard({ icon, label, value, sub, color }: { icon: string; label: string; value: string | number; sub?: string; color: string }) {
   return (
@@ -18,7 +21,49 @@ function KpiCard({ icon, label, value, sub, color }: { icon: string; label: stri
 }
 
 export default function Dashboard() {
+  const [members, setMembers] = useState<Member[]>(defaultMembers);
+  const [companyData, setCompanyData] = useState<CompanyData | null>(null);
+
+  useEffect(() => {
+    // Load real members
+    const stored = localStorage.getItem('imadoki-members');
+    if (stored) {
+      try { setMembers(JSON.parse(stored)); } catch { /* ignore */ }
+    }
+    // Load real company financial data
+    const cd = localStorage.getItem('imadoki-company-data');
+    if (cd) {
+      try { setCompanyData(JSON.parse(cd)); } catch { /* ignore */ }
+    }
+  }, []);
+
   const activeAI = members.filter(m => m.isAI && m.status === 'online').length;
+
+  // Derive KPIs from real data when available
+  const latestPL = companyData?.monthlyPL?.slice(-1)[0];
+  const prevPL = companyData?.monthlyPL?.slice(-2)[0];
+  const activeClients = companyData?.clients?.filter(c => c.status === 'active') ?? [];
+  const atRiskClients = companyData?.clients?.filter(c => c.status === 'at-risk') ?? [];
+
+  const revenueDisplay = latestPL
+    ? `¥${latestPL.revenue.toLocaleString()}`
+    : '未入力';
+
+  const revGrowthLabel = (() => {
+    if (!latestPL || !prevPL || prevPL.revenue === 0) return latestPL ? '実績値' : 'データ入力へ';
+    const growth = Math.round(((latestPL.revenue - prevPL.revenue) / prevPL.revenue) * 100);
+    return `前月比${growth >= 0 ? '+' : ''}${growth}%`;
+  })();
+
+  const opMarginLabel = latestPL && latestPL.revenue > 0
+    ? `営業利益率${Math.round((latestPL.operatingProfit / latestPL.revenue) * 100)}%`
+    : '';
+
+  const clientCountLabel = companyData
+    ? `${activeClients.length}社契約中${atRiskClients.length > 0 ? ` / リスク${atRiskClients.length}社` : ''}`
+    : '';
+
+  const hasData = !!companyData && (companyData.monthlyPL.length > 0 || companyData.clients.length > 0);
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -39,18 +84,52 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* Real data notice if no data yet */}
+      {!hasData && (
+        <div className="mb-5 px-4 py-3 rounded-xl flex items-center gap-3" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
+          <span className="text-amber-400">⚠️</span>
+          <span className="text-sm" style={{ color: '#fbbf24' }}>
+            財務データが未入力です。
+          </span>
+          <a href="/ceo/data" className="text-sm underline" style={{ color: '#a5b4fc' }}>データ入力ページ</a>
+          <span className="text-sm" style={{ color: '#fbbf24' }}>で実際の売上・クライアントを登録すると、ここに反映されます。</span>
+        </div>
+      )}
+
+      {/* KPI Cards — financial */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-        <KpiCard icon="🤖" label="AIエージェント" value={kpiData.aiMembers} sub="稼働中" color="#6366f1" />
-        <KpiCard icon="📁" label="アクティブ案件" value={kpiData.activeProjects} sub="進行中" color="#a855f7" />
-        <KpiCard icon="✅" label="完了タスク" value={`${kpiData.tasksCompleted}件`} sub="今月" color="#22c55e" />
-        <KpiCard icon="💰" label="月次売上" value={kpiData.monthlyRevenue} sub="前月比+12%" color="#f59e0b" />
+        <KpiCard icon="💰" label="直近月売上" value={revenueDisplay} sub={revGrowthLabel} color="#f59e0b" />
+        <KpiCard
+          icon="📈"
+          label="直近月営業利益"
+          value={latestPL ? `¥${latestPL.operatingProfit.toLocaleString()}` : '未入力'}
+          sub={opMarginLabel || '—'}
+          color={latestPL ? (latestPL.operatingProfit >= 0 ? '#22c55e' : '#ef4444') : '#6b7280'}
+        />
+        <KpiCard
+          icon="👥"
+          label="契約クライアント"
+          value={companyData ? `${activeClients.length}社` : '未入力'}
+          sub={clientCountLabel || '—'}
+          color="#6366f1"
+        />
+        <KpiCard
+          icon="📊"
+          label="累計売上"
+          value={companyData?.monthlyPL?.length
+            ? `¥${companyData.monthlyPL.reduce((s, m) => s + m.revenue, 0).toLocaleString()}`
+            : '未入力'}
+          sub={companyData?.monthlyPL?.length ? `${companyData.monthlyPL.length}ヶ月分` : '—'}
+          color="#a855f7"
+        />
       </div>
+
+      {/* KPI Cards — org */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <KpiCard icon="👥" label="総メンバー数" value={members.length} sub={`AI ${kpiData.aiMembers}名含む`} color="#818cf8" />
-        <KpiCard icon="🎯" label="顧客満足度" value={`${kpiData.clientSatisfaction}%`} sub="高水準維持" color="#34d399" />
-        <KpiCard icon="⚡" label="処理中タスク" value={`${kpiData.tasksInProgress}件`} sub="AI自動処理" color="#fb923c" />
-        <KpiCard icon="📊" label="総プロジェクト" value={kpiData.totalProjects} sub="今期" color="#60a5fa" />
+        <KpiCard icon="🤖" label="AIエージェント" value={members.filter(m => m.isAI).length} sub="稼働中" color="#6366f1" />
+        <KpiCard icon="👤" label="人間スタッフ" value={members.filter(m => !m.isAI).length} sub="メンバー" color="#ec4899" />
+        <KpiCard icon="✅" label="完了タスク" value={`${tasks.filter(t => t.status === 'done').length}件`} sub="今月" color="#22c55e" />
+        <KpiCard icon="📁" label="進行中プロジェクト" value={projects.filter(p => p.status === 'active').length} sub="案件" color="#60a5fa" />
       </div>
 
       {/* Main content */}
@@ -66,11 +145,11 @@ export default function Dashboard() {
                   <div key={msg.id} className="flex gap-3 items-start">
                     <div className="w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0"
                       style={{ background: msg.isAI ? 'rgba(99,102,241,0.15)' : 'rgba(168,85,247,0.15)' }}>
-                      {member?.avatar}
+                      {member?.avatar ?? '👤'}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-xs font-medium text-white">{member?.name}</span>
+                        <span className="text-xs font-medium text-white">{member?.name ?? msg.from}</span>
                         {msg.isAI && (
                           <span className="text-xs px-1.5 rounded" style={{ background: 'rgba(99,102,241,0.2)', color: '#818cf8' }}>AI</span>
                         )}
@@ -97,13 +176,10 @@ export default function Dashboard() {
                     }}>{p.progress}%</span>
                   </div>
                   <div className="h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${p.progress}%`,
-                        background: p.progress > 80 ? '#22c55e' : p.progress > 50 ? '#f59e0b' : 'linear-gradient(90deg, #6366f1, #a855f7)',
-                      }}
-                    />
+                    <div className="h-full rounded-full" style={{
+                      width: `${p.progress}%`,
+                      background: p.progress > 80 ? '#22c55e' : p.progress > 50 ? '#f59e0b' : 'linear-gradient(90deg, #6366f1, #a855f7)',
+                    }} />
                   </div>
                   <div className="flex items-center justify-between mt-1">
                     <span className="text-xs" style={{ color: '#4b5563' }}>{p.client}</span>
@@ -142,7 +218,9 @@ export default function Dashboard() {
           <div className="mt-4 p-3 rounded-lg text-center" style={{ background: 'rgba(99,102,241,0.08)' }}>
             <div className="text-xs" style={{ color: '#818cf8' }}>AI稼働率</div>
             <div className="text-xl font-bold" style={{ color: '#a5b4fc' }}>
-              {Math.round((members.filter(m => m.isAI && m.status === 'online').length / members.filter(m => m.isAI).length) * 100)}%
+              {members.filter(m => m.isAI).length > 0
+                ? `${Math.round((members.filter(m => m.isAI && m.status === 'online').length / members.filter(m => m.isAI).length) * 100)}%`
+                : '—'}
             </div>
           </div>
         </div>

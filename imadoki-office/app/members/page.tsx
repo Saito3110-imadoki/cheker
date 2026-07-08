@@ -460,7 +460,9 @@ export default function MembersPage() {
     try {
       setMembers(next);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch (e) {
+      // サイドバー・組織図など他ページに変更を通知
+      window.dispatchEvent(new Event('imadoki-members-updated'));
+    } catch {
       showToast('⚠️ 保存に失敗しました');
     }
   };

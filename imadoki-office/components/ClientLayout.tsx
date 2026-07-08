@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { members as defaultMembers, Member } from '@/lib/data';
 
 const navItems = [
   { href: '/', label: 'ダッシュボード', icon: '📊' },
@@ -19,6 +20,28 @@ const navItems = [
 
 function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed: (v: boolean) => void }) {
   const pathname = usePathname();
+  const [self, setSelf] = useState<Member | null>(null);
+
+  useEffect(() => {
+    const load = () => {
+      try {
+        const stored = localStorage.getItem('imadoki-members');
+        const list: Member[] = stored ? JSON.parse(stored) : defaultMembers;
+        const me = list.find(m => m.id === 'ceo') ?? list.find(m => !m.isAI) ?? null;
+        setSelf(me);
+      } catch { setSelf(null); }
+    };
+    load();
+    // re-read when storage changes (e.g. after profile edit)
+    window.addEventListener('storage', load);
+    // also listen for custom event from members page
+    window.addEventListener('imadoki-members-updated', load);
+    return () => {
+      window.removeEventListener('storage', load);
+      window.removeEventListener('imadoki-members-updated', load);
+    };
+  }, []);
+
   return (
     <aside
       className="fixed left-0 top-0 h-screen z-40 flex flex-col transition-all duration-300"
@@ -70,11 +93,11 @@ function Sidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed
           <div
             className="w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0"
             style={{ background: 'rgba(99,102,241,0.15)' }}
-          >👩‍💼</div>
+          >{self?.avatar ?? '👩‍💼'}</div>
           {!collapsed && (
             <div>
-              <div className="text-xs text-white font-medium">今時 花子</div>
-              <div className="text-xs" style={{ color: '#6b7280' }}>CEO</div>
+              <div className="text-xs text-white font-medium">{self?.name ?? '—'}</div>
+              <div className="text-xs" style={{ color: '#6b7280' }}>{self?.role?.split('/')[0]?.trim() ?? 'CEO'}</div>
             </div>
           )}
           {!collapsed && <div className="ml-auto w-2 h-2 rounded-full bg-green-400" style={{ boxShadow: '0 0 6px #4ade80' }} />}

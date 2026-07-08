@@ -1,9 +1,10 @@
 'use client';
 
-import { members, Member } from '@/lib/data';
+import { useState, useEffect } from 'react';
+import { members as defaultMembers, Member } from '@/lib/data';
 
-function MemberCard({ member, isRoot }: { member: Member; isRoot?: boolean }) {
-  const reports = member.reports?.map(id => members.find(m => m.id === id)).filter(Boolean) as Member[];
+function MemberCard({ member, isRoot, allMembers }: { member: Member; isRoot?: boolean; allMembers: Member[] }) {
+  const reports = member.reports?.map(id => allMembers.find(m => m.id === id)).filter(Boolean) as Member[];
 
   return (
     <div className="flex flex-col items-center">
@@ -52,7 +53,7 @@ function MemberCard({ member, isRoot }: { member: Member; isRoot?: boolean }) {
             {reports.map((r, i) => (
               <div key={r.id} className="flex flex-col items-center">
                 <div className="w-px h-6" style={{ background: 'rgba(99,102,241,0.3)' }} />
-                <MemberCard member={r} />
+                <MemberCard member={r} allMembers={allMembers} />
               </div>
             ))}
           </div>
@@ -63,7 +64,26 @@ function MemberCard({ member, isRoot }: { member: Member; isRoot?: boolean }) {
 }
 
 export default function OrgPage() {
-  const ceo = members.find(m => m.id === 'ceo')!;
+  const [members, setMembers] = useState<Member[]>(defaultMembers);
+
+  useEffect(() => {
+    const load = () => {
+      try {
+        const stored = localStorage.getItem('imadoki-members');
+        if (stored) setMembers(JSON.parse(stored));
+      } catch { /* ignore */ }
+    };
+    load();
+    window.addEventListener('storage', load);
+    window.addEventListener('imadoki-members-updated', load);
+    return () => {
+      window.removeEventListener('storage', load);
+      window.removeEventListener('imadoki-members-updated', load);
+    };
+  }, []);
+
+  const ceo = members.find(m => m.id === 'ceo') ?? members.find(m => !m.isAI) ?? members[0];
+  if (!ceo) return null;
   const deptColors: Record<string, string> = {
     '経営': '#6366f1',
     'マーケティング戦略': '#a855f7',

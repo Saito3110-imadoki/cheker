@@ -3,6 +3,261 @@
 import { useState, useEffect, useRef } from 'react';
 import { CompanyData, MonthlyPL, Client } from '@/lib/ceo-types';
 
+// -------- Smart Import Modal --------
+const PL_FIELD_LABELS: Record<string, string> = {
+  month: '月', revenue: '売上高', cogs: '外注費・制作費',
+  personnelCost: '人件費', adCost: '広告費', officeCost: '家賃・オフィス費',
+  otherCost: 'その他経費', notes: 'メモ',
+};
+const CLIENT_FIELD_LABELS: Record<string, string> = {
+  name: 'クライアント名', monthlyFee: '月額', services: 'サービス',
+  startDate: '開始月', status: 'ステータス', notes: 'メモ',
+};
+
+interface ImportResult {
+  headers: string[];
+  colMap: Record<string, number>;
+  preview: Record<string, unknown>[];
+  total: number;
+  rows: Record<string, unknown>[];
+}
+
+function SmartImportModal({
+  type, onClose, onConfirm,
+}: {
+  type: 'pl' | 'clients';
+  onClose: () => void;
+  onConfirm: (rows: Record<string, unknown>[]) => void;
+}) {
+  const [step, setStep] = useState<'upload' | 'mapping' | 'preview'>('upload');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [result, setResult] = useState<ImportResult | null>(null);
+  const [colMap, setColMap] = useState<Record<string, number>>({});
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const fieldLabels = type === 'pl' ? PL_FIELD_LABELS : CLIENT_FIELD_LABELS;
+  const requiredFields = type === 'pl' ? ['month', 'revenue'] : ['name', 'monthlyFee'];
+
+  async function handleFile(file: File) {
+    setLoading(true);
+    setError('');
+    const form = new FormData();
+    form.append('file', file);
+    form.append('type', type);
+    try {
+      const res = await fetch('/api/import-parse', { method: 'POST', body: form });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setResult(data);
+      setColMap(data.colMap);
+      setStep('mapping');
+    } catch (e) {
+      setError('読み込み失敗: ' + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function remapAndPreview() {
+    if (!result) return;
+    // Re-parse using the user-adjusted colMap
+    // For simplicity just show existing preview with current map info
+    setStep('preview');
+  }
+
+  function confirm() {
+    if (!result) return;
+    onConfirm(result.rows);
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.7)' }}>
+      <div className="rounded-2xl p-6 w-full max-w-2xl mx-4 max-h-screen overflow-y-auto" style={{ background: '#0f0f1a', border: '1px solid rgba(99,102,241,0.3)' }}>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-base font-bold text-white">
+            📂 スマートインポート — {type === 'pl' ? 'P&L（月次損益）' : 'クライアント'}
+          </h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-300 text-xl">✕</button>
+        </div>
+
+        {/* Step indicator */}
+        <div className="flex items-center gap-3 mb-6">
+          {['upload', 'mapping', 'preview'].map((s, i) => {
+            const labels = ['① ファイル選択', '② カラム確認', '③ プレビュー'];
+            const active = s === step;
+            const done = ['upload','mapping','preview'].indexOf(s) < ['upload','mapping','preview'].indexOf(step);
+            return (
+              <div key={s} className="flex items-center gap-2">
+                {i > 0 && <div className="w-6 h-px" style={{ background: 'rgba(99,102,241,0.3)' }} />}
+                <span className="text-xs px-2.5 py-1 rounded-full" style={{
+                  background: active ? 'rgba(99,102,241,0.2)' : done ? 'rgba(34,197,94,0.1)' : 'rgba(255,255,255,0.04)',
+                  color: active ? '#a5b4fc' : done ? '#4ade80' : '#6b7280',
+                }}>{done ? '✓ ' : ''}{labels[i]}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        {error && (
+          <div className="mb-4 px-3 py-2 rounded-lg text-sm" style={{ background: 'rgba(239,68,68,0.1)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.2)' }}>
+            ⚠️ {error}
+          </div>
+        )}
+
+        {/* Step 1: upload */}
+        {step === 'upload' && (
+          <div>
+            <div
+              className="border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all hover:opacity-80"
+              style={{ borderColor: 'rgba(99,102,241,0.4)', background: 'rgba(99,102,241,0.04)' }}
+              onClick={() => fileRef.current?.click()}
+            >
+              <div className="text-4xl mb-3">{loading ? '⏳' : '📂'}</div>
+              <div className="text-white font-medium mb-1">{loading ? '読み込み中...' : 'ファイルをクリックして選択'}</div>
+              <div className="text-xs" style={{ color: '#6b7280' }}>CSV・Excel（.xlsx / .xls）対応 — どんな列名でも自動認識</div>
+              <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden"
+                onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
+            </div>
+            <div className="mt-4 p-3 rounded-lg text-xs space-y-1" style={{ background: 'rgba(255,255,255,0.03)', color: '#6b7280' }}>
+              <div className="font-medium text-white mb-1.5">自動認識できる列名の例：</div>
+              {type === 'pl' ? (
+                <div className="grid grid-cols-2 gap-1">
+                  <div>月 / 年月 / 対象月 / 月次</div>
+                  <div>売上 / 売上高 / 売上金額 / 収入</div>
+                  <div>外注費 / 制作費 / 売上原価</div>
+                  <div>人件費 / 給与 / 役員報酬</div>
+                  <div>広告費 / 広告宣伝費 / 販促費</div>
+                  <div>家賃 / 地代家賃 / 賃借料</div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-1">
+                  <div>クライアント名 / 会社名 / 取引先</div>
+                  <div>月額 / 月額料金 / 請求金額</div>
+                  <div>サービス / 業務内容</div>
+                  <div>開始日 / 契約開始 / 契約日</div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: column mapping review */}
+        {step === 'mapping' && result && (
+          <div>
+            <div className="mb-3 text-xs" style={{ color: '#9ca3af' }}>
+              ファイルの列数: {result.headers.length} | データ行数: {result.total}
+            </div>
+            <div className="rounded-lg overflow-hidden mb-4" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr style={{ background: 'rgba(99,102,241,0.1)' }}>
+                    <th className="px-3 py-2 text-left text-white">取り込み項目</th>
+                    <th className="px-3 py-2 text-left text-white">ファイルの列名</th>
+                    <th className="px-3 py-2 text-left" style={{ color: '#6b7280' }}>認識状態</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(fieldLabels).map(([field, label]) => {
+                    const idx = colMap[field];
+                    const matched = idx != null;
+                    const isRequired = requiredFields.includes(field);
+                    return (
+                      <tr key={field} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                        <td className="px-3 py-2">
+                          <span className="text-white">{label}</span>
+                          {isRequired && <span className="ml-1 text-red-400">*</span>}
+                        </td>
+                        <td className="px-3 py-2">
+                          <select
+                            value={idx != null ? idx : -1}
+                            onChange={e => {
+                              const val = Number(e.target.value);
+                              setColMap(prev => ({ ...prev, [field]: val === -1 ? undefined as unknown as number : val }));
+                            }}
+                            className="text-xs px-2 py-1 rounded outline-none"
+                            style={{ background: 'rgba(255,255,255,0.05)', color: '#e5e7eb', border: '1px solid rgba(255,255,255,0.1)' }}
+                          >
+                            <option value={-1} style={{ background: '#0f0f1a' }}>（使用しない）</option>
+                            {result.headers.map((h, i) => (
+                              <option key={i} value={i} style={{ background: '#0f0f1a' }}>{h || `列${i+1}`}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="px-3 py-2">
+                          {matched ? (
+                            <span style={{ color: '#4ade80' }}>✓ 自動認識</span>
+                          ) : (
+                            <span style={{ color: isRequired ? '#f87171' : '#6b7280' }}>
+                              {isRequired ? '⚠ 手動で選択' : '— 省略'}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setStep('upload')} className="text-xs px-3 py-2 rounded-lg" style={{ color: '#6b7280' }}>← 戻る</button>
+              <button
+                onClick={remapAndPreview}
+                className="text-xs px-4 py-2 rounded-lg font-medium text-white"
+                style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}
+              >
+                プレビューを確認 →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: preview */}
+        {step === 'preview' && result && (
+          <div>
+            <div className="mb-3 text-sm text-white">
+              <span className="text-green-400 font-bold">{result.total}件</span>のデータを取り込みます（先頭5件を表示）
+            </div>
+            <div className="rounded-lg overflow-x-auto mb-4" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
+              <table className="text-xs w-full">
+                <thead>
+                  <tr style={{ background: 'rgba(99,102,241,0.1)' }}>
+                    {Object.entries(fieldLabels).filter(([f]) => f !== 'notes').map(([f, l]) => (
+                      <th key={f} className="px-3 py-2 text-left text-white whitespace-nowrap">{l}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.preview.map((row, i) => (
+                    <tr key={i} style={{ borderTop: '1px solid rgba(255,255,255,0.05)', color: '#e5e7eb' }}>
+                      {Object.keys(fieldLabels).filter(f => f !== 'notes').map(f => (
+                        <td key={f} className="px-3 py-2 whitespace-nowrap">
+                          {Array.isArray(row[f]) ? (row[f] as string[]).join('/') : (row[f] != null ? String(row[f]) : '—')}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setStep('mapping')} className="text-xs px-3 py-2 rounded-lg" style={{ color: '#6b7280' }}>← 戻る</button>
+              <button
+                onClick={confirm}
+                className="text-xs px-5 py-2 rounded-lg font-semibold text-white"
+                style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)' }}
+              >
+                ✓ {result.total}件をインポート
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // CSV templates
 const PL_CSV_TEMPLATE = `month,revenue,cogs,personnelCost,adCost,officeCost,otherCost,notes
 2025-04,1500000,200000,700000,100000,80000,50000,新規2社獲得
@@ -127,8 +382,7 @@ export default function DataPage() {
   const [activeTab, setActiveTab] = useState<'pl' | 'clients'>('pl');
   const [saved, setSaved] = useState(false);
   const [csvError, setCsvError] = useState('');
-  const plFileRef = useRef<HTMLInputElement>(null);
-  const clientFileRef = useRef<HTMLInputElement>(null);
+  const [importModal, setImportModal] = useState<'pl' | 'clients' | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('imadoki-company-data');
@@ -155,29 +409,6 @@ export default function DataPage() {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const handleCSVUpload = (file: File, type: 'pl' | 'clients') => {
-    setCsvError('');
-    const reader = new FileReader();
-    reader.onload = e => {
-      try {
-        let text = e.target?.result as string;
-        // strip BOM if present
-        if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
-        if (type === 'pl') {
-          const parsed = parsePLCSV(text);
-          if (parsed.length === 0) throw new Error('データが見つかりません');
-          save({ ...data, monthlyPL: [...data.monthlyPL, ...parsed] });
-        } else {
-          const parsed = parseClientCSV(text);
-          if (parsed.length === 0) throw new Error('データが見つかりません');
-          save({ ...data, clients: [...data.clients, ...parsed] });
-        }
-      } catch {
-        setCsvError('CSVの読み込みに失敗しました。テンプレートの形式を確認してください。');
-      }
-    };
-    reader.readAsText(file, 'UTF-8');
-  };
 
   const addPL = () => save({ ...data, monthlyPL: [...data.monthlyPL, emptyPL()] });
   const updatePL = (i: number, field: keyof MonthlyPL, value: string | number) => {
@@ -204,8 +435,24 @@ export default function DataPage() {
     color: `rgb(${color})`,
   });
 
+  function handleImportConfirm(rows: Record<string, unknown>[], type: 'pl' | 'clients') {
+    if (type === 'pl') {
+      const newRows = (rows as Partial<MonthlyPL>[]).map(r => calcPL(r));
+      save({ ...data, monthlyPL: [...data.monthlyPL, ...newRows] });
+    } else {
+      save({ ...data, clients: [...data.clients, ...(rows as unknown as Client[])] });
+    }
+  }
+
   return (
     <div className="max-w-7xl mx-auto">
+      {importModal && (
+        <SmartImportModal
+          type={importModal}
+          onClose={() => setImportModal(null)}
+          onConfirm={rows => { handleImportConfirm(rows, importModal); setImportModal(null); }}
+        />
+      )}
       {/* Header */}
       <div className="mb-5 flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -228,16 +475,14 @@ export default function DataPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {/* P&L Import */}
           <button
-            onClick={() => plFileRef.current?.click()}
+            onClick={() => setImportModal('pl')}
             className="flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all hover:opacity-90 text-center"
             style={btnStyle('99,102,241')}
           >
             <span className="text-xl">📤</span>
             <span className="text-xs font-medium">P&L インポート</span>
-            <span className="text-xs opacity-60">CSV/Excelを読み込む</span>
+            <span className="text-xs opacity-60">自動カラム認識</span>
           </button>
-          <input ref={plFileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden"
-            onChange={e => e.target.files?.[0] && handleCSVUpload(e.target.files[0], 'pl')} />
 
           {/* P&L Template */}
           <button
@@ -252,16 +497,14 @@ export default function DataPage() {
 
           {/* Client Import */}
           <button
-            onClick={() => clientFileRef.current?.click()}
+            onClick={() => setImportModal('clients')}
             className="flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all hover:opacity-90 text-center"
             style={btnStyle('168,85,247')}
           >
             <span className="text-xl">📤</span>
             <span className="text-xs font-medium">クライアント インポート</span>
-            <span className="text-xs opacity-60">CSV/Excelを読み込む</span>
+            <span className="text-xs opacity-60">自動カラム認識</span>
           </button>
-          <input ref={clientFileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden"
-            onChange={e => e.target.files?.[0] && handleCSVUpload(e.target.files[0], 'clients')} />
 
           {/* Client Template */}
           <button

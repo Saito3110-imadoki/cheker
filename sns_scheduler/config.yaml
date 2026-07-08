@@ -103,5 +103,6 @@ notion:
     analytics_date: 計測日時
   status:
     pending: 承認待ち
+    done: 投稿済
   platform:
     default: 両方

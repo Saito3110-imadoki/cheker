@@ -74,8 +74,12 @@ PROP_DATETIME     = _cfg("notion", "properties", "datetime",     default="投稿
 PROP_PLATFORM     = _cfg("notion", "properties", "platform",     default="媒体")
 PROP_STATUS       = _cfg("notion", "properties", "status",       default="ステータス")
 PROP_IMAGE_URL    = _cfg("notion", "properties", "image_url",    default="画像URL")
+PROP_LIKES        = _cfg("notion", "properties", "likes",        default="いいね数")
+PROP_RETWEETS     = _cfg("notion", "properties", "retweets",     default="RT数")
+PROP_IMPRESSIONS  = _cfg("notion", "properties", "impressions",  default="インプレッション")
 
 STATUS_PENDING_APPROVAL = _cfg("notion", "status",   "pending", default="承認待ち")
+STATUS_POSTED           = _cfg("notion", "status",   "done",    default="投稿済")
 PLATFORM_BOTH           = _cfg("notion", "platform", "default", default="両方")
 
 GITHUB_REPOSITORY = os.environ.get("GITHUB_REPOSITORY", "")
@@ -357,9 +361,71 @@ def fetch_trending_tweets(max_tweets: int = 6) -> list[str]:
         return []
 
 
+# ── 投稿実績の学習コンテキスト ────────────────────────────
+def fetch_performance_insights(max_posts: int = 20) -> str:
+    """直近の投稿実績（いいね・RT・インプレッション）から、
+    生成AIに渡す学習コンテキストを組み立てる。
+    実績データが3件未満・プロパティ未作成・取得失敗の場合は空文字を返し、
+    生成処理には影響を与えない。"""
+    try:
+        notion = Client(auth=NOTION_TOKEN)
+        resp = notion.databases.query(
+            database_id=NOTION_DATABASE_ID,
+            filter={
+                "and": [
+                    {"property": PROP_STATUS,
+                     "multi_select": {"contains": STATUS_POSTED}},
+                    {"property": PROP_LIKES,
+                     "number": {"is_not_empty": True}},
+                ]
+            },
+            sorts=[{"property": PROP_DATETIME, "direction": "descending"}],
+            page_size=max_posts,
+        )
+
+        rows = []
+        for page in resp.get("results", []):
+            props = page["properties"]
+            title = props.get(PROP_TEXT, {}).get("title", [])
+            text  = "".join(p["plain_text"] for p in title).replace("\n", " ")[:60]
+            likes = props.get(PROP_LIKES, {}).get("number") or 0
+            rts   = props.get(PROP_RETWEETS, {}).get("number") or 0
+            imp   = props.get(PROP_IMPRESSIONS, {}).get("number") or 0
+            if text:
+                # RT > いいね > インプの順に重み付けした簡易スコア
+                rows.append({"text": text, "likes": likes, "rts": rts,
+                             "imp": imp, "score": rts * 5 + likes * 3 + imp * 0.01})
+
+        if len(rows) < 3:
+            return ""
+
+        rows.sort(key=lambda r: r["score"], reverse=True)
+        top    = rows[:3]
+        bottom = rows[-2:]
+
+        lines = [
+            "【直近の投稿実績 — 必ず分析して今日の投稿に反映すること】",
+            "▼ 伸びた投稿（この切り口・書き出しの型を強化する）:",
+        ]
+        for r in top:
+            lines.append(f"・「{r['text']}…」→ いいね{r['likes']} / RT{r['rts']} / imp{r['imp']}")
+        lines.append("▼ 伸びなかった投稿（同じパターンを避ける）:")
+        for r in bottom:
+            lines.append(f"・「{r['text']}…」→ いいね{r['likes']} / RT{r['rts']} / imp{r['imp']}")
+        lines.append(
+            "伸びた投稿に共通するフックの型・テーマ・具体性のレベルを抽出し、"
+            "今日の投稿に反映すること。ただし文面の使い回しは禁止。新しいテーマで型だけ再現する。")
+        return "\n".join(lines)
+
+    except Exception as e:
+        print(f"  実績データ取得スキップ: {e}")
+        return ""
+
+
 # ── Claude AI 投稿生成 ────────────────────────────────────
 def generate_posts_with_claude(
-    news_items: list[str], trending: list[str], count: int = 5
+    news_items: list[str], trending: list[str], count: int = 5,
+    insights: str = "",
 ) -> list[dict]:
     ai_client  = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     news_text  = "\n".join(f"・{item}" for item in news_items) or "（情報なし）"
@@ -386,9 +452,10 @@ def generate_posts_with_claude(
     topics_list     = _cfg("topics", "primary", default=["AI活用", "SNS運用", "マーケティング"])
     company_name    = _cfg("company", "name", default="")
 
-    forbidden_str = "・".join(forbidden_list)
-    topics_str    = "、".join(topics_list)
-    company_str   = f"（{company_name}向け）" if company_name else ""
+    forbidden_str  = "・".join(forbidden_list)
+    topics_str     = "、".join(topics_list)
+    company_str    = f"（{company_name}向け）" if company_name else ""
+    insights_block = f"{insights}\n\n" if insights else ""
 
     prompt = (
         f"あなたはX・Threadsで累計10万フォロワーを獲得してきたプロのSNSマーケターです{company_str}。\n"
@@ -399,6 +466,7 @@ def generate_posts_with_claude(
         f"以下のニュースとトレンドをもとに、投稿を{count}件作成してください。\n\n"
         f"【参考ニュース】\n{news_text}\n\n"
         f"【参考トレンド】\n{trend_text}\n\n"
+        f"{insights_block}"
         "【投稿タイプと配分】\n"
         f"A. 実践ノウハウ型（{n_a}件）— フォロワー獲得の主力。保存されることが目的\n"
         "   - 読んだ人が「明日そのままマネできる」具体的な手順・使い方・テクニック\n"
@@ -607,9 +675,14 @@ def run():
     trending = fetch_trending_tweets()
     print(f"  Xトレンド: {len(trending)}件")
 
+    print("投稿実績データ取得中...")
+    insights = fetch_performance_insights()
+    print(f"  実績学習: {'あり（プロンプトに反映）' if insights else 'データ不足のためスキップ'}")
+
     posts_per_day = _cfg("content", "posts_per_day", default=5)
     print("Claude AIで投稿文生成中...")
-    posts = generate_posts_with_claude(news, trending, count=posts_per_day)
+    posts = generate_posts_with_claude(news, trending, count=posts_per_day,
+                                       insights=insights)
     print(f"  生成: {len(posts)}件")
 
     if not posts:

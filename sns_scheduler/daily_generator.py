@@ -88,14 +88,14 @@ PLATFORM_BOTH           = _cfg("notion", "platform", "default", default="両方"
 GITHUB_REPOSITORY = os.environ.get("GITHUB_REPOSITORY", "")
 IMAGE_DIR = Path("post-images")
 
-# 3色ルール
-C_BASE    = '#0D1117'
-C_SURFACE = '#161B22'
-C_MAIN    = '#818CF8'
-C_ACCENT  = '#FCD34D'
-C_TEXT    = '#E2E8F0'
+# 3色ルール（白背景ライトテーマ）
+C_BASE    = '#FFFFFF'
+C_SURFACE = '#F1F5F9'
+C_MAIN    = '#4F46E5'
+C_ACCENT  = '#D97706'
+C_TEXT    = '#0F172A'
 C_MUTED   = '#64748B'
-C_BORDER  = '#30363D'
+C_BORDER  = '#E2E8F0'
 
 RSS_FEEDS = _cfg("rss_feeds", default=[
     "https://rss.itmedia.co.jp/rss/2.0/aiplus.xml",
@@ -170,7 +170,7 @@ def _draw_bar(ax, chart: dict):
 
         # 背景トラック
         ax.add_patch(FancyBboxPatch((x_start, y - bar_h / 2), bar_max, bar_h,
-            boxstyle="round,pad=0.04", lw=0, facecolor='#1A2235'))
+            boxstyle="round,pad=0.04", lw=0, facecolor='#E2E8F0'))
         # 塗り棒
         ax.add_patch(FancyBboxPatch((x_start, y - bar_h / 2), bar_w, bar_h,
             boxstyle="round,pad=0.04", lw=0, facecolor=C_MAIN))
@@ -203,7 +203,7 @@ def _draw_stat(ax, chart: dict):
         # カード背景
         ax.add_patch(FancyBboxPatch((x0, 0.75), w, 4.25,
             boxstyle="round,pad=0.15", lw=2,
-            edgecolor=C_MAIN, facecolor='#0D1B2A'))
+            edgecolor=C_MAIN, facecolor='#F8FAFC'))
 
         # 上部アクセントバー
         ax.add_patch(FancyBboxPatch((x0 + 0.08, 4.72), w - 0.16, 0.16,
@@ -235,7 +235,7 @@ def _draw_stat(ax, chart: dict):
     if impact:
         ax.add_patch(FancyBboxPatch((0.4, 0.1), 11.2, 0.52,
             boxstyle="round,pad=0.05", lw=1,
-            edgecolor='#2D2500', facecolor='#1C1400'))
+            edgecolor='#FCD34D', facecolor='#FFFBEB'))
         _t(ax, 6.0, 0.37, impact, size=10, color=C_ACCENT,
            ha='center', va='center')
 
@@ -264,7 +264,7 @@ def _draw_comparison(ax, chart: dict):
     # 右パネル
     ax.add_patch(FancyBboxPatch((7.0, 0.85), 4.7, 4.15,
         boxstyle="round,pad=0.12", lw=2,
-        edgecolor=C_MAIN, facecolor='#0D1B2A'))
+        edgecolor=C_MAIN, facecolor='#F8FAFC'))
     _t(ax, 9.35, 4.65, right_label, size=14, color=C_MAIN, bold=True, ha='center')
     ax.plot([7.3, 11.4], [4.35, 4.35], color=C_BORDER, lw=0.7)
     for i, item in enumerate(right_items[:4]):
@@ -289,12 +289,12 @@ def _draw_flow(ax, chart: dict):
         ax.add_patch(FancyBboxPatch((0.4, y - 0.28), 1.9, 0.56,
             boxstyle="round,pad=0.06", lw=0, facecolor=chip_c))
         _t(ax, 1.35, y, st.get("label", f"STEP{i+1}"), size=11,
-           color='#111111' if is_last else '#ffffff', bold=True,
+           color='#ffffff', bold=True,
            ha='center', va='center')
         # テキストボックス
         ax.add_patch(FancyBboxPatch((2.7, y - 0.32), 8.9, 0.64,
             boxstyle="round,pad=0.06", lw=1,
-            edgecolor=C_ACCENT if is_last else C_BORDER, facecolor='#0D1B2A'))
+            edgecolor=C_ACCENT if is_last else C_BORDER, facecolor='#F8FAFC'))
         _t(ax, 3.0, y, st.get("text", ""), size=10.5, color=C_TEXT, va='center')
         # 矢印
         if not is_last:
@@ -314,7 +314,7 @@ def _draw_list(ax, chart: dict):
         y = top - (i + 0.5) * row_h
         ax.add_patch(FancyBboxPatch((0.4, y - row_h / 2 + 0.08), 11.2, row_h - 0.16,
             boxstyle="round,pad=0.06", lw=1,
-            edgecolor=C_BORDER, facecolor='#0D1B2A'))
+            edgecolor=C_BORDER, facecolor='#F8FAFC'))
         # 番号
         ax.add_patch(FancyBboxPatch((0.7, y - 0.26), 0.52, 0.52,
             boxstyle="round,pad=0.05", lw=0, facecolor=C_MAIN))
@@ -342,7 +342,7 @@ def generate_chart_image(chart: dict, output_path: Path) -> bool:
 
         # ヘッダー背景
         ax.add_patch(FancyBboxPatch((0.4, 6.05), 11.2, 0.58,
-            boxstyle="round,pad=0.05", lw=0, facecolor='#161B22'))
+            boxstyle="round,pad=0.05", lw=0, facecolor='#F1F5F9'))
         # 左アクセントバー
         ax.plot([0.4, 0.4], [5.9, 6.65], color=C_ACCENT, lw=5,
                 solid_capstyle='round')

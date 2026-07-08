@@ -45,7 +45,7 @@ schedule:
     - "22:00"
 
 branding:
-  primary_color: "#6366f1"   # indigo（IMadokiメインカラー）
-  accent_color: "#fbbf24"    # amber（ハイライト）
+  primary_color: "#4f46e5"   # indigo-600（白背景向けIMadokiカラー）
+  accent_color: "#d97706"    # amber-600（白背景でも読めるハイライト）
   logo_url: ""
   company_name: "株式会社IMADOKI"

@@ -51,7 +51,7 @@ notion:
     default: 両方
 
 branding:
-  primary_color: "#ec4899"   # ピンク（ファッション系）
-  accent_color: "#f59e0b"    # ゴールド
+  primary_color: "#db2777"   # 濃いピンク（白背景向け・ファッション系）
+  accent_color: "#b45309"    # 濃いゴールド（白背景向け）
   logo_url: ""
   company_name: "株式会社サンプル"

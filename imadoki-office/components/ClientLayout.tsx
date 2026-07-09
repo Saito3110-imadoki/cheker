@@ -61,6 +61,34 @@ function Tooltip({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
+function useBadgeCounts() {
+  const [overdueTasks, setOverdueTasks] = useState(0);
+  const [pendingAnalysis, setPendingAnalysis] = useState(0);
+
+  useEffect(() => {
+    const calc = () => {
+      try {
+        const today = new Date().toISOString().slice(0, 10);
+        const tasks: { status: string; dueDate?: string }[] = JSON.parse(localStorage.getItem('imadoki-tasks') || '[]');
+        setOverdueTasks(tasks.filter(t => t.status !== 'done' && t.dueDate && t.dueDate < today).length);
+      } catch { setOverdueTasks(0); }
+      try {
+        const data = JSON.parse(localStorage.getItem('imadoki-company-data') || 'null');
+        setPendingAnalysis(data?.pendingActions?.length ?? 0);
+      } catch { setPendingAnalysis(0); }
+    };
+    calc();
+    window.addEventListener('storage', calc);
+    window.addEventListener('imadoki-members-updated', calc);
+    return () => {
+      window.removeEventListener('storage', calc);
+      window.removeEventListener('imadoki-members-updated', calc);
+    };
+  }, []);
+
+  return { overdueTasks, pendingAnalysis };
+}
+
 function Sidebar({ collapsed, setCollapsed, onCmdK }: {
   collapsed: boolean;
   setCollapsed: (v: boolean) => void;
@@ -69,6 +97,7 @@ function Sidebar({ collapsed, setCollapsed, onCmdK }: {
   const pathname = usePathname();
   const [self, setSelf] = useState<Member | null>(null);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const { overdueTasks, pendingAnalysis } = useBadgeCounts();
 
   useEffect(() => {
     const load = () => {
@@ -145,6 +174,9 @@ function Sidebar({ collapsed, setCollapsed, onCmdK }: {
             <div className="space-y-0.5">
               {group.items.map(item => {
                 const active = isActive(pathname, item.href);
+                const badge = item.href === '/tasks' ? overdueTasks
+                  : item.href === '/ceo/analysis' ? pendingAnalysis
+                  : 0;
                 const navItem = (
                   <Link key={item.href} href={item.href}>
                     <div className="flex items-center gap-3 px-2 py-2 rounded-lg transition-all duration-150 cursor-pointer"
@@ -153,14 +185,28 @@ function Sidebar({ collapsed, setCollapsed, onCmdK }: {
                         borderLeft: `2px solid ${active ? '#6366f1' : 'transparent'}`,
                         color: active ? '#a5b4fc' : '#6b7280',
                       }}>
-                      <span className="text-base flex-shrink-0 w-5 text-center">{item.icon}</span>
+                      <span className="relative text-base flex-shrink-0 w-5 text-center">
+                        {item.icon}
+                        {badge > 0 && (
+                          <span className="absolute -top-1 -right-1 min-w-[14px] h-3.5 px-0.5 rounded-full text-white flex items-center justify-center"
+                            style={{ background: '#ef4444', fontSize: '9px', lineHeight: 1, fontWeight: 700 }}>
+                            {badge > 9 ? '9+' : badge}
+                          </span>
+                        )}
+                      </span>
                       {!collapsed && <span className="text-sm font-medium truncate">{item.label}</span>}
-                      {active && !collapsed && <div className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#6366f1' }} />}
+                      {!collapsed && badge > 0 && (
+                        <span className="ml-auto min-w-[18px] h-4.5 px-1.5 rounded-full text-white flex items-center justify-center flex-shrink-0"
+                          style={{ background: '#ef4444', fontSize: '10px', fontWeight: 700 }}>
+                          {badge > 99 ? '99+' : badge}
+                        </span>
+                      )}
+                      {active && !collapsed && badge === 0 && <div className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#6366f1' }} />}
                     </div>
                   </Link>
                 );
                 return collapsed ? (
-                  <Tooltip key={item.href} label={item.label}>{navItem}</Tooltip>
+                  <Tooltip key={item.href} label={`${item.label}${badge > 0 ? ` (${badge})` : ''}`}>{navItem}</Tooltip>
                 ) : navItem;
               })}
             </div>

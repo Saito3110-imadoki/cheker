@@ -6,6 +6,82 @@ import { members as defaultMembers, projects as defaultProjects, tasks as defaul
 import { CompanyData } from '@/lib/ceo-types';
 import { Member } from '@/lib/data';
 
+function RevenueChart({ data }: { data: { month: string; revenue: number; operatingProfit: number }[] }) {
+  if (data.length < 2) return (
+    <div className="flex items-center justify-center h-32 text-sm" style={{ color: '#4b5563' }}>
+      月次データが2件以上になるとグラフが表示されます
+    </div>
+  );
+
+  const maxVal = Math.max(...data.map(d => d.revenue));
+  const minVal = Math.min(0, ...data.map(d => d.operatingProfit));
+  const range = maxVal - minVal || 1;
+
+  const W = 560;
+  const H = 140;
+  const PAD = { top: 12, right: 16, bottom: 28, left: 56 };
+  const chartW = W - PAD.left - PAD.right;
+  const chartH = H - PAD.top - PAD.bottom;
+
+  const n = data.length;
+  const xOf = (i: number) => PAD.left + (i / (n - 1)) * chartW;
+  const yOf = (v: number) => PAD.top + chartH - ((v - minVal) / range) * chartH;
+
+  const revPts = data.map((d, i) => `${xOf(i)},${yOf(d.revenue)}`).join(' ');
+  const profPts = data.map((d, i) => `${xOf(i)},${yOf(d.operatingProfit)}`).join(' ');
+  const areaPath = `M${xOf(0)},${yOf(data[0].revenue)} ` +
+    data.slice(1).map((d, i) => `L${xOf(i + 1)},${yOf(d.revenue)}`).join(' ') +
+    ` L${xOf(n - 1)},${yOf(minVal)} L${xOf(0)},${yOf(minVal)} Z`;
+
+  const yZero = yOf(0);
+  const yGrids = [0, 0.25, 0.5, 0.75, 1].map(t => ({
+    y: PAD.top + chartH * (1 - t),
+    v: minVal + range * t,
+  }));
+
+  const fmtY = (v: number) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : `${v}`;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: '140px' }}>
+      <defs>
+        <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#6366f1" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {/* Grid lines */}
+      {yGrids.map(({ y, v }) => (
+        <g key={v}>
+          <line x1={PAD.left} y1={y} x2={W - PAD.right} y2={y} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+          <text x={PAD.left - 6} y={y + 4} textAnchor="end" fontSize="9" fill="#4b5563">{fmtY(v)}</text>
+        </g>
+      ))}
+      {/* Zero line */}
+      {minVal < 0 && (
+        <line x1={PAD.left} y1={yZero} x2={W - PAD.right} y2={yZero} stroke="rgba(255,255,255,0.15)" strokeWidth="1" strokeDasharray="3,3" />
+      )}
+      {/* Revenue area */}
+      <path d={areaPath} fill="url(#revGrad)" />
+      {/* Revenue line */}
+      <polyline points={revPts} fill="none" stroke="#6366f1" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      {/* Profit line */}
+      <polyline points={profPts} fill="none" stroke="#22c55e" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" strokeDasharray="4,2" />
+      {/* X labels */}
+      {data.map((d, i) => {
+        const show = n <= 8 || i % Math.ceil(n / 6) === 0 || i === n - 1;
+        return show ? (
+          <text key={d.month} x={xOf(i)} y={H - 4} textAnchor="middle" fontSize="9" fill="#6b7280">
+            {d.month.slice(2, 7)}
+          </text>
+        ) : null;
+      })}
+      {/* Dots on latest point */}
+      <circle cx={xOf(n - 1)} cy={yOf(data[n - 1].revenue)} r="3" fill="#6366f1" stroke="#0f0f1a" strokeWidth="1.5" />
+      <circle cx={xOf(n - 1)} cy={yOf(data[n - 1].operatingProfit)} r="2.5" fill="#22c55e" stroke="#0f0f1a" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
 type ProjectStatus = 'active' | 'planning' | 'review' | 'completed';
 interface StoredProject { id: string; name: string; client: string; status: ProjectStatus; progress: number; deadline: string; }
 interface StoredTask { id: string; status: string; }
@@ -139,6 +215,24 @@ export default function Dashboard() {
         <KpiCard icon="✅" label="完了タスク" value={`${doneTaskCount}件`} sub="累計" color="#22c55e" />
         <KpiCard icon="📁" label="進行中プロジェクト" value={activeProjectCount} sub="案件" color="#60a5fa" />
       </div>
+
+      {/* Revenue Chart */}
+      {sortedPL.length > 0 && (
+        <div className="glass rounded-xl p-5 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-white">📈 売上・営業利益 月次推移</h3>
+            <div className="flex items-center gap-4 text-xs" style={{ color: '#6b7280' }}>
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-5 h-0.5 rounded" style={{ background: '#6366f1' }} />売上
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-5 h-0.5 rounded" style={{ background: '#22c55e', borderTop: '1px dashed #22c55e' }} />営業利益
+              </span>
+            </div>
+          </div>
+          <RevenueChart data={sortedPL} />
+        </div>
+      )}
 
       {/* Main content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

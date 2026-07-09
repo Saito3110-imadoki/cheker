@@ -60,8 +60,8 @@ h1 .hl{color:var(--indigo);}
 .hero-sub{font-size:19px;color:var(--muted);max-width:640px;margin:0 auto 34px;}
 .cta-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:10px;}
 .cta-note{font-size:13.5px;color:var(--faint);margin-bottom:52px;}
-.hero-visual{max-width:760px;margin:0 auto;}
-.hero-visual .frame{border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 24px 60px rgba(15,23,42,.14);}
+.hero-visual{max-width:660px;margin:0 auto;}
+.hero-visual .hero-post{box-shadow:0 24px 60px rgba(15,23,42,.14);text-align:left;}
 .hero-visual figcaption{margin-top:14px;font-size:13.5px;color:var(--muted);font-weight:500;}
 @media(max-width:767px){h1{font-size:34px;}.hero{padding:120px 0 56px;}h2{font-size:27px;}}
 
@@ -236,8 +236,24 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
     </div>
     <p class="cta-note">クレジットカード登録不要・最短翌日スタート</p>
     <figure class="hero-visual">
-      <div class="frame"><img src="assets/light_flow.png" alt="AIが自動生成した図解の実例" loading="eager"></div>
-      <figcaption>▲ AIが毎朝自動生成している図解の<b>実物</b>です（デザイナー不要）</figcaption>
+      <div class="sns-card hero-post">
+        <div class="sns-head">
+          <span class="sns-ava"></span>
+          <span class="sns-name"><b>あなたの会社</b><span>@your_company</span></span>
+          <span class="sns-tag">X</span>
+        </div>
+        <p class="sns-body">SNSの投稿、頑張って書いてるのに伸びない…その原因、実は本文じゃなく『1行目』かもしれません。
+
+タイムラインで読まれるのは最初の1行だけ。反応が変わる書き出しのコツを図解にまとめました🧵</p>
+        <div class="sns-attach"><img src="assets/light_flow.png" alt="AIが自動生成した図解の実例" loading="eager"></div>
+        <div class="sns-foot">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 1 1 16.1-3.8z"/></svg>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        </div>
+      </div>
+      <figcaption>▲ 投稿文も図解も、AIが毎朝自動生成した<b>実物</b>のセットです</figcaption>
     </figure>
   </div>
 </header>
@@ -431,13 +447,13 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
       </div>
       <div class="ind-card">
         <div class="ind-head">
-          <span class="ind-emoji">💇</span>
-          <span class="ind-name"><b>美容サロンの場合</b><span>ターゲット: 髪質に悩む20〜30代女性</span></span>
+          <span class="ind-emoji">🏥</span>
+          <span class="ind-name"><b>美容クリニックの場合</b><span>ターゲット: 肌悩みを相談したい30〜40代女性</span></span>
         </div>
-        <p class="ind-body">『縮毛矯正とストレートパーマ、どっちがいいですか？』
+        <p class="ind-body">『シミ取りレーザーって1回で終わりますか？』
 
-実はこれ、髪のダメージ履歴で答えが変わる質問なんです。カウンセリングで必ず聞いている3つの質問、公開します。</p>
-        <div class="ind-tags"><span class="ind-tag">寄り添い・プロの知見</span><span class="ind-tag">悩み相談への回答</span></div>
+実はシミの種類によって適した治療は変わります。自己判断で市販品を使い続ける前に、まず種類を知ることが大切です。カウンセリングで確認している3つのポイントをご紹介します。</p>
+        <div class="ind-tags"><span class="ind-tag">医学的・安心感</span><span class="ind-tag">治療の疑問に回答</span></div>
       </div>
     </div>
     <p class="nm-caption">業種・ターゲット・文体・参照するニュース源まで、<b>すべて貴社専用にチューニング</b>してお渡しします。</p>
@@ -502,7 +518,7 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
     <div class="center mb-12">
       <p class="eyebrow">Pricing</p>
       <h2>シンプルな料金プラン</h2>
-      <p class="lead">全プラン <b style="color:var(--ink);">14日間無料</b>・初期費用0円・いつでも解約OK</p>
+      <p class="lead">全プラン <b style="color:var(--ink);">14日間の無料トライアル</b>つき（最低契約期間 6ヶ月）</p>
     </div>
     <div class="grid3">
       <div class="plan">
@@ -549,6 +565,7 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
         <a class="btn-plan amber" href="mailto:info@imadoki.co.jp?subject=PostPilot プロプラン 相談">まず相談する</a>
       </div>
     </div>
+    <p class="nm-caption" style="margin-top:26px;">※ 別途、初期構築費 <b>30,000円</b>（税抜）を頂戴します。業種チューニング・Notion環境の構築・投稿設定まで、すべて弊社が代行する費用です。<br>※ 最低契約期間は6ヶ月です。7ヶ月目以降は月単位でご解約いただけます。</p>
   </div>
 </section>
 
@@ -576,8 +593,8 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
       <p>X（Twitter）のアカウントと、無料のNotion・LINEだけです。セットアップは弊社が代行し、最短で申込みの翌日から投稿案が届き始めます。</p>
     </details>
     <details>
-      <summary>解約したらデータはどうなりますか？</summary>
-      <p>月単位でいつでも解約でき、違約金はありません。投稿履歴や実績データはすべて貴社のNotionに残るため、解約後もそのまま資産として使えます。</p>
+      <summary>契約期間と解約について教えてください</summary>
+      <p>最低契約期間は6ヶ月です（AIが貴社の「伸びる型」を学習し、成果が安定するまでの期間として設定しています）。7ヶ月目以降は月単位でご解約いただけます。解約後も投稿履歴や実績データはすべて貴社のNotionに残るため、そのまま資産として使えます。</p>
     </details>
   </div>
 </section>
@@ -586,7 +603,7 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
 <section class="final">
   <div class="wrap-narrow">
     <h2>まずは14日間、<br>AIに任せてみてください。</h2>
-    <p class="lead" style="margin-bottom:34px;">合わなければ、そのまま終了でOK。費用は一切かかりません。<br>その14日間で「SNSが勝手に動く感覚」を体験してください。</p>
+    <p class="lead" style="margin-bottom:34px;">トライアル期間中の費用はかかりません。合わなければそのまま終了でOK。<br>その14日間で「SNSが勝手に動く感覚」を体験してください。</p>
     <a class="btn btn-white" href="mailto:info@imadoki.co.jp?subject=PostPilot 無料トライアル申込み">14日間無料で試す →</a>
     <p class="cta-note">クレジットカード登録不要・最短翌日スタート</p>
   </div>

@@ -676,8 +676,8 @@ export default function DataPage() {
       {/* Header */}
       <div className="mb-5 flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">📥 経営データ入力</h1>
-          <p className="text-sm mt-1" style={{ color: '#6b7280' }}>売上実績・クライアント情報を入力してAI分析に活用</p>
+          <h1 className="font-bold flex items-center gap-2" style={{ fontSize: '22px', color: '#f1f5f9' }}>📥 経営データ入力</h1>
+          <p className="mt-1" style={{ fontSize: '13px', color: '#94a3b8' }}>売上実績とクライアント情報を集約 — 入力したデータがそのままAI経営分析の材料になります</p>
         </div>
         {saved && (
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg" style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)' }}>
@@ -689,70 +689,80 @@ export default function DataPage() {
       {/* Import / Export Banner */}
       <div className="mb-5 p-4 rounded-xl" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.18)' }}>
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-sm font-semibold text-white">📂 データのインポート・エクスポート</span>
+          <span className="text-sm font-semibold" style={{ color: '#f1f5f9' }}>📂 データのインポート</span>
           <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(99,102,241,0.2)', color: '#a5b4fc' }}>CSV / Excel対応</span>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-          {/* P&L Import */}
-          <button
-            onClick={() => setImportModal('pl')}
-            className="flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all hover:opacity-90 text-center"
-            style={btnStyle('99,102,241')}
-          >
-            <span className="text-xl">📤</span>
-            <span className="text-xs font-medium">P&L インポート</span>
-            <span className="text-xs opacity-60">自動カラム認識</span>
-          </button>
 
-          {/* P&L Template */}
-          <button
-            onClick={() => downloadCSV(PL_CSV_TEMPLATE, 'PL_テンプレート.csv')}
-            className="flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all hover:opacity-90 text-center"
-            style={btnStyle('34,197,94')}
-          >
-            <span className="text-xl">📥</span>
-            <span className="text-xs font-medium">P&L テンプレート</span>
-            <span className="text-xs opacity-60">CSVサンプルDL</span>
-          </button>
-
-          {/* Client Import */}
-          <button
-            onClick={() => setImportModal('clients')}
-            className="flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all hover:opacity-90 text-center"
-            style={btnStyle('168,85,247')}
-          >
-            <span className="text-xl">📤</span>
-            <span className="text-xs font-medium">クライアント インポート</span>
-            <span className="text-xs opacity-60">自動カラム認識</span>
-          </button>
-
-          {/* Client Template */}
-          <button
-            onClick={() => downloadCSV(CLIENT_CSV_TEMPLATE, 'クライアント_テンプレート.csv')}
-            className="flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all hover:opacity-90 text-center"
-            style={btnStyle('245,158,11')}
-          >
-            <span className="text-xl">📥</span>
-            <span className="text-xs font-medium">クライアント テンプレート</span>
-            <span className="text-xs opacity-60">CSVサンプルDL</span>
-          </button>
-
-          {/* IMADOKI PL Excel Import */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+          {/* IMADOKI PL Excel Import — primary */}
           <button
             onClick={() => plExcelRef.current?.click()}
             disabled={plExcelLoading}
-            className="flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all hover:opacity-90 text-center"
-            style={{ ...btnStyle('20,184,166'), opacity: plExcelLoading ? 0.6 : 1, cursor: plExcelLoading ? 'wait' : 'pointer' }}
+            className="flex items-center gap-4 px-5 py-4 rounded-xl transition-all hover:opacity-90 text-left"
+            style={{
+              background: 'linear-gradient(135deg, rgba(99,102,241,0.9), rgba(168,85,247,0.9))',
+              border: '1px solid rgba(165,180,252,0.4)',
+              opacity: plExcelLoading ? 0.6 : 1,
+              cursor: plExcelLoading ? 'wait' : 'pointer',
+            }}
           >
-            <span className="text-xl">{plExcelLoading ? '⏳' : '📊'}</span>
-            <span className="text-xs font-medium">詳細PLインポート</span>
-            <span className="text-xs opacity-60">IMADOKI Excel専用</span>
+            <span className="text-3xl">{plExcelLoading ? '⏳' : '📊'}</span>
+            <span className="flex flex-col">
+              <span className="flex items-center gap-2">
+                <span className="text-sm font-bold text-white">詳細PLインポート</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>推奨</span>
+              </span>
+              <span className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.75)' }}>
+                {plExcelLoading ? '読み込み中です…' : 'IMADOKIのPL Excelをそのままアップロード。月次PL＋クライアント別売上を一括登録'}
+              </span>
+            </span>
           </button>
           <input ref={plExcelRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }}
             onChange={e => { const f = e.target.files?.[0]; if (f) handlePlExcelImport(f); }} />
+
+          {/* Secondary: generic imports */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setImportModal('pl')}
+              className="flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl transition-all hover:opacity-90 text-center"
+              style={btnStyle('99,102,241')}
+            >
+              <span className="text-xl">📤</span>
+              <span className="text-xs font-medium">汎用CSVインポート（P&L）</span>
+              <span className="text-xs opacity-60">どんな列名でも自動認識</span>
+            </button>
+            <button
+              onClick={() => setImportModal('clients')}
+              className="flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-xl transition-all hover:opacity-90 text-center"
+              style={btnStyle('168,85,247')}
+            >
+              <span className="text-xl">📤</span>
+              <span className="text-xs font-medium">汎用CSVインポート（クライアント）</span>
+              <span className="text-xs opacity-60">どんな列名でも自動認識</span>
+            </button>
+          </div>
         </div>
-        <p className="text-xs mt-2" style={{ color: '#4b5563' }}>
-          ※ 詳細PLインポートはIMADOKIのPL全体・売上原価シートに対応した専用インポーターです
+
+        {/* Template downloads — auxiliary text links */}
+        <div className="flex items-center gap-4 flex-wrap text-xs" style={{ color: '#64748b' }}>
+          <span>テンプレートが必要な方：</span>
+          <button
+            onClick={() => downloadCSV(PL_CSV_TEMPLATE, 'PL_テンプレート.csv')}
+            className="underline underline-offset-2 hover:opacity-80 transition-opacity"
+            style={{ color: '#94a3b8' }}
+          >
+            ⬇ P&L用CSVテンプレート
+          </button>
+          <button
+            onClick={() => downloadCSV(CLIENT_CSV_TEMPLATE, 'クライアント_テンプレート.csv')}
+            className="underline underline-offset-2 hover:opacity-80 transition-opacity"
+            style={{ color: '#94a3b8' }}
+          >
+            ⬇ クライアント用CSVテンプレート
+          </button>
+        </div>
+        <p className="text-xs mt-2.5" style={{ color: '#64748b' }}>
+          💡 IMADOKIの「PL全体」「売上原価」シートを含むExcelなら「詳細PLインポート」が最速です。他社形式のCSV・Excelは汎用CSVインポートをご利用ください（列名は自動で認識されます）
         </p>
       </div>
 
@@ -818,7 +828,8 @@ export default function DataPage() {
             {data.monthlyPL.length === 0 ? (
               <div className="text-center py-12">
                 <div className="text-4xl mb-3">📊</div>
-                <p className="text-sm mb-2" style={{ color: '#6b7280' }}>月次データを追加するか、上のCSVインポートを使ってください</p>
+                <p className="text-sm mb-1" style={{ color: '#94a3b8' }}>月次P&Lデータがまだありません</p>
+                <p className="text-xs mb-2" style={{ color: '#64748b' }}>上の「詳細PLインポート」でExcelを取り込むのが最速です。手入力で始めることもできます</p>
                 <button onClick={addPL} className="px-4 py-2 rounded-lg text-sm text-white mt-2" style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}>
                   最初の月を手動追加
                 </button>
@@ -942,7 +953,8 @@ export default function DataPage() {
           {data.clients.length === 0 ? (
             <div className="glass rounded-xl text-center py-12">
               <div className="text-4xl mb-3">👥</div>
-              <p className="text-sm mb-4" style={{ color: '#6b7280' }}>クライアントを追加するか、上のCSVインポートを使ってください</p>
+              <p className="text-sm mb-1" style={{ color: '#94a3b8' }}>クライアント情報がまだありません</p>
+              <p className="text-xs mb-4" style={{ color: '#64748b' }}>クライアントを登録すると、月次売上の内訳や解約リスクをAIが分析できるようになります</p>
               <button onClick={addClient} className="px-4 py-2 rounded-lg text-sm text-white" style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}>
                 最初のクライアントを追加
               </button>

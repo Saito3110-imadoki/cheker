@@ -219,7 +219,8 @@ function ProjectCard({ project, members, onEdit, onDelete }: {
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1 min-w-0 mr-3">
           <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: `${o.color}20`, color: o.color }}>
+            <span className="text-xs px-2.5 py-1 rounded-full font-semibold inline-flex items-center gap-1"
+              style={{ background: `${o.color}26`, color: o.color, border: `1px solid ${o.color}66`, boxShadow: `0 0 0 1px ${o.color}1a` }}>
               {o.icon} {o.label}
             </span>
           </div>
@@ -369,8 +370,8 @@ export default function ProjectsPage() {
 
       <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">📁 プロジェクト</h1>
-          <p className="text-sm mt-1" style={{ color: '#6b7280' }}>社長指示・クライアント相談からプロジェクトを管理</p>
+          <h1 className="font-bold flex items-center gap-2" style={{ fontSize: '22px', color: '#f1f5f9' }}>📁 プロジェクト</h1>
+          <p className="mt-1" style={{ fontSize: '13px', color: '#94a3b8' }}>社長指示・クライアント相談を起点に登録 — 進捗と期限を一元管理して対応漏れを防ぐ</p>
         </div>
         <button onClick={() => openAdd('ceo-directive')}
           className="text-sm px-4 py-2 rounded-xl font-semibold text-white"
@@ -428,11 +429,13 @@ export default function ProjectsPage() {
       {filtered.length === 0 ? (
         <div className="glass rounded-2xl text-center py-20">
           <div className="text-5xl mb-4">📁</div>
-          <p className="text-base font-medium text-white mb-2">
-            {projects.length === 0 ? 'プロジェクトがまだありません' : 'フィルター条件に一致しません'}
+          <p className="text-base font-medium mb-2" style={{ color: '#f1f5f9' }}>
+            {projects.length === 0 ? '最初のプロジェクトを登録しましょう' : 'フィルター条件に一致するプロジェクトがありません'}
           </p>
-          <p className="text-sm mb-6" style={{ color: '#6b7280' }}>
-            {projects.length === 0 ? '社長からの指示やクライアントからの相談をプロジェクトとして登録しましょう' : ''}
+          <p className="text-sm mb-6 max-w-md mx-auto leading-relaxed" style={{ color: '#94a3b8' }}>
+            {projects.length === 0
+              ? '社長からの指示やクライアントからの相談を登録しておくと、進捗・期限・担当がひと目で把握でき、対応漏れを防げます。まずは起点を選んで1件追加してみてください'
+              : 'フィルターを解除するか、別の条件をお試しください'}
           </p>
           {projects.length === 0 && (
             <div className="flex gap-3 justify-center flex-wrap">

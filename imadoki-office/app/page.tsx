@@ -91,14 +91,23 @@ function KpiCard({ icon, label, value, sub, color }: { icon: string; label: stri
     <div className="glass glass-hover rounded-xl p-5 animate-fade-up">
       <div className="flex items-start justify-between mb-3">
         <span className="text-2xl">{icon}</span>
-        <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: `${color}22`, color }}>
-          {sub}
-        </span>
+        {sub && (
+          <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: `${color}22`, color }}>
+            {sub}
+          </span>
+        )}
       </div>
-      <div className="text-2xl font-bold text-white mb-1">{value}</div>
-      <div className="text-sm" style={{ color: '#6b7280' }}>{label}</div>
+      <div className="font-bold mb-1.5" style={{ color: '#f1f5f9', fontSize: '28px', lineHeight: 1.2, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' }}>{value}</div>
+      <div className="text-sm" style={{ color: '#94a3b8' }}>{label}</div>
     </div>
   );
+}
+
+function greeting() {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 11) return 'おはようございます';
+  if (h >= 11 && h < 18) return 'こんにちは';
+  return 'お疲れさまです';
 }
 
 export default function Dashboard() {
@@ -114,8 +123,6 @@ export default function Dashboard() {
     try { const s = localStorage.getItem('imadoki-projects'); if (s) setLsProjects(JSON.parse(s)); } catch { /* ignore */ }
     try { const s = localStorage.getItem('imadoki-tasks'); if (s) setLsTasks(JSON.parse(s)); } catch { /* ignore */ }
   }, []);
-
-  const activeAI = members.filter(m => m.isAI && m.status === 'online').length;
 
   // Derive KPIs from real data when available
   const sortedPL = companyData?.monthlyPL ? [...companyData.monthlyPL].sort((a, b) => a.month.localeCompare(b.month)) : [];
@@ -162,16 +169,20 @@ export default function Dashboard() {
         <div className="flex items-center gap-3 mb-2">
           <div className="text-3xl">✦</div>
           <div>
-            <h1 className="text-2xl font-bold text-white">IMADOKI AI Office</h1>
-            <p style={{ color: '#6b7280', fontSize: '14px' }}>株式会社IMADOKI — AI組織管理プラットフォーム</p>
+            <h1 className="font-bold" style={{ color: '#f1f5f9', fontSize: '22px' }}>{greeting()}。今日の経営状況をまとめました</h1>
+            <p style={{ color: '#94a3b8', fontSize: '13px' }}>売上・利益・クライアント・チームの動きを、ここで一目で把握できます</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 mt-4 p-3 rounded-lg" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)' }}>
-          <div className="w-2 h-2 rounded-full" style={{ background: '#4ade80', boxShadow: '0 0 8px #4ade80' }} />
-          <span className="text-sm" style={{ color: '#a5b4fc' }}>
-            {activeAI}体のAIエージェントが稼働中 — リアルタイムでマーケティング業務を最適化しています
-          </span>
-        </div>
+        {latestPL && (
+          <div className="flex items-center gap-3 mt-4 p-3 rounded-lg" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)' }}>
+            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#4ade80', boxShadow: '0 0 8px #4ade80' }} />
+            <span className="text-sm" style={{ color: '#a5b4fc', fontVariantNumeric: 'tabular-nums' }}>
+              {latestPL.month.split('-')[1].replace(/^0/, '')}月の売上は ¥{latestPL.revenue.toLocaleString()}
+              {prevPL && prevPL.revenue > 0 && `（前月比${latestPL.revenue >= prevPL.revenue ? '+' : ''}${Math.round(((latestPL.revenue - prevPL.revenue) / prevPL.revenue) * 100)}%）`}
+              {futureRevenue > 0 && ` — 来月以降の受注見込みは ¥${futureRevenue.toLocaleString()} です`}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Real data notice if no data yet */}
@@ -179,10 +190,10 @@ export default function Dashboard() {
         <div className="mb-5 px-4 py-3 rounded-xl flex items-center gap-3" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
           <span className="text-amber-400">⚠️</span>
           <span className="text-sm" style={{ color: '#fbbf24' }}>
-            財務データが未入力です。
+            まずは財務データを登録しましょう。
           </span>
           <Link href="/ceo/data" className="text-sm underline" style={{ color: '#a5b4fc' }}>データ入力ページ</Link>
-          <span className="text-sm" style={{ color: '#fbbf24' }}>で実際の売上・クライアントを登録すると、ここに反映されます。</span>
+          <span className="text-sm" style={{ color: '#fbbf24' }}>で売上・クライアントを入力すると、このダッシュボードに経営指標が表示されます。</span>
         </div>
       )}
 
@@ -218,10 +229,10 @@ export default function Dashboard() {
 
       {/* KPI Cards — org */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <KpiCard icon="🤖" label="AIエージェント" value={members.filter(m => m.isAI).length} sub="稼働中" color="#6366f1" />
-        <KpiCard icon="👤" label="人間スタッフ" value={members.filter(m => !m.isAI).length} sub="メンバー" color="#ec4899" />
-        <KpiCard icon="✅" label="完了タスク" value={`${doneTaskCount}件`} sub="累計" color="#22c55e" />
-        <KpiCard icon="📁" label="進行中プロジェクト" value={activeProjectCount} sub="案件" color="#60a5fa" />
+        <KpiCard icon="🤖" label="AIエージェント" value={members.filter(m => m.isAI).length} sub={`${members.filter(m => m.isAI && m.status === 'online').length}体が稼働中`} color="#6366f1" />
+        <KpiCard icon="👤" label="人間スタッフ" value={members.filter(m => !m.isAI).length} sub="チームの中核" color="#ec4899" />
+        <KpiCard icon="✅" label="完了タスク" value={`${doneTaskCount}件`} sub="チームの実行力" color="#22c55e" />
+        <KpiCard icon="📁" label="進行中プロジェクト" value={activeProjectCount} sub={activeProjectCount > 0 ? '進捗は下で確認' : 'まず案件登録を'} color="#60a5fa" />
       </div>
 
       {/* Revenue Chart */}
@@ -277,9 +288,12 @@ export default function Dashboard() {
           <div className="glass rounded-xl p-5">
             <h3 className="text-sm font-semibold text-white mb-4">📁 プロジェクト進捗</h3>
             {lsProjects.length === 0 ? (
-              <div className="text-center py-6" style={{ color: '#4b5563' }}>
+              <div className="text-center py-6">
                 <div className="text-2xl mb-2">📁</div>
-                <p className="text-xs">プロジェクトが未登録です</p>
+                <p className="text-xs mb-2" style={{ color: '#64748b' }}>プロジェクトはまだありません</p>
+                <Link href="/projects" className="text-xs underline" style={{ color: '#a5b4fc' }}>
+                  プロジェクトページで最初の案件を登録する →
+                </Link>
               </div>
             ) : (
             <div className="space-y-4">

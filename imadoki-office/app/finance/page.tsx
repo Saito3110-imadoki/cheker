@@ -113,9 +113,10 @@ function syncRevenueFromInvoices(invoices: Invoice[]) {
 function Badge({ status }: { status: InvoiceStatus }) {
   const c = STATUS_CONFIG[status];
   return (
-    <span style={{ background: c.bg, color: c.color, fontSize: 11, fontWeight: 600,
-      padding: '2px 8px', borderRadius: 20, whiteSpace: 'nowrap' }}>
-      {c.label}
+    <span style={{ background: c.bg, color: c.color, fontSize: 11, fontWeight: 700,
+      padding: '3px 10px', borderRadius: 20, whiteSpace: 'nowrap', letterSpacing: 0.3,
+      border: `1px solid ${c.color}40` }}>
+      ● {c.label}
     </span>
   );
 }
@@ -211,19 +212,19 @@ function InvoiceForm({ initial, onSave, onCancel }: {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
         <div>
-          <label style={labelStyle}>取引先名 *</label>
-          <input style={inputStyle} value={clientName} onChange={e => setClientName(e.target.value)} placeholder="株式会社〇〇" />
+          <label style={labelStyle}>取引先名（必須）</label>
+          <input style={inputStyle} value={clientName} onChange={e => setClientName(e.target.value)} placeholder="例：株式会社サンプル商事" />
         </div>
         <div>
-          <label style={labelStyle}>取引先住所</label>
-          <input style={inputStyle} value={clientAddress} onChange={e => setClientAddress(e.target.value)} placeholder="東京都〇〇区..." />
+          <label style={labelStyle}>取引先住所（書面に記載されます）</label>
+          <input style={inputStyle} value={clientAddress} onChange={e => setClientAddress(e.target.value)} placeholder="例：東京都渋谷区〇〇 1-2-3" />
         </div>
         <div>
-          <label style={labelStyle}>発行日 *</label>
+          <label style={labelStyle}>発行日（必須）</label>
           <input type="date" style={inputStyle} value={issueDate} onChange={e => setIssueDate(e.target.value)} />
         </div>
         <div>
-          <label style={labelStyle}>支払期日</label>
+          <label style={labelStyle}>支払期日（入金管理に使われます）</label>
           <input type="date" style={inputStyle} value={dueDate} onChange={e => setDueDate(e.target.value)} />
         </div>
       </div>
@@ -247,7 +248,7 @@ function InvoiceForm({ initial, onSave, onCancel }: {
                 <td style={{ paddingBottom: 6, paddingRight: 8 }}>
                   <input style={inputStyle} value={item.description}
                     onChange={e => updateItem(idx, 'description', e.target.value)}
-                    placeholder="サービス内容" />
+                    placeholder="例：Webサイト制作費（トップページデザイン）" />
                 </td>
                 <td style={{ paddingBottom: 6, paddingRight: 8 }}>
                   <input type="number" style={{ ...inputStyle, textAlign: 'right' }}
@@ -301,7 +302,7 @@ function InvoiceForm({ initial, onSave, onCancel }: {
       <div style={{ marginBottom: 20 }}>
         <label style={labelStyle}>備考</label>
         <textarea style={{ ...inputStyle, resize: 'vertical', minHeight: 60 } as React.CSSProperties}
-          value={notes} onChange={e => setNotes(e.target.value)} placeholder="振込先・備考など" />
+          value={notes} onChange={e => setNotes(e.target.value)} placeholder="例：お振込先：〇〇銀行 △△支店 普通 1234567 ／ 振込手数料は貴社ご負担にてお願いいたします" />
       </div>
 
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
@@ -375,7 +376,7 @@ function LegalCheckPanel({ invoice, onDone }: { invoice: Invoice; onDone: (resul
       {!result ? (
         <div>
           <p style={{ color: '#94a3b8', fontSize: 13, marginBottom: 16 }}>
-            Claude claude-opus-4-8 が日本法に基づいて書類をレビューします。必須記載事項、リスク箇所、修正提案を提示します。
+            AI法務アシスタントが日本法に基づいてこの書類を審査します。必須記載事項の漏れ・リスク箇所・修正提案を数十秒でレポートします。
           </p>
           {error && <div style={{ color: '#f87171', fontSize: 13, marginBottom: 12 }}>{error}</div>}
           <button onClick={run} disabled={loading}
@@ -545,8 +546,8 @@ export default function FinancePage() {
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ color: '#e2e8f0', fontSize: 22, fontWeight: 700, margin: 0 }}>💰 財務・書類管理</h1>
-        <p style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>請求書・業務委託請求書・契約書の作成とAIリーガルチェック</p>
+        <h1 style={{ color: '#f1f5f9', fontSize: 22, fontWeight: 700, margin: 0 }}>財務・書類管理</h1>
+        <p style={{ color: '#94a3b8', fontSize: 13, marginTop: 4 }}>請求書・契約書の作成から入金管理・AI法務チェックまで、ここでワンストップ</p>
       </div>
 
       {/* KPI cards */}
@@ -602,17 +603,25 @@ export default function FinancePage() {
           {filtered.length === 0 ? (
             <div style={{ ...glass, textAlign: 'center', padding: 48 }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>📄</div>
-              <div style={{ color: '#94a3b8', fontSize: 14 }}>書類がありません</div>
-              <button onClick={() => setTab('create')}
-                style={{ marginTop: 16, padding: '8px 20px', borderRadius: 8, fontSize: 13, cursor: 'pointer',
-                  background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.3)', color: '#a5b4fc' }}>
-                最初の書類を作成
+              <div style={{ color: '#f1f5f9', fontSize: 15, fontWeight: 600, marginBottom: 6 }}>まだ書類がありません</div>
+              <div style={{ color: '#94a3b8', fontSize: 13, marginBottom: 4 }}>
+                請求書・契約書を数分で作成し、AI法務チェックと入金管理までそのまま進められます。
+              </div>
+              <button onClick={() => { setSelected(null); setTab('create'); }}
+                style={{ marginTop: 16, padding: '10px 24px', borderRadius: 8, fontSize: 14, cursor: 'pointer',
+                  background: 'linear-gradient(135deg,#6366f1,#a855f7)', border: 'none', color: '#fff', fontWeight: 600,
+                  boxShadow: '0 4px 16px rgba(99,102,241,0.35)' }}>
+                ✏️ 最初の書類を作成する
               </button>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <style>{`
+                .doc-row { transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease; }
+                .doc-row:hover { background: rgba(255,255,255,0.06) !important; border-color: rgba(99,102,241,0.35) !important; transform: translateY(-1px); }
+              `}</style>
               {filtered.map(inv => (
-                <div key={inv.id} style={{ ...glass, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px' }}>
+                <div key={inv.id} className="doc-row" style={{ ...glass, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                       <span style={{ color: '#e2e8f0', fontWeight: 600, fontSize: 14 }}>{inv.clientName}</span>
@@ -633,9 +642,11 @@ export default function FinancePage() {
                   <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                     {inv.status === 'sent' && (
                       <button onClick={() => updateStatus(inv.id, 'paid')}
-                        style={{ padding: '4px 10px', borderRadius: 6, fontSize: 11, cursor: 'pointer',
-                          background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)', color: '#4ade80' }}>
-                        入金済
+                        title="入金を確認したらクリック"
+                        style={{ padding: '5px 14px', borderRadius: 6, fontSize: 12, cursor: 'pointer', fontWeight: 700,
+                          background: 'linear-gradient(135deg,#16a34a,#22c55e)', border: 'none', color: '#fff',
+                          boxShadow: '0 2px 10px rgba(34,197,94,0.35)' }}>
+                        ✓ 入金済にする
                       </button>
                     )}
                     <button onClick={() => { setSelected(inv); setTab('preview'); }}

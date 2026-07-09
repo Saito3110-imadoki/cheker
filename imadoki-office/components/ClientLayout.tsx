@@ -169,7 +169,7 @@ function Sidebar({ collapsed, setCollapsed, onCmdK }: {
         {NAV_GROUPS.map(group => (
           <div key={group.label}>
             {!collapsed && (
-              <div className="px-2 mb-1 text-xs font-semibold uppercase tracking-wider" style={{ color: '#374151' }}>
+              <div className="px-2 mb-1 text-xs font-semibold uppercase tracking-wider" style={{ color: '#64748b' }}>
                 {group.label}
               </div>
             )}
@@ -181,11 +181,13 @@ function Sidebar({ collapsed, setCollapsed, onCmdK }: {
                   : 0;
                 const navItem = (
                   <Link key={item.href} href={item.href}>
-                    <div className="flex items-center gap-3 px-2 py-2 rounded-lg transition-all duration-150 cursor-pointer"
+                    <div className={`flex items-center gap-3 px-2 py-2 rounded-lg transition-all duration-200 ease-out cursor-pointer ${active ? '' : 'text-slate-400 hover:bg-white/[0.05] hover:text-slate-200 hover:translate-x-0.5'}`}
                       style={{
-                        background: active ? 'rgba(99,102,241,0.15)' : 'transparent',
+                        background: active ? 'rgba(99,102,241,0.18)' : undefined,
                         borderLeft: `2px solid ${active ? '#6366f1' : 'transparent'}`,
-                        color: active ? '#a5b4fc' : '#6b7280',
+                        color: active ? '#c7d2fe' : undefined,
+                        boxShadow: active ? 'inset 0 0 0 1px rgba(99,102,241,0.15)' : undefined,
+                        fontWeight: active ? 600 : undefined,
                       }}>
                       <span className="relative text-base flex-shrink-0 w-5 text-center">
                         {item.icon}

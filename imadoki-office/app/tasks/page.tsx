@@ -142,10 +142,20 @@ function TaskCard({ task, members, projects, onEdit, onDelete, onMove }: {
   const assignee = members.find(m => m.id === task.assigneeId);
   const project = projects.find(p => p.id === task.projectId);
   const p = priorityConfig[task.priority];
+  const isOverdue = !!task.dueDate && task.status !== 'done' && task.dueDate < new Date().toISOString().slice(0, 10);
 
   return (
     <div className="glass rounded-lg p-3 mb-2 relative group"
-      style={{ border: task.isAITask ? '1px solid rgba(99,102,241,0.2)' : '1px solid rgba(255,255,255,0.05)' }}>
+      style={{
+        border: isOverdue ? '1px solid rgba(248,113,113,0.45)' : task.isAITask ? '1px solid rgba(99,102,241,0.2)' : '1px solid rgba(255,255,255,0.05)',
+        background: isOverdue ? 'rgba(248,113,113,0.06)' : undefined,
+        boxShadow: isOverdue ? '0 0 12px rgba(248,113,113,0.08)' : undefined,
+      }}>
+      {isOverdue && (
+        <div className="flex items-center gap-1 mb-1.5 text-xs font-semibold" style={{ color: '#f87171', fontSize: '10px' }}>
+          ⚠ 期限超過 — 対応が必要です
+        </div>
+      )}
       <div className="flex items-start justify-between gap-2 mb-2">
         <p className="text-xs text-white font-medium leading-snug flex-1">{task.title}</p>
         <span className="text-xs px-1.5 py-0.5 rounded flex-shrink-0" style={{ background: p.bg, color: p.color, fontSize: '9px' }}>{p.label}</span>
@@ -166,7 +176,16 @@ function TaskCard({ task, members, projects, onEdit, onDelete, onMove }: {
             </>
           )}
         </div>
-        {task.dueDate && <span className="text-xs" style={{ color: '#9ca3af', fontSize: '9px' }}>{task.dueDate}</span>}
+        {task.dueDate && (
+          <span className="text-xs px-1 py-0.5 rounded" style={{
+            color: isOverdue ? '#f87171' : '#9ca3af',
+            background: isOverdue ? 'rgba(248,113,113,0.12)' : 'transparent',
+            fontWeight: isOverdue ? 600 : 400,
+            fontSize: '9px',
+          }}>
+            {isOverdue ? '⏰ ' : ''}{task.dueDate}
+          </span>
+        )}
       </div>
       {project && <div className="mt-1.5 text-xs truncate" style={{ color: '#9ca3af', fontSize: '9px' }}>📁 {project.name}</div>}
 
@@ -254,8 +273,8 @@ export default function TasksPage() {
 
       <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2">✅ タスク管理</h1>
-          <p className="text-sm mt-1" style={{ color: '#6b7280' }}>カンバンボード — AIと人間が協力してタスクを推進</p>
+          <h1 className="font-bold flex items-center gap-2" style={{ fontSize: '22px', color: '#f1f5f9' }}>✅ タスク管理</h1>
+          <p className="mt-1" style={{ fontSize: '13px', color: '#94a3b8' }}>カンバンボードで進捗を可視化 — AIと人間が分担してタスクを前に進める</p>
         </div>
         <button onClick={() => openAdd('todo')}
           className="text-sm px-4 py-2 rounded-xl font-semibold text-white"
@@ -263,6 +282,21 @@ export default function TasksPage() {
           ＋ タスク追加
         </button>
       </div>
+
+      {/* Overdue alert */}
+      {(() => {
+        const today = new Date().toISOString().slice(0, 10);
+        const overdue = tasks.filter(t => t.dueDate && t.status !== 'done' && t.dueDate < today).length;
+        if (overdue === 0) return null;
+        return (
+          <div className="mb-4 px-4 py-2.5 rounded-xl flex items-center gap-2 text-sm"
+            style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.3)', color: '#f87171' }}>
+            <span>⚠</span>
+            <span className="font-semibold">期限超過のタスクが {overdue} 件あります</span>
+            <span className="text-xs" style={{ color: '#94a3b8' }}>— 赤枠のカードから優先的にご対応ください</span>
+          </div>
+        );
+      })()}
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-3 mb-6">
@@ -306,8 +340,10 @@ export default function TasksPage() {
       {tasks.length === 0 && (
         <div className="mt-4 glass rounded-2xl text-center py-14">
           <div className="text-4xl mb-3">✅</div>
-          <p className="text-sm font-medium text-white mb-1">タスクがまだありません</p>
-          <p className="text-xs mb-5" style={{ color: '#6b7280' }}>プロジェクトに紐づくタスクを追加してください</p>
+          <p className="text-sm font-medium mb-1" style={{ color: '#f1f5f9' }}>最初のタスクを追加しましょう</p>
+          <p className="text-xs mb-5 max-w-sm mx-auto leading-relaxed" style={{ color: '#94a3b8' }}>
+            やるべきことをタスクに分解して登録すると、担当・期限・進捗がボードで一目瞭然に。プロジェクトに紐づければ案件単位の状況もすぐ追えます
+          </p>
           <button onClick={() => openAdd('todo')} className="px-4 py-2 rounded-xl text-sm font-semibold text-white"
             style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}>
             最初のタスクを追加

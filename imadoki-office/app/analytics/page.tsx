@@ -163,8 +163,8 @@ export default function AnalyticsPage() {
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ color: '#e2e8f0', fontSize: 24, fontWeight: 700, marginBottom: 4 }}>アナリティクス</h1>
-        <p style={{ color: '#6b7280', fontSize: 14 }}>クライアント別・事業部別売上分析</p>
+        <h1 style={{ color: '#f1f5f9', fontSize: 22, fontWeight: 700, marginBottom: 4 }}>アナリティクス</h1>
+        <p style={{ color: '#94a3b8', fontSize: 13 }}>クライアント別・事業部別の売上と粗利をひと目で把握し、依存リスクまでチェック</p>
       </div>
 
       {/* Period filter */}
@@ -178,7 +178,7 @@ export default function AnalyticsPage() {
               border: `1px solid ${period === p ? 'rgba(99,102,241,0.6)' : 'rgba(255,255,255,0.1)'}`,
               color: period === p ? '#a5b4fc' : '#9ca3af',
             }}>
-            {p === 'all' ? '全期間' : p === 'thisYear' ? '今期' : p}
+            {p === 'all' ? '全期間' : p === 'thisYear' ? '今期' : p === 'custom' ? '期間指定' : p}
           </button>
         ))}
         {period === 'custom' && (
@@ -357,11 +357,20 @@ export default function AnalyticsPage() {
                       </span>
                     </td>
                     <td style={{ padding: '8px 12px', textAlign: 'right', color: '#a5b4fc' }}>{fmtMoney(c.totalRevenue)}</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', color: '#9ca3af' }}>{fmtMoney(c.totalCogs)}</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', color: grossProfit >= 0 ? '#34d399' : '#f87171' }}>{fmtMoney(grossProfit)}</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', color: grossMargin >= 30 ? '#34d399' : grossMargin >= 0 ? '#fbbf24' : '#f87171' }}>
-                      {grossMargin.toFixed(1)}%
+                    <td style={{ padding: '8px 12px', textAlign: 'right', color: '#9ca3af', fontVariantNumeric: 'tabular-nums' }}>
+                      {c.totalCogs === 0 ? <span style={{ color: '#64748b' }}>—</span> : fmtMoney(c.totalCogs)}
                     </td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', color: grossProfit >= 0 ? '#34d399' : '#f87171' }}>{fmtMoney(grossProfit)}</td>
+                    {c.totalCogs === 0 ? (
+                      <td style={{ padding: '8px 12px', textAlign: 'right', color: '#64748b', fontSize: 11 }}>
+                        原価未入力
+                      </td>
+                    ) : (
+                      <td style={{ padding: '8px 12px', textAlign: 'right', fontVariantNumeric: 'tabular-nums',
+                        color: grossMargin >= 30 ? '#34d399' : grossMargin >= 0 ? '#fbbf24' : '#f87171' }}>
+                        {grossMargin.toFixed(1)}%
+                      </td>
+                    )}
                   </tr>
                 );
               })}

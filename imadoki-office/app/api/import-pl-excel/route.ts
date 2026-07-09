@@ -12,36 +12,38 @@ function serialToYYYYMM(serial: number): string {
 type Row = (string | number | null | undefined)[];
 
 function parsePL全体(raw: Row[]): MonthlyPL[] {
-  const headerRow = raw[1];
-  if (!headerRow) return [];
-
-  const months: string[] = [];
-  for (let i = 2; i <= 13; i++) {
-    const serial = headerRow[i];
-    if (typeof serial === 'number') {
-      months.push(serialToYYYYMM(serial));
+  // Find header row with most date serials
+  let dateColumns: { idx: number; month: string }[] = [];
+  let headerRowIdx = -1;
+  for (let r = 0; r < Math.min(5, raw.length); r++) {
+    if (!raw[r]) continue;
+    const cols = findDateColumns(raw[r]);
+    if (cols.length > dateColumns.length) {
+      dateColumns = cols;
+      headerRowIdx = r;
     }
   }
+  if (dateColumns.length === 0) return [];
 
   let revenueRow: Row | null = null;
   let cogsRow: Row | null = null;
   let currentCategory = '';
 
-  for (let r = 2; r < raw.length; r++) {
+  for (let r = headerRowIdx + 1; r < raw.length; r++) {
     const row = raw[r];
     if (!row) continue;
     if (row[0] === '売上') currentCategory = '売上';
     else if (row[0] === '原価') currentCategory = '原価';
 
-    if (row[1] === '合計') {
+    const isTotal = [row[0], row[1], row[2]].some(c => c === '合計');
+    if (isTotal) {
       if (currentCategory === '売上' && !revenueRow) revenueRow = row;
       else if (currentCategory === '原価' && !cogsRow) cogsRow = row;
     }
     if (revenueRow && cogsRow) break;
   }
 
-  return months.map((month, i) => {
-    const idx = i + 2;
+  return dateColumns.map(({ idx, month }) => {
     const revenue = typeof revenueRow?.[idx] === 'number' ? (revenueRow[idx] as number) : 0;
     const cogs = typeof cogsRow?.[idx] === 'number' ? (cogsRow[idx] as number) : 0;
     return {
@@ -60,21 +62,37 @@ function parsePL全体(raw: Row[]): MonthlyPL[] {
   });
 }
 
-const CLIENT_DATE_INDICES = [3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25];
+// Dynamically find which columns hold Excel date serials (values > 40000 = year ~2009+)
+function findDateColumns(row: Row): { idx: number; month: string }[] {
+  const result: { idx: number; month: string }[] = [];
+  row.forEach((cell, idx) => {
+    if (typeof cell === 'number' && cell > 40000 && cell < 60000) {
+      result.push({ idx, month: serialToYYYYMM(cell) });
+    }
+  });
+  return result;
+}
 
 function parseClientSheet(raw: Row[], businessUnit: ClientRevenue['businessUnit']): ClientRevenue[] {
-  const headerRow = raw[1];
-  if (!headerRow) return [];
-
-  const months: string[] = CLIENT_DATE_INDICES.map(i => {
-    const serial = headerRow[i];
-    return typeof serial === 'number' ? serialToYYYYMM(serial) : '';
-  });
+  // Find header row (row with the most date serials, usually row index 1 or 2)
+  let dateColumns: { idx: number; month: string }[] = [];
+  let headerRowIdx = -1;
+  for (let r = 0; r < Math.min(5, raw.length); r++) {
+    if (!raw[r]) continue;
+    const cols = findDateColumns(raw[r]);
+    if (cols.length > dateColumns.length) {
+      dateColumns = cols;
+      headerRowIdx = r;
+    }
+  }
+  if (dateColumns.length === 0) return [];
 
   const clients: ClientRevenue[] = [];
   let currentClientName: string | null = null;
   let currentCategory = '';
   let monthlyMap: Record<string, ClientMonthlyRevenue> = {};
+
+  const months = dateColumns.map(d => d.month);
 
   const pushClient = () => {
     if (!currentClientName) return;
@@ -86,28 +104,31 @@ function parseClientSheet(raw: Row[], businessUnit: ClientRevenue['businessUnit'
     }
   };
 
-  for (let r = 4; r < raw.length; r++) {
+  for (let r = headerRowIdx + 1; r < raw.length; r++) {
     const row = raw[r];
     if (!row) continue;
 
+    // Client name: col0 is non-empty string, not a category keyword
     const col0 = row[0];
-    if (col0 !== null && col0 !== undefined && typeof col0 === 'string' && col0 !== 'クライアント名') {
+    const SKIP = ['クライアント名', '売上', '原価', '合計', '', null, undefined];
+    if (col0 !== null && col0 !== undefined && typeof col0 === 'string' && !SKIP.includes(col0)) {
       pushClient();
-      currentClientName = col0;
+      currentClientName = col0.trim();
       currentCategory = '';
       monthlyMap = {};
       months.forEach(m => { monthlyMap[m] = { month: m, revenue: 0, cogs: 0 }; });
       continue;
     }
 
-    const col1 = row[1];
-    if (col1 === '売上') { currentCategory = '売上'; continue; }
-    if (col1 === '原価') { currentCategory = '原価'; continue; }
+    // Category detection — check col0, col1, or col2
+    const anyCol = [row[0], row[1], row[2]].find(c => c === '売上' || c === '原価');
+    if (anyCol === '売上') { currentCategory = '売上'; continue; }
+    if (anyCol === '原価') { currentCategory = '原価'; continue; }
 
-    if (row[2] === '合計' && currentClientName) {
-      CLIENT_DATE_INDICES.forEach((idx, i) => {
-        const month = months[i];
-        if (!month) return;
+    // Totals row: any cell in first 4 cols is '合計'
+    const isTotal = [row[0], row[1], row[2], row[3]].some(c => c === '合計');
+    if (isTotal && currentClientName) {
+      dateColumns.forEach(({ idx, month }) => {
         const val = typeof row[idx] === 'number' ? (row[idx] as number) : 0;
         if (!monthlyMap[month]) monthlyMap[month] = { month, revenue: 0, cogs: 0 };
         if (currentCategory === '売上') monthlyMap[month].revenue = val;
@@ -136,14 +157,26 @@ export async function POST(req: NextRequest) {
     return utils.sheet_to_json<Row>(ws, { header: 1, defval: null });
   };
 
-  const monthlyPL = parsePL全体(getSheet('PL全体'));
+  // Find PL全体 sheet (fuzzy match)
+  const plSheetName = wb.SheetNames.find(n => n.includes('PL') && n.includes('全体')) ?? wb.SheetNames[0];
+  const monthlyPL = parsePL全体(getSheet(plSheetName));
 
-  const clientRevenue: ClientRevenue[] = [
-    ...parseClientSheet(getSheet('売上・原価Web'), 'web'),
-    ...parseClientSheet(getSheet('売上・原価広告'), 'ads'),
-    ...parseClientSheet(getSheet('売上・原価SNS運用'), 'sns'),
-    ...parseClientSheet(getSheet('売上・原価メディア'), 'media'),
+  // Map business unit keywords to type
+  const BU_MAP: { keywords: string[]; unit: ClientRevenue['businessUnit'] }[] = [
+    { keywords: ['Web', 'WEB', 'ウェブ'], unit: 'web' },
+    { keywords: ['広告', 'AD', 'Ad'], unit: 'ads' },
+    { keywords: ['SNS', 'Sns', 'sns'], unit: 'sns' },
+    { keywords: ['メディア', 'Media', 'MEDIA'], unit: 'media' },
   ];
 
-  return NextResponse.json({ monthlyPL, clientRevenue });
+  const clientRevenue: ClientRevenue[] = [];
+  for (const sheetName of wb.SheetNames) {
+    const bu = BU_MAP.find(b => b.keywords.some(k => sheetName.includes(k)));
+    if (!bu) continue;
+    const rows = getSheet(sheetName);
+    if (rows.length < 3) continue;
+    clientRevenue.push(...parseClientSheet(rows, bu.unit));
+  }
+
+  return NextResponse.json({ monthlyPL, clientRevenue, debug: { sheets: wb.SheetNames, plSheet: plSheetName } });
 }

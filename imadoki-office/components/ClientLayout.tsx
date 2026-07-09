@@ -15,6 +15,8 @@ const NAV_GROUPS = [
       { href: '/ceo',          label: '社長室',         icon: '👔' },
       { href: '/ceo/data',     label: 'データ入力',     icon: '📥' },
       { href: '/ceo/analysis', label: 'AI分析・承認',   icon: '🔍' },
+      { href: '/analytics',   label: 'アナリティクス', icon: '📈' },
+      { href: '/finance',     label: '財務・書類',      icon: '💰' },
     ],
   },
   {

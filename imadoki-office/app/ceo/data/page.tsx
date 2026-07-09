@@ -443,6 +443,8 @@ export default function DataPage() {
   const [saved, setSaved] = useState(false);
   const [csvError, setCsvError] = useState('');
   const [importModal, setImportModal] = useState<'pl' | 'clients' | null>(null);
+  const [plExcelLoading, setPlExcelLoading] = useState(false);
+  const plExcelRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('imadoki-company-data');
@@ -513,6 +515,30 @@ export default function DataPage() {
     }
   }
 
+  async function handlePlExcelImport(file: File) {
+    setPlExcelLoading(true);
+    setCsvError('');
+    const form = new FormData();
+    form.append('file', file);
+    try {
+      const res = await fetch('/api/import-pl-excel', { method: 'POST', body: form });
+      const json = await res.json();
+      if (json.error) throw new Error(json.error);
+      const merged = [...data.monthlyPL];
+      (json.monthlyPL ?? []).forEach((r: MonthlyPL) => {
+        const idx = merged.findIndex(m => m.month === r.month);
+        if (idx >= 0) merged[idx] = r; else merged.push(r);
+      });
+      merged.sort((a, b) => a.month.localeCompare(b.month));
+      save({ ...data, monthlyPL: merged, clientRevenue: json.clientRevenue ?? data.clientRevenue });
+    } catch (e) {
+      setCsvError('詳細PLインポート失敗: ' + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setPlExcelLoading(false);
+      if (plExcelRef.current) plExcelRef.current.value = '';
+    }
+  }
+
   return (
     <div className="max-w-7xl mx-auto">
       {importModal && (
@@ -541,7 +567,7 @@ export default function DataPage() {
           <span className="text-sm font-semibold text-white">📂 データのインポート・エクスポート</span>
           <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(99,102,241,0.2)', color: '#a5b4fc' }}>CSV / Excel対応</span>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
           {/* P&L Import */}
           <button
             onClick={() => setImportModal('pl')}
@@ -585,9 +611,23 @@ export default function DataPage() {
             <span className="text-xs font-medium">クライアント テンプレート</span>
             <span className="text-xs opacity-60">CSVサンプルDL</span>
           </button>
+
+          {/* IMADOKI PL Excel Import */}
+          <button
+            onClick={() => plExcelRef.current?.click()}
+            disabled={plExcelLoading}
+            className="flex flex-col items-center gap-1 px-3 py-3 rounded-xl transition-all hover:opacity-90 text-center"
+            style={{ ...btnStyle('20,184,166'), opacity: plExcelLoading ? 0.6 : 1, cursor: plExcelLoading ? 'wait' : 'pointer' }}
+          >
+            <span className="text-xl">{plExcelLoading ? '⏳' : '📊'}</span>
+            <span className="text-xs font-medium">詳細PLインポート</span>
+            <span className="text-xs opacity-60">IMADOKI Excel専用</span>
+          </button>
+          <input ref={plExcelRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }}
+            onChange={e => { const f = e.target.files?.[0]; if (f) handlePlExcelImport(f); }} />
         </div>
         <p className="text-xs mt-2" style={{ color: '#4b5563' }}>
-          ※ Excelの場合は「名前を付けて保存」→「CSV（カンマ区切り）」で保存してからインポートしてください
+          ※ 詳細PLインポートはIMADOKIのPL全体・売上原価シートに対応した専用インポーターです
         </p>
       </div>
 

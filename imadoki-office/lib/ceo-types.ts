@@ -35,9 +35,24 @@ export interface ActionItem {
   rejectedReason?: string;
 }
 
+export interface ClientMonthlyRevenue {
+  month: string;
+  revenue: number;
+  cogs: number;
+}
+
+export interface ClientRevenue {
+  clientName: string;
+  businessUnit: 'web' | 'ads' | 'sns' | 'media';
+  monthly: ClientMonthlyRevenue[];
+  totalRevenue: number;
+  totalCogs: number;
+}
+
 export interface CompanyData {
   monthlyPL: MonthlyPL[];
   clients: Client[];
   actionItems: ActionItem[];
+  clientRevenue?: ClientRevenue[];
   lastAnalyzedAt?: string;
 }

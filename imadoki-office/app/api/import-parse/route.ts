@@ -14,11 +14,11 @@ const PL_ALIASES: Record<string, string[]> = {
 
 // Aliases for Client column auto-detection
 const CLIENT_ALIASES: Record<string, string[]> = {
-  name:        ['クライアント名', '会社名', '取引先', '顧客名', 'name', 'client', '得意先名', '企業名'],
-  monthlyFee:  ['月額', '月額料金', '月次料金', '月額費用', '請求金額', 'fee', '月額単価', '契約金額'],
-  services:    ['サービス', '対応サービス', 'service', '業務内容', 'サービス種別'],
-  startDate:   ['開始日', '契約開始', '開始月', '契約日', 'start', '開始'],
-  status:      ['ステータス', '状態', 'status', '契約状態'],
+  name:        ['クライアント名', '会社名', '取引先', '顧客名', 'name', 'client', '得意先名', '企業名', '会社名(個人名)', '会社名・個人名'],
+  monthlyFee:  ['月額', '月額料金', '月次料金', '月額費用', '請求金額', 'fee', '月額単価', '契約金額', '売値', '売値(税込)', 'クライアントの支払総額', '税込金額', '支払総額'],
+  services:    ['サービス', '対応サービス', 'service', '業務内容', 'サービス種別', '種類', 'サービス名'],
+  startDate:   ['開始日', '契約開始', '開始月', '契約日', 'start', '開始', '月額費用支払い開始月日'],
+  status:      ['ステータス', '状態', 'status', '契約状態', '着金チェック'],
   notes:       ['備考', 'メモ', 'notes', '特記事項', 'コメント'],
 };
 
@@ -93,7 +93,7 @@ function parseRows(rows: (string | number | null)[][], headers: string[], type: 
     return dataRows.map((row, i) => ({
       id: `c-import-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 7)}`,
       name:       get(row, 'name'),
-      monthlyFee: Number(get(row, 'monthlyFee').replace(/,/g, '')) || 0,
+      monthlyFee: Number(get(row, 'monthlyFee').replace(/[¥,\s]/g, '')) || 0,
       services:   get(row, 'services').split(/[/・,、]/).map(s => s.trim()).filter(Boolean),
       startDate:  (() => {
         const raw = get(row, 'startDate').replace(/\//g, '-').replace(/年/g, '-').replace(/月/g, '').replace(/日/g, '').trim();
@@ -118,7 +118,12 @@ export async function POST(request: Request) {
     if (buffer.length > 10 * 1024 * 1024) {
       return Response.json({ error: 'ファイルサイズが10MBを超えています' }, { status: 400 });
     }
-    const workbook = read(buffer, { type: 'buffer', cellDates: false });
+    // CSV files must be parsed as UTF-8 string to avoid mojibake.
+    // Excel binary formats (xls/xlsx) need buffer mode.
+    const isCsv = file.name.toLowerCase().endsWith('.csv') || file.type === 'text/csv';
+    const workbook = isCsv
+      ? read(buffer.toString('utf8'), { type: 'string', cellDates: false })
+      : read(buffer, { type: 'buffer', cellDates: false });
     const is1904 = !!(workbook.Workbook?.WBProps as Record<string, unknown> | undefined)?.date1904;
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
@@ -134,15 +139,30 @@ export async function POST(request: Request) {
       return Response.json({ error: 'データ行が見つかりません', rows: [], headers: [], colMap: {} }, { status: 400 });
     }
 
-    // Find the header row (first row with multiple non-null cells)
+    // Find the header row: the row (in the first 15) with the most non-null cells.
+    // This avoids picking summary rows that appear before the real column headers.
     let headerRowIdx = 0;
-    for (let i = 0; i < Math.min(10, rawData.length); i++) {
+    let bestCount = 0;
+    for (let i = 0; i < Math.min(15, rawData.length); i++) {
       const nonNull = rawData[i].filter(c => c != null && c !== '').length;
-      if (nonNull >= 2) { headerRowIdx = i; break; }
+      if (nonNull > bestCount) { bestCount = nonNull; headerRowIdx = i; }
     }
 
-    const headers = rawData[headerRowIdx].map(h => (h != null ? String(h) : ''));
-    const dataRows = rawData.slice(headerRowIdx + 1);
+    const headers = rawData[headerRowIdx].map(h => (h != null ? String(h).replace(/\n/g, '') : ''));
+    let dataRows = rawData.slice(headerRowIdx + 1);
+    // For client imports: if first column looks like a TRUE/FALSE flag (e.g. PL column),
+    // filter out rows where it is explicitly FALSE.
+    if (type === 'clients') {
+      const firstColVals = dataRows.map(r => String(r[0] ?? '').toUpperCase().trim());
+      const hasBoolFlag = firstColVals.some(v => v === 'TRUE' || v === 'FALSE');
+      if (hasBoolFlag) {
+        dataRows = dataRows.filter(r => {
+          const v = String(r[0] ?? '').toUpperCase().trim();
+          return v !== 'FALSE';
+        });
+      }
+    }
+
     const aliases = type === 'pl' ? PL_ALIASES : CLIENT_ALIASES;
     const colMap = detectColumnMap(headers, aliases);
     const parsed = parseRows(dataRows, headers, type, is1904);

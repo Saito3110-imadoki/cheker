@@ -20,6 +20,8 @@ interface ImportResult {
   preview: Record<string, unknown>[];
   total: number;
   rows: Record<string, unknown>[];
+  // raw data rows for client-side remap
+  rawRows: (string | number | null)[][];
 }
 
 function SmartImportModal({
@@ -59,10 +61,63 @@ function SmartImportModal({
     }
   }
 
+  function applyColMap(rawRows: (string | number | null)[][], map: Record<string, number>) {
+    const get = (row: (string | number | null)[], field: string): string => {
+      const idx = map[field];
+      if (idx == null || idx < 0) return '';
+      const val = row[idx];
+      return val != null ? String(val).trim() : '';
+    };
+    const dataRows = rawRows.filter(row => row.some(c => c != null && c !== ''));
+    if (type === 'pl') {
+      return dataRows.map(row => {
+        let month = get(row, 'month');
+        month = month.replace(/年/g, '-').replace(/月/g, '').replace(/\//g, '-');
+        const [y, m] = month.split('-');
+        if (y && m) month = `${y}-${m.padStart(2, '0')}`;
+        return {
+          month,
+          revenue: Number(get(row, 'revenue').replace(/,/g, '')) || 0,
+          cogs: Number(get(row, 'cogs').replace(/,/g, '')) || 0,
+          personnelCost: Number(get(row, 'personnelCost').replace(/,/g, '')) || 0,
+          adCost: Number(get(row, 'adCost').replace(/,/g, '')) || 0,
+          officeCost: Number(get(row, 'officeCost').replace(/,/g, '')) || 0,
+          otherCost: Number(get(row, 'otherCost').replace(/,/g, '')) || 0,
+          notes: get(row, 'notes'),
+        };
+      }).filter(r => r.month && r.revenue > 0);
+    } else {
+      const STATUS_MAP: Record<string, string> = {
+        '契約中': 'active', 'active': 'active',
+        'リスクあり': 'at-risk', 'at-risk': 'at-risk',
+        '解約': 'churned', 'churned': 'churned',
+        '交渉中': 'negotiating', 'negotiating': 'negotiating',
+      };
+      return dataRows.map((row, i) => ({
+        id: `c-import-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 5)}`,
+        name: get(row, 'name'),
+        monthlyFee: Number(get(row, 'monthlyFee').replace(/,/g, '')) || 0,
+        services: get(row, 'services').split(/[/・,、]/).map(s => s.trim()).filter(Boolean),
+        startDate: (() => {
+          const raw = get(row, 'startDate').replace(/年/g, '-').replace(/月/g, '').replace(/\//g, '-').replace(/日/g, '').trim();
+          const [y, m] = raw.split('-');
+          return y && m ? `${y}-${m.padStart(2, '0')}` : raw;
+        })(),
+        status: STATUS_MAP[get(row, 'status').trim()] ?? 'active',
+        notes: get(row, 'notes'),
+      })).filter(r => r.name);
+    }
+  }
+
   function remapAndPreview() {
     if (!result) return;
-    // Re-parse using the user-adjusted colMap
-    // For simplicity just show existing preview with current map info
+    const remapped = applyColMap(result.rawRows, colMap);
+    setResult(prev => prev ? {
+      ...prev,
+      rows: remapped,
+      preview: remapped.slice(0, 5),
+      total: remapped.length,
+    } : prev);
     setStep('preview');
   }
 
@@ -410,7 +465,16 @@ export default function DataPage() {
   };
 
 
-  const addPL = () => save({ ...data, monthlyPL: [...data.monthlyPL, emptyPL()] });
+  const addPL = () => {
+    const newRow = emptyPL();
+    if (data.monthlyPL.some(pl => pl.month === newRow.month)) {
+      // increment month to avoid duplicate
+      const [y, m] = newRow.month.split('-').map(Number);
+      const next = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`;
+      newRow.month = next;
+    }
+    save({ ...data, monthlyPL: [...data.monthlyPL, newRow] });
+  };
   const updatePL = (i: number, field: keyof MonthlyPL, value: string | number) => {
     const updated = data.monthlyPL.map((pl, idx) => idx === i ? calcPL({ ...pl, [field]: value }) : pl);
     save({ ...data, monthlyPL: updated });
@@ -551,7 +615,8 @@ export default function DataPage() {
         <div>
           {/* Summary cards if data exists */}
           {data.monthlyPL.length > 0 && (() => {
-            const latest = data.monthlyPL[data.monthlyPL.length - 1];
+            const sorted = [...data.monthlyPL].sort((a, b) => a.month.localeCompare(b.month));
+            const latest = sorted[sorted.length - 1];
             const totalRev = data.monthlyPL.reduce((s, m) => s + m.revenue, 0);
             const avgOp = data.monthlyPL.reduce((s, m) => s + m.operatingProfit, 0) / data.monthlyPL.length;
             const grossRate = latest.revenue > 0 ? Math.round((latest.grossProfit / latest.revenue) * 100) : 0;

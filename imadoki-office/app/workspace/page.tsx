@@ -176,6 +176,12 @@ export default function WorkspacePage() {
                 };
                 return updated;
               });
+            } else if (data.type === 'error') {
+              setMessages(prev => {
+                const updated = [...prev];
+                updated[updated.length - 1] = { ...updated[updated.length - 1], content: `⚠️ エラー: ${data.error}` };
+                return updated;
+              });
             }
           } catch {}
         }
@@ -262,6 +268,7 @@ export default function WorkspacePage() {
     setFeedbackInput(prev => ({ ...prev, [deliverable.id]: '' }));
     setStreaming(true);
 
+    const prevContent = deliverable.content; // backup before clearing
     setDeliverables(prev =>
       prev.map(d => (d.id === deliverable.id ? { ...d, content: '', requestedChanges: feedback } : d))
     );
@@ -305,6 +312,11 @@ export default function WorkspacePage() {
           } catch {}
         }
       }
+    } catch (e) {
+      // restore original content on failure
+      setDeliverables(prev =>
+        prev.map(d => (d.id === deliverable.id ? { ...d, content: prevContent, requestedChanges: undefined } : d))
+      );
     } finally {
       setStreaming(false);
     }

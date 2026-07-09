@@ -22,6 +22,14 @@ const CLIENT_ALIASES: Record<string, string[]> = {
   notes:       ['備考', 'メモ', 'notes', '特記事項', 'コメント'],
 };
 
+// Map Japanese status labels to internal keys
+const STATUS_MAP: Record<string, string> = {
+  '契約中': 'active', 'active': 'active',
+  'リスクあり': 'at-risk', 'at-risk': 'at-risk', 'atrisk': 'at-risk',
+  '解約': 'churned', 'churned': 'churned',
+  '交渉中': 'negotiating', 'negotiating': 'negotiating',
+};
+
 function detectColumnMap(headers: string[], aliases: Record<string, string[]>): Record<string, number> {
   const map: Record<string, number> = {};
   const normalizeH = (h: string) => h.replace(/\s/g, '').toLowerCase();
@@ -38,7 +46,7 @@ function detectColumnMap(headers: string[], aliases: Record<string, string[]>): 
   return map;
 }
 
-function parseRows(rows: (string | number | null)[][], headers: string[], type: 'pl' | 'clients') {
+function parseRows(rows: (string | number | null)[][], headers: string[], type: 'pl' | 'clients', is1904 = false) {
   const aliases = type === 'pl' ? PL_ALIASES : CLIENT_ALIASES;
   const colMap = detectColumnMap(headers, aliases);
 
@@ -57,8 +65,9 @@ function parseRows(rows: (string | number | null)[][], headers: string[], type: 
       // Normalize month: accepts YYYY/MM, YYYY-MM, YYYY年MM月, serial number
       let month = monthRaw;
       if (/^\d{5,}$/.test(monthRaw)) {
-        // Excel serial date
-        const date = new Date((Number(monthRaw) - 25569) * 86400 * 1000);
+        // Excel serial date — use is1904 flag passed from caller
+        const offset = is1904 ? 24107 : 25569;
+        const date = new Date((Number(monthRaw) - offset) * 86400 * 1000);
         month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       } else {
         month = monthRaw
@@ -82,12 +91,16 @@ function parseRows(rows: (string | number | null)[][], headers: string[], type: 
     }).filter(r => r.month && (r.revenue > 0 || r.cogs > 0));
   } else {
     return dataRows.map((row, i) => ({
-      id: `c-import-${Date.now()}-${i}`,
+      id: `c-import-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 7)}`,
       name:       get(row, 'name'),
       monthlyFee: Number(get(row, 'monthlyFee').replace(/,/g, '')) || 0,
       services:   get(row, 'services').split(/[/・,、]/).map(s => s.trim()).filter(Boolean),
-      startDate:  get(row, 'startDate').replace(/\//g, '-').replace(/年/g, '-').replace(/月/g, '').replace(/日/g, ''),
-      status:     (['active', 'at-risk', 'churned', 'negotiating'].includes(get(row, 'status')) ? get(row, 'status') : 'active') as string,
+      startDate:  (() => {
+        const raw = get(row, 'startDate').replace(/\//g, '-').replace(/年/g, '-').replace(/月/g, '').replace(/日/g, '').trim();
+        const [y, m] = raw.split('-');
+        return y && m ? `${y}-${m.padStart(2, '0')}` : raw;
+      })(),
+      status:     STATUS_MAP[get(row, 'status').trim()] ?? 'active',
       notes:      get(row, 'notes'),
     })).filter(r => r.name);
   }
@@ -102,7 +115,11 @@ export async function POST(request: Request) {
     if (!file) return new Response('No file', { status: 400 });
 
     const buffer = Buffer.from(await file.arrayBuffer());
+    if (buffer.length > 10 * 1024 * 1024) {
+      return Response.json({ error: 'ファイルサイズが10MBを超えています' }, { status: 400 });
+    }
     const workbook = read(buffer, { type: 'buffer', cellDates: false });
+    const is1904 = !!(workbook.Workbook?.WBProps as Record<string, unknown> | undefined)?.date1904;
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
 
@@ -128,7 +145,7 @@ export async function POST(request: Request) {
     const dataRows = rawData.slice(headerRowIdx + 1);
     const aliases = type === 'pl' ? PL_ALIASES : CLIENT_ALIASES;
     const colMap = detectColumnMap(headers, aliases);
-    const parsed = parseRows(dataRows, headers, type);
+    const parsed = parseRows(dataRows, headers, type, is1904);
 
     return Response.json({
       headers,
@@ -136,6 +153,7 @@ export async function POST(request: Request) {
       preview: parsed.slice(0, 5),
       total: parsed.length,
       rows: parsed,
+      rawRows: dataRows.slice(0, 500), // cap at 500 rows for JSON size
     });
   } catch (e) {
     return Response.json({ error: String(e) }, { status: 500 });

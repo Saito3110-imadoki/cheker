@@ -178,9 +178,9 @@ function TaskCard({ task, members, projects, onEdit, onDelete, onMove }: {
             </>
           )}
         </div>
-        {task.dueDate && <span className="text-xs" style={{ color: '#374151', fontSize: '9px' }}>{task.dueDate}</span>}
+        {task.dueDate && <span className="text-xs" style={{ color: '#9ca3af', fontSize: '9px' }}>{task.dueDate}</span>}
       </div>
-      {project && <div className="mt-1.5 text-xs truncate" style={{ color: '#374151', fontSize: '9px' }}>📁 {project.name}</div>}
+      {project && <div className="mt-1.5 text-xs truncate" style={{ color: '#9ca3af', fontSize: '9px' }}>📁 {project.name}</div>}
 
       {/* Move buttons */}
       <div className="mt-2 hidden group-hover:flex items-center gap-1 flex-wrap">
@@ -208,12 +208,19 @@ export default function TasksPage() {
   useEffect(() => {
     const t = localStorage.getItem(STORAGE_KEY);
     if (t) { try { setTasks(JSON.parse(t)); } catch { /* ignore */ } }
-    const m = localStorage.getItem('imadoki-members');
-    if (m) { try { setMembers(JSON.parse(m)); } catch { /* ignore */ } }
-    else { import('@/lib/data').then(mod => setMembers(mod.members)); }
+
+    const loadMembers = () => {
+      const m = localStorage.getItem('imadoki-members');
+      if (m) { try { setMembers(JSON.parse(m)); } catch { /* ignore */ } }
+      else { import('@/lib/data').then(mod => setMembers(mod.members)); }
+    };
+    loadMembers();
+
     const p = localStorage.getItem('imadoki-projects');
     if (p) { try { setProjects(JSON.parse(p)); } catch { /* ignore */ } }
-    else { import('@/app/projects/page').then(() => setProjects([])); }
+
+    window.addEventListener('imadoki-members-updated', loadMembers);
+    return () => window.removeEventListener('imadoki-members-updated', loadMembers);
   }, []);
 
   const persist = (next: Task[]) => {

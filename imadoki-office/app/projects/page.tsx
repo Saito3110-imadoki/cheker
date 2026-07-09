@@ -230,11 +230,15 @@ export default function ProjectsPage() {
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) { try { setProjects(JSON.parse(stored)); } catch { /* ignore */ } }
-    const m = localStorage.getItem('imadoki-members');
-    if (m) { try { setMembers(JSON.parse(m)); } catch { /* ignore */ } }
-    else {
-      import('@/lib/data').then(mod => setMembers(mod.members));
-    }
+
+    const loadMembers = () => {
+      const m = localStorage.getItem('imadoki-members');
+      if (m) { try { setMembers(JSON.parse(m)); } catch { /* ignore */ } }
+      else { import('@/lib/data').then(mod => setMembers(mod.members)); }
+    };
+    loadMembers();
+    window.addEventListener('imadoki-members-updated', loadMembers);
+    return () => window.removeEventListener('imadoki-members-updated', loadMembers);
   }, []);
 
   const persist = (next: Project[]) => {

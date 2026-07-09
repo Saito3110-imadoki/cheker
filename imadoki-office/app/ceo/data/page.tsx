@@ -387,10 +387,15 @@ function parseClientCSV(text: string): Client[] {
   });
 }
 
+function csvCell(v: string | number): string {
+  const s = String(v);
+  return /[,"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
 function exportPLCSV(monthlyPL: MonthlyPL[]): string {
   const header = 'month,revenue,cogs,personnelCost,adCost,officeCost,otherCost,notes';
   const rows = monthlyPL.map(pl =>
-    `${pl.month},${pl.revenue},${pl.cogs},${pl.personnelCost},${pl.adCost},${pl.officeCost},${pl.otherCost},${pl.notes}`
+    [pl.month, pl.revenue, pl.cogs, pl.personnelCost, pl.adCost, pl.officeCost, pl.otherCost, pl.notes].map(csvCell).join(',')
   );
   return [header, ...rows].join('\n');
 }
@@ -398,7 +403,7 @@ function exportPLCSV(monthlyPL: MonthlyPL[]): string {
 function exportClientCSV(clients: Client[]): string {
   const header = 'name,monthlyFee,services,startDate,status,notes';
   const rows = clients.map(c =>
-    `${c.name},${c.monthlyFee},${c.services.join('/')},${c.startDate},${c.status},${c.notes}`
+    [c.name, c.monthlyFee, c.services.join('/'), c.startDate, c.status, c.notes].map(csvCell).join(',')
   );
   return [header, ...rows].join('\n');
 }

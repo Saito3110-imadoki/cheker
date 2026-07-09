@@ -1,9 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { members as defaultMembers, projects, tasks, chatMessages } from '@/lib/data';
+import Link from 'next/link';
+import { members as defaultMembers, projects as defaultProjects, tasks as defaultTasks, chatMessages } from '@/lib/data';
 import { CompanyData } from '@/lib/ceo-types';
 import { Member } from '@/lib/data';
+
+type ProjectStatus = 'active' | 'planning' | 'review' | 'completed';
+interface StoredProject { id: string; name: string; client: string; status: ProjectStatus; progress: number; deadline: string; }
+interface StoredTask { id: string; status: string; }
 
 function KpiCard({ icon, label, value, sub, color }: { icon: string; label: string; value: string | number; sub?: string; color: string }) {
   return (
@@ -23,25 +28,28 @@ function KpiCard({ icon, label, value, sub, color }: { icon: string; label: stri
 export default function Dashboard() {
   const [members, setMembers] = useState<Member[]>(defaultMembers);
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
+  const [lsProjects, setLsProjects] = useState<StoredProject[]>([]);
+  const [lsTasks, setLsTasks] = useState<StoredTask[]>([]);
 
   useEffect(() => {
-    // Load real members
-    const stored = localStorage.getItem('imadoki-members');
-    if (stored) {
-      try { setMembers(JSON.parse(stored)); } catch { /* ignore */ }
-    }
-    // Load real company financial data
-    const cd = localStorage.getItem('imadoki-company-data');
-    if (cd) {
-      try { setCompanyData(JSON.parse(cd)); } catch { /* ignore */ }
-    }
+    try { const s = localStorage.getItem('imadoki-members'); if (s) setMembers(JSON.parse(s)); } catch { /* ignore */ }
+    try { const s = localStorage.getItem('imadoki-company-data'); if (s) setCompanyData(JSON.parse(s)); } catch { /* ignore */ }
+    try { const s = localStorage.getItem('imadoki-projects'); if (s) setLsProjects(JSON.parse(s)); } catch { /* ignore */ }
+    try { const s = localStorage.getItem('imadoki-tasks'); if (s) setLsTasks(JSON.parse(s)); } catch { /* ignore */ }
   }, []);
 
   const activeAI = members.filter(m => m.isAI && m.status === 'online').length;
 
   // Derive KPIs from real data when available
-  const latestPL = companyData?.monthlyPL?.slice(-1)[0];
-  const prevPL = companyData?.monthlyPL?.slice(-2)[0];
+  const sortedPL = companyData?.monthlyPL ? [...companyData.monthlyPL].sort((a, b) => a.month.localeCompare(b.month)) : [];
+  const latestPL = sortedPL[sortedPL.length - 1];
+  const prevPL = sortedPL[sortedPL.length - 2];
+
+  // Use localStorage data if available, fall back to defaults
+  const displayProjects = lsProjects.length > 0 ? lsProjects : defaultProjects as StoredProject[];
+  const displayTasks = lsTasks.length > 0 ? lsTasks : defaultTasks as StoredTask[];
+  const activeProjectCount = displayProjects.filter(p => p.status === 'active').length;
+  const doneTaskCount = displayTasks.filter(t => t.status === 'done').length;
   const activeClients = companyData?.clients?.filter(c => c.status === 'active') ?? [];
   const atRiskClients = companyData?.clients?.filter(c => c.status === 'at-risk') ?? [];
 
@@ -91,7 +99,7 @@ export default function Dashboard() {
           <span className="text-sm" style={{ color: '#fbbf24' }}>
             財務データが未入力です。
           </span>
-          <a href="/ceo/data" className="text-sm underline" style={{ color: '#a5b4fc' }}>データ入力ページ</a>
+          <Link href="/ceo/data" className="text-sm underline" style={{ color: '#a5b4fc' }}>データ入力ページ</Link>
           <span className="text-sm" style={{ color: '#fbbf24' }}>で実際の売上・クライアントを登録すると、ここに反映されます。</span>
         </div>
       )}
@@ -128,8 +136,8 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <KpiCard icon="🤖" label="AIエージェント" value={members.filter(m => m.isAI).length} sub="稼働中" color="#6366f1" />
         <KpiCard icon="👤" label="人間スタッフ" value={members.filter(m => !m.isAI).length} sub="メンバー" color="#ec4899" />
-        <KpiCard icon="✅" label="完了タスク" value={`${tasks.filter(t => t.status === 'done').length}件`} sub="今月" color="#22c55e" />
-        <KpiCard icon="📁" label="進行中プロジェクト" value={projects.filter(p => p.status === 'active').length} sub="案件" color="#60a5fa" />
+        <KpiCard icon="✅" label="完了タスク" value={`${doneTaskCount}件`} sub="累計" color="#22c55e" />
+        <KpiCard icon="📁" label="進行中プロジェクト" value={activeProjectCount} sub="案件" color="#60a5fa" />
       </div>
 
       {/* Main content */}
@@ -167,7 +175,7 @@ export default function Dashboard() {
           <div className="glass rounded-xl p-5">
             <h3 className="text-sm font-semibold text-white mb-4">📁 プロジェクト進捗</h3>
             <div className="space-y-4">
-              {projects.map(p => (
+              {displayProjects.slice(0, 5).map(p => (
                 <div key={p.id}>
                   <div className="flex justify-between mb-1.5">
                     <span className="text-xs text-white font-medium truncate mr-2">{p.name}</span>

@@ -1,7 +1,15 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { CompanyData, MonthlyPL, Client } from '@/lib/ceo-types';
+import { CompanyData, MonthlyPL, Client, ClientRevenue } from '@/lib/ceo-types';
+
+interface PlExcelResult {
+  monthlyPL: MonthlyPL[];
+  clientRevenue: ClientRevenue[];
+  parsedSheets: string[];
+}
+
+const BU_LABELS: Record<string, string> = { web: 'Web', ads: '広告', sns: 'SNS運用', media: 'メディア' };
 
 // -------- Smart Import Modal --------
 const PL_FIELD_LABELS: Record<string, string> = {
@@ -444,6 +452,7 @@ export default function DataPage() {
   const [csvError, setCsvError] = useState('');
   const [importModal, setImportModal] = useState<'pl' | 'clients' | null>(null);
   const [plExcelLoading, setPlExcelLoading] = useState(false);
+  const [plExcelPreview, setPlExcelPreview] = useState<PlExcelResult | null>(null);
   const plExcelRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -524,19 +533,26 @@ export default function DataPage() {
       const res = await fetch('/api/import-pl-excel', { method: 'POST', body: form });
       const json = await res.json();
       if (json.error) throw new Error(json.error);
-      const merged = [...data.monthlyPL];
-      (json.monthlyPL ?? []).forEach((r: MonthlyPL) => {
-        const idx = merged.findIndex(m => m.month === r.month);
-        if (idx >= 0) merged[idx] = r; else merged.push(r);
-      });
-      merged.sort((a, b) => a.month.localeCompare(b.month));
-      save({ ...data, monthlyPL: merged, clientRevenue: json.clientRevenue ?? data.clientRevenue });
+      // Show preview — user must click 確定 to apply
+      setPlExcelPreview(json as PlExcelResult);
     } catch (e) {
       setCsvError('詳細PLインポート失敗: ' + (e instanceof Error ? e.message : String(e)));
     } finally {
       setPlExcelLoading(false);
       if (plExcelRef.current) plExcelRef.current.value = '';
     }
+  }
+
+  function applyPlExcelImport() {
+    if (!plExcelPreview) return;
+    const merged = [...data.monthlyPL];
+    (plExcelPreview.monthlyPL ?? []).forEach((r: MonthlyPL) => {
+      const idx = merged.findIndex(m => m.month === r.month);
+      if (idx >= 0) merged[idx] = r; else merged.push(r);
+    });
+    merged.sort((a, b) => a.month.localeCompare(b.month));
+    save({ ...data, monthlyPL: merged, clientRevenue: plExcelPreview.clientRevenue ?? data.clientRevenue });
+    setPlExcelPreview(null);
   }
 
   return (
@@ -547,6 +563,115 @@ export default function DataPage() {
           onClose={() => setImportModal(null)}
           onConfirm={rows => { handleImportConfirm(rows, importModal); setImportModal(null); }}
         />
+      )}
+
+      {/* PL Excel 確定モーダル */}
+      {plExcelPreview && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}
+          onClick={() => setPlExcelPreview(null)}>
+          <div className="w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl overflow-hidden"
+            style={{ background: '#0d0d1a', border: '1px solid rgba(99,102,241,0.3)' }}
+            onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="px-6 py-4 border-b flex items-center justify-between" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+              <div>
+                <h3 className="text-white font-bold text-base">📊 読み込み内容の確認</h3>
+                <p className="text-xs mt-0.5" style={{ color: '#6b7280' }}>内容を確認して「確定して反映」を押してください</p>
+              </div>
+              <button onClick={() => setPlExcelPreview(null)} className="text-lg" style={{ color: '#6b7280' }}>✕</button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
+              {/* Summary */}
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: '読み込んだ月数', value: `${plExcelPreview.monthlyPL.length}ヶ月` },
+                  { label: 'クライアント数', value: `${plExcelPreview.clientRevenue.length}社` },
+                  { label: '売上合計', value: `¥${plExcelPreview.monthlyPL.reduce((s, m) => s + m.revenue, 0).toLocaleString()}` },
+                ].map(c => (
+                  <div key={c.label} className="rounded-xl p-3 text-center" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}>
+                    <div className="text-xs mb-1" style={{ color: '#818cf8' }}>{c.label}</div>
+                    <div className="text-white font-bold text-sm">{c.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Monthly PL */}
+              <div>
+                <div className="text-xs font-semibold mb-2" style={{ color: '#94a3b8' }}>月次PL（{plExcelPreview.monthlyPL.length}ヶ月）</div>
+                <div className="rounded-lg overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr style={{ background: 'rgba(255,255,255,0.04)', color: '#6b7280' }}>
+                        <th className="text-left px-3 py-2">月</th>
+                        <th className="text-right px-3 py-2">売上</th>
+                        <th className="text-right px-3 py-2">原価</th>
+                        <th className="text-right px-3 py-2">粗利</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {plExcelPreview.monthlyPL.map(m => (
+                        <tr key={m.month} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                          <td className="px-3 py-1.5 text-white">{m.month}</td>
+                          <td className="px-3 py-1.5 text-right" style={{ color: '#e2e8f0' }}>¥{m.revenue.toLocaleString()}</td>
+                          <td className="px-3 py-1.5 text-right" style={{ color: '#94a3b8' }}>¥{m.cogs.toLocaleString()}</td>
+                          <td className="px-3 py-1.5 text-right" style={{ color: '#4ade80' }}>¥{m.grossProfit.toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Clients */}
+              <div>
+                <div className="text-xs font-semibold mb-2" style={{ color: '#94a3b8' }}>クライアント別売上（{plExcelPreview.clientRevenue.length}社）</div>
+                <div className="rounded-lg overflow-hidden max-h-52 overflow-y-auto" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <table className="w-full text-xs">
+                    <thead className="sticky top-0" style={{ background: '#12121f' }}>
+                      <tr style={{ color: '#6b7280' }}>
+                        <th className="text-left px-3 py-2">クライアント</th>
+                        <th className="text-left px-3 py-2">事業部</th>
+                        <th className="text-right px-3 py-2">売上</th>
+                        <th className="text-right px-3 py-2">粗利率</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...plExcelPreview.clientRevenue].sort((a, b) => b.totalRevenue - a.totalRevenue).map(c => {
+                        const rate = c.totalRevenue > 0 ? ((c.totalRevenue - c.totalCogs) / c.totalRevenue) * 100 : 0;
+                        return (
+                          <tr key={`${c.businessUnit}-${c.clientName}`} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                            <td className="px-3 py-1.5 text-white truncate max-w-[220px]">{c.clientName}</td>
+                            <td className="px-3 py-1.5" style={{ color: '#818cf8' }}>{BU_LABELS[c.businessUnit] ?? c.businessUnit}</td>
+                            <td className="px-3 py-1.5 text-right" style={{ color: '#e2e8f0' }}>¥{c.totalRevenue.toLocaleString()}</td>
+                            <td className="px-3 py-1.5 text-right" style={{ color: rate >= 50 ? '#4ade80' : rate >= 20 ? '#facc15' : '#f87171' }}>
+                              {rate.toFixed(0)}%
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t flex items-center justify-end gap-3" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+              <button onClick={() => setPlExcelPreview(null)}
+                className="px-5 py-2 rounded-lg text-sm"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8' }}>
+                キャンセル
+              </button>
+              <button onClick={applyPlExcelImport}
+                className="px-6 py-2 rounded-lg text-sm font-semibold text-white"
+                style={{ background: 'linear-gradient(135deg,#6366f1,#a855f7)' }}>
+                ✓ 確定して反映
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       {/* Header */}
       <div className="mb-5 flex items-center justify-between flex-wrap gap-3">

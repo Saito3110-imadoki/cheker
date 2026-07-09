@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { members as defaultMembers, projects as defaultProjects, tasks as defaultTasks, chatMessages } from '@/lib/data';
+import { members as defaultMembers, chatMessages } from '@/lib/data';
 import { CompanyData } from '@/lib/ceo-types';
 import { Member } from '@/lib/data';
 
@@ -106,6 +106,7 @@ export default function Dashboard() {
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
   const [lsProjects, setLsProjects] = useState<StoredProject[]>([]);
   const [lsTasks, setLsTasks] = useState<StoredTask[]>([]);
+  // displayProjects / displayTasks show real data only — no fallback to samples
 
   useEffect(() => {
     try { const s = localStorage.getItem('imadoki-members'); if (s) setMembers(JSON.parse(s)); } catch { /* ignore */ }
@@ -121,11 +122,8 @@ export default function Dashboard() {
   const latestPL = sortedPL[sortedPL.length - 1];
   const prevPL = sortedPL[sortedPL.length - 2];
 
-  // Use localStorage data if available, fall back to defaults
-  const displayProjects = lsProjects.length > 0 ? lsProjects : defaultProjects as StoredProject[];
-  const displayTasks = lsTasks.length > 0 ? lsTasks : defaultTasks as StoredTask[];
-  const activeProjectCount = displayProjects.filter(p => p.status === 'active').length;
-  const doneTaskCount = displayTasks.filter(t => t.status === 'done').length;
+  const activeProjectCount = lsProjects.filter(p => p.status === 'active').length;
+  const doneTaskCount = lsTasks.filter(t => t.status === 'done').length;
   const activeClients = companyData?.clients?.filter(c => c.status === 'active') ?? [];
   const atRiskClients = companyData?.clients?.filter(c => c.status === 'at-risk') ?? [];
 
@@ -268,8 +266,14 @@ export default function Dashboard() {
           {/* Project progress */}
           <div className="glass rounded-xl p-5">
             <h3 className="text-sm font-semibold text-white mb-4">📁 プロジェクト進捗</h3>
+            {lsProjects.length === 0 ? (
+              <div className="text-center py-6" style={{ color: '#4b5563' }}>
+                <div className="text-2xl mb-2">📁</div>
+                <p className="text-xs">プロジェクトが未登録です</p>
+              </div>
+            ) : (
             <div className="space-y-4">
-              {displayProjects.slice(0, 5).map(p => (
+              {lsProjects.slice(0, 5).map(p => (
                 <div key={p.id}>
                   <div className="flex justify-between mb-1.5">
                     <span className="text-xs text-white font-medium truncate mr-2">{p.name}</span>
@@ -290,6 +294,7 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
+            )}
           </div>
         </div>
 

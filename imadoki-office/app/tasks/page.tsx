@@ -18,18 +18,6 @@ export interface Task {
   description: string;
 }
 
-const defaultTasks: Task[] = [
-  { id: 't1', title: 'VI(ビジュアルアイデンティティ)案 3パターン作成', projectId: 'proj-1', assigneeId: 'creative-ai', priority: 'high', status: 'in-progress', dueDate: '2025-06-18', isAITask: true, description: '' },
-  { id: 't2', title: 'ブランドコンセプトシート作成', projectId: 'proj-1', assigneeId: 'strategy-ai', priority: 'high', status: 'done', dueDate: '2025-06-10', isAITask: true, description: '' },
-  { id: 't3', title: 'クライアントヒアリングシート整理', projectId: 'proj-1', assigneeId: 'creative-lead', priority: 'medium', status: 'done', dueDate: '2025-06-05', isAITask: false, description: '' },
-  { id: 't4', title: 'Instagram広告クリエイティブ20種作成', projectId: 'proj-2', assigneeId: 'creative-ai', priority: 'high', status: 'in-progress', dueDate: '2025-06-22', isAITask: true, description: '' },
-  { id: 't5', title: 'TikTok動画スクリプト作成', projectId: 'proj-2', assigneeId: 'pr-ai', priority: 'high', status: 'todo', dueDate: '2025-06-25', isAITask: true, description: '' },
-  { id: 't6', title: 'ターゲットオーディエンス分析レポート', projectId: 'proj-2', assigneeId: 'data-ai', priority: 'medium', status: 'review', dueDate: '2025-06-15', isAITask: true, description: '' },
-  { id: 't7', title: 'Google Ads入札戦略最適化', projectId: 'proj-3', assigneeId: 'ads-ai', priority: 'high', status: 'in-progress', dueDate: '2025-06-20', isAITask: true, description: '' },
-  { id: 't8', title: '月次パフォーマンスレポート作成', projectId: 'proj-3', assigneeId: 'data-ai', priority: 'medium', status: 'done', dueDate: '2025-06-05', isAITask: true, description: '' },
-  { id: 't9', title: 'プレスリリース最終校正', projectId: 'proj-5', assigneeId: 'pr-lead', priority: 'high', status: 'review', dueDate: '2025-06-16', isAITask: false, description: '' },
-  { id: 't10', title: 'メディアリスト更新・配信準備', projectId: 'proj-5', assigneeId: 'pr-ai', priority: 'high', status: 'in-progress', dueDate: '2025-06-17', isAITask: true, description: '' },
-];
 
 const priorityConfig = {
   high: { label: '高', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' },
@@ -198,7 +186,7 @@ function TaskCard({ task, members, projects, onEdit, onDelete, onMove }: {
 }
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<Task[]>(defaultTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [adding, setAdding] = useState(false);
@@ -269,17 +257,11 @@ export default function TasksPage() {
           <h1 className="text-xl font-bold text-white flex items-center gap-2">✅ タスク管理</h1>
           <p className="text-sm mt-1" style={{ color: '#6b7280' }}>カンバンボード — AIと人間が協力してタスクを推進</p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => { persist(defaultTasks); }}
-            className="text-xs px-3 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', color: '#6b7280', border: '1px solid rgba(255,255,255,0.08)' }}>
-            🔄 リセット
-          </button>
-          <button onClick={() => openAdd('todo')}
-            className="text-sm px-4 py-2 rounded-xl font-semibold text-white"
-            style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}>
-            ＋ タスク追加
-          </button>
-        </div>
+        <button onClick={() => openAdd('todo')}
+          className="text-sm px-4 py-2 rounded-xl font-semibold text-white"
+          style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}>
+          ＋ タスク追加
+        </button>
       </div>
 
       {/* Stats */}
@@ -321,12 +303,25 @@ export default function TasksPage() {
         ))}
       </div>
 
-      <div className="mt-6 p-4 rounded-xl text-center" style={{ background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.15)' }}>
-        <span className="text-sm" style={{ color: '#818cf8' }}>
-          🤖 AIエージェントが自動で{tasks.filter(t => t.isAITask).length}件のタスクを担当中 —
-          残り{tasks.filter(t => t.isAITask && t.status !== 'done').length}件を処理しています
-        </span>
-      </div>
+      {tasks.length === 0 && (
+        <div className="mt-4 glass rounded-2xl text-center py-14">
+          <div className="text-4xl mb-3">✅</div>
+          <p className="text-sm font-medium text-white mb-1">タスクがまだありません</p>
+          <p className="text-xs mb-5" style={{ color: '#6b7280' }}>プロジェクトに紐づくタスクを追加してください</p>
+          <button onClick={() => openAdd('todo')} className="px-4 py-2 rounded-xl text-sm font-semibold text-white"
+            style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}>
+            最初のタスクを追加
+          </button>
+        </div>
+      )}
+      {tasks.length > 0 && (
+        <div className="mt-4 p-3 rounded-xl" style={{ background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.1)' }}>
+          <span className="text-xs" style={{ color: '#818cf8' }}>
+            🤖 AI担当タスク {tasks.filter(t => t.isAITask && t.status !== 'done').length}件処理中 /
+            完了 {tasks.filter(t => t.status === 'done').length}件
+          </span>
+        </div>
+      )}
     </div>
   );
 }

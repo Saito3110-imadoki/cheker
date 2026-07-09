@@ -1,0 +1,57 @@
+# ============================================================
+#  クライアント設定ファイル：サンプル（コピーして使ってください）
+# ============================================================
+
+# GitHub Secrets のプレフィックス
+# 複数クライアントを1リポジトリで管理する場合に使用
+# 例: "CLIENT_A" → CLIENT_A_X_API_KEY, CLIENT_A_NOTION_TOKEN など
+env_prefix: "CLIENT_A"
+
+company:
+  name: 株式会社サンプル
+  industry: 小売・EC
+  url: https://example.com
+
+content:
+  target_audience: 20〜30代の女性・ファッション好き
+  tone: おしゃれ・共感・テンポが良い
+  posts_per_day: 3
+  post_length_min: 150
+  post_length_max: 300
+
+topics:
+  primary:
+    - ファッション
+    - ライフスタイル
+    - トレンド
+  keywords_x:
+    - ファッション
+    - コーデ
+    - トレンド
+
+rss_feeds:
+  - https://www.fashionsnap.com/feed/
+
+schedule:
+  times:
+    - "08:00"
+    - "12:00"
+    - "20:00"
+
+notion:
+  properties:
+    text: 投稿文
+    datetime: 投稿日時
+    platform: 媒体
+    status: ステータス
+    image_url: 画像URL
+  status:
+    pending: 承認待ち
+  platform:
+    default: 両方
+
+branding:
+  primary_color: "#db2777"   # 濃いピンク（白背景向け・ファッション系）
+  accent_color: "#b45309"    # 濃いゴールド（白背景向け）
+  logo_url: ""
+  company_name: "株式会社サンプル"

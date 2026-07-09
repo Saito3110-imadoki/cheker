@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PostPilot｜SNS運用、あなたの仕事は「1日2分の承認」だけ。</title>
-<meta name="description" content="ネタ探しから投稿文・図解画像づくり、X/Threadsへの投稿、効果分析まで、AIが全自動。中小企業のためのSNS自動運用サービス PostPilot。14日間無料・クレカ登録不要。">
+<meta name="description" content="AIが運用しながら学習する自動企画投稿システム PostPilot。ネタ探しから投稿文・図解画像づくり、X/Threadsへの投稿、効果分析まで全自動。あなたはNotionで承認するだけ。14日間無料・クレカ登録不要。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
@@ -81,6 +81,24 @@ h1 .hl{color:var(--indigo);}
 .step.focus{background:var(--indigo-50);border:2px solid var(--indigo);}
 .dark-note{background:var(--ink);color:#fff;border-radius:18px;padding:26px 30px;text-align:center;font-size:18px;font-weight:700;margin-top:34px;}
 .dark-note b{color:var(--amber-btn);}
+
+/* Notion承認画面モック */
+.notion-mock{background:#fff;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 18px 46px rgba(15,23,42,.10);max-width:840px;margin:44px auto 0;}
+.nm-bar{display:flex;align-items:center;gap:7px;background:var(--soft2);padding:11px 16px;border-bottom:1px solid var(--line);}
+.nm-bar i{width:11px;height:11px;border-radius:50%;display:inline-block;}
+.nm-bar i:nth-child(1){background:#fda4af;}.nm-bar i:nth-child(2){background:#fcd34d;}.nm-bar i:nth-child(3){background:#86efac;}
+.nm-bar b{margin-left:10px;font-size:12.5px;color:var(--muted);font-weight:500;}
+.nm-head{display:grid;grid-template-columns:1fr 88px 148px;gap:10px;padding:10px 20px;font-size:12px;color:var(--faint);font-weight:700;border-bottom:1px solid var(--soft2);}
+.nm-row{display:grid;grid-template-columns:1fr 88px 148px;gap:10px;padding:14px 20px;border-bottom:1px solid var(--soft2);align-items:center;}
+.nm-row:last-child{border-bottom:none;}
+.nm-row p{font-size:13.5px;color:var(--body);line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.nm-img{font-size:12px;color:var(--muted);text-align:center;}
+.pill{font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;text-align:center;}
+.pill.ok{background:#ecfdf5;color:#047857;}
+.pill.wait{background:#fdf2f8;color:#be185d;}
+.pill.no{background:var(--soft2);color:var(--faint);}
+.nm-caption{text-align:center;font-size:14.5px;color:var(--body);margin-top:18px;}
+@media(max-width:640px){.nm-head{grid-template-columns:1fr 110px;}.nm-head span:nth-child(2){display:none;}.nm-row{grid-template-columns:1fr 110px;}.nm-row .nm-img{display:none;}}
 
 /* ギャラリー */
 figure.shot{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 1px 4px rgba(15,23,42,.04);transition:box-shadow .2s;}
@@ -178,7 +196,7 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
 <!-- ヒーロー -->
 <header class="hero center" id="top">
   <div class="wrap">
-    <div class="badge"><span class="dot"></span>中小企業のためのSNS自動運用サービス</div>
+    <div class="badge"><span class="dot"></span>AIが運用しながら学習する、自動企画投稿システム</div>
     <h1>SNS運用、あなたの仕事は<br>「<span class="hl">1日2分の承認</span>」だけ。</h1>
     <p class="hero-sub">ネタ探しから投稿文・図解画像づくり、X / Threadsへの投稿、効果分析まで。面倒なことは、ぜんぶAIが自動で回します。</p>
     <div class="cta-row">
@@ -250,6 +268,28 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
         <p>ベストな時間にX / Threadsへ自動投稿。夜に「いいね・表示回数」を自動計測し、<b style="color:var(--ink);">翌朝のAIが伸びた型を学習</b>します。</p>
       </div>
     </div>
+    <!-- Notion承認画面のイメージ -->
+    <div class="notion-mock" aria-label="Notionの承認画面イメージ">
+      <div class="nm-bar"><i></i><i></i><i></i><b>Notion — 毎朝届く投稿案（承認画面イメージ）</b></div>
+      <div class="nm-head"><span>投稿文</span><span>図解</span><span>ステータス</span></div>
+      <div class="nm-row">
+        <p>「AIのプロンプトは長いほど良い」は誤解でした。自分で5個のプロンプトを40%削って試したら『あ、本当だ』って気づいた——</p>
+        <span class="nm-img">🖼 3枚</span>
+        <span class="pill ok">承認 → 自動投稿</span>
+      </div>
+      <div class="nm-row">
+        <p>PostgreSQL 19 betaの変化を1文で言うと：無駄な「ファイル再整理」を勝手にやる機能が賢くなった。データベースって使ってると——</p>
+        <span class="nm-img">🖼 1枚</span>
+        <span class="pill wait">承認待ち</span>
+      </div>
+      <div class="nm-row">
+        <p>営業がAIエージェントを使って変わったのは『準備の速さ』。人間は交渉と信頼構築という本来の仕事に戻れる——</p>
+        <span class="nm-img">—</span>
+        <span class="pill no">却下</span>
+      </div>
+    </div>
+    <p class="nm-caption">毎朝届く投稿案を、ボタンひとつで承認・却下。<b>承認した案だけ</b>が自動投稿されます。</p>
+
     <div class="dark-note">使えば使うほど、あなたの会社専用の<b>「伸びる投稿の型」</b>をAIが覚えていきます。</div>
   </div>
 </section>

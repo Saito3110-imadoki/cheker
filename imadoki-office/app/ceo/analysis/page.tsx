@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { CompanyData, ActionItem } from '@/lib/ceo-types';
 
 const categoryConfig = {
@@ -125,10 +126,10 @@ export default function AnalysisPage() {
           <p className="text-sm mt-1" style={{ color: '#6b7280' }}>実データをAIが分析し、ネクストアクションを社長が承認する</p>
         </div>
         <div className="flex gap-3">
-          <a href="/ceo/data" className="text-xs px-3 py-2 rounded-lg transition-all"
+          <Link href="/ceo/data" className="text-xs px-3 py-2 rounded-lg transition-all"
             style={{ background: 'rgba(255,255,255,0.05)', color: '#9ca3af', border: '1px solid rgba(255,255,255,0.08)' }}>
             📥 データ編集
-          </a>
+          </Link>
           <button
             onClick={runAnalysis}
             disabled={loading || noData}
@@ -148,10 +149,10 @@ export default function AnalysisPage() {
           <div className="text-5xl mb-4">📥</div>
           <p className="text-white font-semibold mb-2">データがありません</p>
           <p className="text-sm mb-5" style={{ color: '#6b7280' }}>まず売上・クライアントデータを入力してください</p>
-          <a href="/ceo/data" className="inline-block px-5 py-2.5 rounded-lg text-sm font-semibold text-white"
+          <Link href="/ceo/data" className="inline-block px-5 py-2.5 rounded-lg text-sm font-semibold text-white"
             style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}>
             データ入力ページへ →
-          </a>
+          </Link>
         </div>
       )}
 

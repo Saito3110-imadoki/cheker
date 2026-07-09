@@ -1,451 +1,444 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PostPilot｜AI × SNS 自動運用サービス by IMADOKI</title>
-  <meta name="description" content="AIが毎朝トレンドを収集・投稿案を生成・図解画像も自動作成。Notionで承認するだけで、X・Threadsへ自動投稿。SNS運用の手間をゼロにします。">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50:  '#eef2ff',
-              100: '#e0e7ff',
-              400: '#818cf8',
-              500: '#6366f1',
-              600: '#4f46e5',
-              700: '#4338ca',
-            },
-            amber: { 400: '#fbbf24' }
-          },
-          fontFamily: {
-            sans: ['"Noto Sans JP"', 'Hiragino Sans', 'BIZ UDPGothic', 'sans-serif'],
-          },
-        }
-      }
-    }
-  </script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <style>
-    .gradient-text {
-      background: linear-gradient(135deg, #818cf8, #fbbf24);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .card-glow {
-      box-shadow: 0 0 40px rgba(99,102,241,0.15);
-    }
-    .card-glow-gold {
-      box-shadow: 0 0 40px rgba(251,191,36,0.2);
-    }
-    .hero-bg {
-      background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.18) 0%, transparent 70%);
-    }
-    .step-line::after {
-      content: '';
-      position: absolute;
-      top: 2.5rem;
-      left: calc(50% + 2rem);
-      width: calc(100% - 4rem);
-      height: 2px;
-      background: linear-gradient(90deg, #6366f1, transparent);
-    }
-  </style>
-</head>
-<body class="bg-slate-900 text-slate-100 font-sans antialiased">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PostPilot｜SNS運用、あなたの仕事は「1日2分の承認」だけ。</title>
+<meta name="description" content="ネタ探しから投稿文・図解画像づくり、X/Threadsへの投稿、効果分析まで、AIが全自動。中小企業のためのSNS自動運用サービス PostPilot。14日間無料・クレカ登録不要。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --indigo:#4f46e5; --indigo-dark:#4338ca; --indigo-50:#eef2ff; --indigo-100:#e0e7ff;
+  --amber:#d97706; --amber-btn:#f59e0b; --amber-bg:#fffbeb;
+  --ink:#0f172a; --body:#334155; --muted:#64748b; --faint:#94a3b8;
+  --line:#e2e8f0; --soft:#f8fafc; --soft2:#f1f5f9;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Noto Sans JP','Hiragino Sans','BIZ UDPGothic',sans-serif;color:var(--ink);background:#fff;line-height:1.7;-webkit-font-smoothing:antialiased;}
+img{max-width:100%;height:auto;display:block;}
+a{text-decoration:none;color:inherit;}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px;}
+.wrap-narrow{max-width:860px;margin:0 auto;padding:0 24px;}
 
-<!-- ── ナビゲーション ── -->
-<nav class="fixed top-0 w-full z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-800">
-  <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <div class="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-        </svg>
-      </div>
-      <span class="font-black text-lg tracking-tight">PostPilot</span>
-      <span class="text-xs text-slate-500 font-medium hidden sm:block">by IMADOKI</span>
-    </div>
-    <div class="hidden md:flex items-center gap-8 text-sm text-slate-400">
-      <a href="#features" class="hover:text-white transition-colors">機能</a>
-      <a href="#howitworks" class="hover:text-white transition-colors">使い方</a>
-      <a href="#pricing" class="hover:text-white transition-colors">料金</a>
-      <a href="#faq" class="hover:text-white transition-colors">FAQ</a>
-    </div>
-    <a href="#pricing" class="bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold px-5 py-2.5 rounded-lg transition-colors">
-      無料で始める
+/* ボタン */
+.btn{display:inline-block;font-weight:700;border-radius:12px;padding:15px 34px;font-size:17px;transition:all .15s ease;text-align:center;}
+.btn-primary{background:var(--indigo);color:#fff;box-shadow:0 8px 20px rgba(79,70,229,.25);}
+.btn-primary:hover{background:var(--indigo-dark);transform:translateY(-1px);}
+.btn-ghost{background:#fff;color:var(--body);border:1px solid #cbd5e1;}
+.btn-ghost:hover{background:var(--soft);}
+.btn-sm{padding:10px 20px;font-size:14px;border-radius:10px;}
+
+/* 見出し */
+.eyebrow{color:var(--indigo);font-weight:700;font-size:13px;letter-spacing:.18em;text-transform:uppercase;margin-bottom:12px;}
+h2{font-size:34px;font-weight:900;line-height:1.35;letter-spacing:-.01em;}
+.lead{color:var(--muted);font-size:17px;margin-top:14px;}
+.center{text-align:center;}
+.marker{background:linear-gradient(transparent 62%,#fde68a 62%);}
+
+/* セクション */
+section{padding:84px 0;}
+.sec-soft{background:var(--soft);}
+
+/* ナビ */
+nav{position:fixed;top:0;width:100%;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
+.nav-inner{max-width:1080px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;}
+.logo{display:flex;align-items:center;gap:10px;font-weight:900;font-size:18px;}
+.logo-mark{width:32px;height:32px;border-radius:9px;background:var(--indigo);display:flex;align-items:center;justify-content:center;}
+.logo small{color:var(--faint);font-weight:500;font-size:12px;}
+.nav-links{display:flex;gap:26px;font-size:14px;font-weight:500;color:var(--muted);}
+.nav-links a:hover{color:var(--ink);}
+@media(max-width:767px){.nav-links{display:none;}}
+
+/* ヒーロー */
+.hero{padding:150px 0 70px;background:linear-gradient(180deg,var(--indigo-50) 0%,#fff 62%);}
+.badge{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 18px;font-size:13.5px;font-weight:500;color:var(--muted);box-shadow:0 1px 4px rgba(15,23,42,.05);margin-bottom:26px;}
+.dot{width:8px;height:8px;border-radius:50%;background:#10b981;}
+h1{font-size:52px;font-weight:900;line-height:1.28;letter-spacing:-.015em;margin-bottom:22px;}
+h1 .hl{color:var(--indigo);}
+.hero-sub{font-size:19px;color:var(--muted);max-width:640px;margin:0 auto 34px;}
+.cta-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:10px;}
+.cta-note{font-size:13.5px;color:var(--faint);margin-bottom:52px;}
+.hero-visual{max-width:760px;margin:0 auto;}
+.hero-visual .frame{border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 24px 60px rgba(15,23,42,.14);}
+.hero-visual figcaption{margin-top:14px;font-size:13.5px;color:var(--muted);font-weight:500;}
+@media(max-width:767px){h1{font-size:34px;}.hero{padding:120px 0 56px;}h2{font-size:27px;}}
+
+/* カードグリッド */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;}
+@media(max-width:860px){.grid3,.grid2{grid-template-columns:1fr;}}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:26px;box-shadow:0 1px 4px rgba(15,23,42,.04);}
+.card .emoji{font-size:30px;margin-bottom:12px;}
+.card h3{font-size:18px;font-weight:700;margin-bottom:8px;}
+.card p{font-size:14px;color:var(--muted);}
+
+/* ステップ */
+.step{position:relative;padding-top:34px;}
+.step-tag{position:absolute;top:14px;left:24px;background:var(--indigo);color:#fff;font-size:12px;font-weight:900;padding:4px 14px;border-radius:999px;}
+.step-tag.amber{background:var(--amber-btn);}
+.step.focus{background:var(--indigo-50);border:2px solid var(--indigo);}
+.dark-note{background:var(--ink);color:#fff;border-radius:18px;padding:26px 30px;text-align:center;font-size:18px;font-weight:700;margin-top:34px;}
+.dark-note b{color:var(--amber-btn);}
+
+/* ギャラリー */
+figure.shot{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 1px 4px rgba(15,23,42,.04);transition:box-shadow .2s;}
+figure.shot:hover{box-shadow:0 14px 34px rgba(15,23,42,.12);}
+figure.shot figcaption{padding:15px 18px;}
+figure.shot figcaption b{display:block;font-size:15px;}
+figure.shot figcaption span{font-size:13px;color:var(--muted);}
+.gallery-note{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px 26px;text-align:center;font-size:15px;color:var(--body);margin-top:26px;}
+
+/* Before/After */
+.ba{border-radius:18px;padding:28px;}
+.ba.before{background:var(--soft);border:1px solid var(--line);}
+.ba.after{background:var(--indigo-50);border:2px solid var(--indigo);position:relative;}
+.ba .label{font-size:12.5px;font-weight:900;letter-spacing:.15em;color:var(--faint);margin-bottom:16px;}
+.ba.after .label{color:var(--indigo);}
+.ba ul{list-style:none;}
+.ba li{display:flex;justify-content:space-between;font-size:15px;padding:9px 0;border-bottom:1px solid var(--line);color:var(--body);}
+.ba.after li{border-color:var(--indigo-100);}
+.ba li b{color:var(--ink);}
+.ba.after li b{color:var(--indigo);}
+.ba .total{text-align:center;margin-top:20px;}
+.ba .total .num{font-size:32px;font-weight:900;}
+.ba.after .total .num{color:var(--indigo);}
+.ba .total small{display:block;color:var(--muted);font-size:13px;margin-top:2px;}
+.ba-tag{position:absolute;top:-14px;left:24px;background:var(--indigo);color:#fff;font-size:12px;font-weight:900;padding:4px 14px;border-radius:999px;}
+
+/* 料金 */
+.plan{background:#fff;border:1px solid var(--line);border-radius:18px;padding:28px;display:flex;flex-direction:column;box-shadow:0 1px 4px rgba(15,23,42,.04);}
+.plan.hot{border:2px solid var(--indigo);box-shadow:0 18px 44px rgba(79,70,229,.14);position:relative;}
+.plan .tier{font-size:13.5px;font-weight:700;color:var(--muted);margin-bottom:8px;}
+.plan.hot .tier{color:var(--indigo);}
+.plan .price{font-size:38px;font-weight:900;line-height:1;}
+.plan .price small{font-size:15px;color:var(--muted);font-weight:500;}
+.plan .tax{font-size:11.5px;color:var(--faint);margin:4px 0 16px;}
+.plan .for{font-size:14px;color:var(--muted);margin-bottom:20px;}
+.plan ul{list-style:none;flex:1;margin-bottom:22px;}
+.plan li{font-size:14px;padding:5px 0;color:var(--body);}
+.plan li::before{content:"✓";color:var(--indigo);font-weight:900;margin-right:9px;}
+.plan li.no{color:var(--faint);}
+.plan li.no::before{content:"−";color:var(--faint);}
+.plan.pro li::before{color:var(--amber);}
+.hot-tag{position:absolute;top:-15px;left:50%;transform:translateX(-50%);background:var(--indigo);color:#fff;font-size:12px;font-weight:900;padding:6px 16px;border-radius:999px;white-space:nowrap;}
+.btn-plan{display:block;text-align:center;border-radius:12px;padding:13px;font-weight:700;font-size:14.5px;transition:all .15s;}
+.btn-plan.gray{background:var(--soft2);color:var(--ink);}
+.btn-plan.gray:hover{background:var(--line);}
+.btn-plan.indigo{background:var(--indigo);color:#fff;}
+.btn-plan.indigo:hover{background:var(--indigo-dark);}
+.btn-plan.amber{background:var(--amber-btn);color:#fff;}
+.btn-plan.amber:hover{background:var(--amber);}
+
+/* FAQ */
+details{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin-bottom:12px;box-shadow:0 1px 4px rgba(15,23,42,.04);}
+summary{font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;font-size:15.5px;}
+summary::-webkit-details-marker{display:none;}
+summary::after{content:"＋";color:var(--faint);font-weight:400;margin-left:14px;}
+details[open] summary::after{content:"−";}
+details p{margin-top:12px;font-size:14px;color:var(--muted);}
+
+/* 最終CTA */
+.final{background:var(--indigo);color:#fff;text-align:center;}
+.final h2{color:#fff;}
+.final .lead{color:var(--indigo-100);}
+.btn-white{background:#fff;color:var(--indigo-dark);font-weight:900;box-shadow:0 14px 34px rgba(0,0,0,.18);}
+.btn-white:hover{background:var(--soft);transform:translateY(-1px);}
+.final .cta-note{color:var(--indigo-100);margin:16px 0 0;}
+
+/* フッター */
+footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:var(--muted);}
+.foot-inner{max-width:1080px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.foot-inner .logo{font-size:15px;color:var(--body);}
+.foot-inner .logo-mark{width:24px;height:24px;border-radius:6px;}
+.foot-links{display:flex;gap:22px;}
+.foot-links a:hover{color:var(--ink);}
+
+/* セクション余白ユーティリティ */
+.mt-10{margin-top:40px;}.mb-12{margin-bottom:48px;}.mb-8{margin-bottom:32px;}
+</style>
+</head>
+<body>
+
+<!-- ナビ -->
+<nav>
+  <div class="nav-inner">
+    <a class="logo" href="#top">
+      <span class="logo-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+      PostPilot <small>by IMADOKI</small>
     </a>
+    <div class="nav-links">
+      <a href="#solution">使い方</a><a href="#proof">実例</a><a href="#pricing">料金</a><a href="#faq">FAQ</a>
+    </div>
+    <a class="btn btn-primary btn-sm" href="#pricing">無料で始める</a>
   </div>
 </nav>
 
-<!-- ── ヒーロー ── -->
-<section class="hero-bg pt-36 pb-24 px-6 text-center">
-  <div class="max-w-4xl mx-auto">
-    <div class="inline-flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-full px-4 py-2 text-sm text-slate-300 mb-8">
-      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-      AIが毎朝7時に自動生成 — 今日も動いています
+<!-- ヒーロー -->
+<header class="hero center" id="top">
+  <div class="wrap">
+    <div class="badge"><span class="dot"></span>中小企業のためのSNS自動運用サービス</div>
+    <h1>SNS運用、あなたの仕事は<br>「<span class="hl">1日2分の承認</span>」だけ。</h1>
+    <p class="hero-sub">ネタ探しから投稿文・図解画像づくり、X / Threadsへの投稿、効果分析まで。面倒なことは、ぜんぶAIが自動で回します。</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="mailto:info@imadoki.co.jp?subject=PostPilot 無料トライアル申込み">14日間無料で試す →</a>
+      <a class="btn btn-ghost" href="#proof">実例を見る</a>
     </div>
+    <p class="cta-note">クレジットカード登録不要・最短翌日スタート</p>
+    <figure class="hero-visual">
+      <div class="frame"><img src="assets/light_flow.png" alt="AIが自動生成した図解の実例" loading="eager"></div>
+      <figcaption>▲ AIが毎朝自動生成している図解の<b>実物</b>です（デザイナー不要）</figcaption>
+    </figure>
+  </div>
+</header>
 
-    <h1 class="text-5xl md:text-6xl font-black leading-tight mb-6">
-      SNS運用を<br>
-      <span class="gradient-text">AIに丸投げ</span>しよう。
-    </h1>
-
-    <p class="text-xl text-slate-400 leading-relaxed mb-10 max-w-2xl mx-auto">
-      毎朝トレンドを収集・投稿案を5件生成・図解画像も自動作成。<br>
-      Notionで承認するだけで X・Threads へ自動投稿されます。
+<!-- 悩み共感 -->
+<section class="sec-soft">
+  <div class="wrap">
+    <div class="center mb-12">
+      <h2>SNS運用、<span class="marker">こんな悪循環</span>に陥っていませんか？</h2>
+    </div>
+    <div class="grid3">
+      <div class="card">
+        <div class="emoji">😩</div>
+        <h3>ネタ探しだけで30分</h3>
+        <p>「今日何を投稿しよう…」から始まり、書いて、画像を作って。1投稿に1時間かかることも。</p>
+      </div>
+      <div class="card">
+        <div class="emoji">🕐</div>
+        <h3>忙しくなると止まる</h3>
+        <p>担当者が本業に追われて更新が停止。動いていないアカウントは、見た人の信頼を下げます。</p>
+      </div>
+      <div class="card">
+        <div class="emoji">📉</div>
+        <h3>成果が見えない</h3>
+        <p>頑張って投稿しても、何が良くて何がダメだったのか分からない。改善のしようがない。</p>
+      </div>
+    </div>
+    <p class="center mt-10" style="font-size:17px;font-weight:500;color:var(--body);">
+      原因は担当者の能力ではありません。<b>「人力で回す仕組み」そのもの</b>に限界があるんです。
     </p>
-
-    <div class="flex flex-col sm:flex-row gap-4 justify-center mb-16">
-      <a href="#pricing" class="bg-brand-500 hover:bg-brand-600 text-white font-bold px-8 py-4 rounded-xl text-lg transition-all hover:scale-105">
-        14日間無料で試す →
-      </a>
-      <a href="#howitworks" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold px-8 py-4 rounded-xl text-lg transition-colors">
-        使い方を見る
-      </a>
-    </div>
-
-    <!-- 指標バッジ -->
-    <div class="flex flex-wrap justify-center gap-6 text-sm text-slate-400">
-      <div class="flex items-center gap-2">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        毎日自動で5件生成
-      </div>
-      <div class="flex items-center gap-2">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        高解像度インフォグラフィック付き
-      </div>
-      <div class="flex items-center gap-2">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        承認→自動投稿まで完全自動
-      </div>
-      <div class="flex items-center gap-2">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        サーバー不要・初期費用ゼロ
-      </div>
-    </div>
   </div>
 </section>
 
-<!-- ── 機能 ── -->
-<section id="features" class="py-24 px-6 bg-slate-950">
-  <div class="max-w-6xl mx-auto">
-    <div class="text-center mb-16">
-      <p class="text-brand-400 font-bold text-sm tracking-widest uppercase mb-3">Features</p>
-      <h2 class="text-4xl font-black mb-4">SNS運用に必要なことが<br>すべて揃っています</h2>
-      <p class="text-slate-400 text-lg">企画・制作・投稿・分析まで、AIが自動でこなします。</p>
+<!-- 使い方3ステップ -->
+<section id="solution">
+  <div class="wrap">
+    <div class="center mb-12">
+      <p class="eyebrow">How it works</p>
+      <h2>PostPilotなら、人がやるのは「選ぶ」だけ。</h2>
+      <p class="lead">毎日の流れはこの3ステップ。すべてLINEとNotionで完結します。</p>
     </div>
-
-    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <!-- 機能カード x6 -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-brand-500/50 transition-colors">
-        <div class="w-12 h-12 bg-brand-500/10 rounded-xl flex items-center justify-center mb-4">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-        </div>
-        <h3 class="font-bold text-lg mb-2">AI投稿文 自動生成</h3>
-        <p class="text-slate-400 text-sm leading-relaxed">業界トレンドとRSSニュースを分析し、「いいね」「保存」されやすい投稿文を毎朝自動生成します。</p>
+    <div class="grid3">
+      <div class="card step">
+        <span class="step-tag">朝7時・自動</span>
+        <div class="emoji">🤖</div>
+        <h3>AIが投稿案を生成</h3>
+        <p>業界ニュースとトレンドを収集し、投稿文5案＋図解画像を自動作成。LINEに「できました」と通知が届きます。</p>
       </div>
-
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-brand-500/50 transition-colors">
-        <div class="w-12 h-12 bg-amber-400/10 rounded-xl flex items-center justify-center mb-4">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-        </div>
-        <h3 class="font-bold text-lg mb-2">インフォグラフィック生成</h3>
-        <p class="text-slate-400 text-sm leading-relaxed">数字・データを含む投稿には高解像度の図解画像（1200×630px）を自動生成。棒グラフ・数字強調・比較など3種類。</p>
+      <div class="card step focus">
+        <span class="step-tag amber">あなたの出番・2分</span>
+        <div class="emoji">👍</div>
+        <h3>良い案だけ承認</h3>
+        <p>Notionを開いて、投稿したい案のステータスを変えるだけ。<b style="color:var(--ink);">承認制なので「AIが勝手に変なことを言う」事故は起きません。</b></p>
       </div>
-
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-brand-500/50 transition-colors">
-        <div class="w-12 h-12 bg-brand-500/10 rounded-xl flex items-center justify-center mb-4">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        </div>
-        <h3 class="font-bold text-lg mb-2">Notion 承認フロー</h3>
-        <p class="text-slate-400 text-sm leading-relaxed">生成された投稿案はすべてNotionに届きます。「未投稿」に変更するだけで承認完了。担当者がチェックする文化を崩しません。</p>
-      </div>
-
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-brand-500/50 transition-colors">
-        <div class="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center mb-4">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-        </div>
-        <h3 class="font-bold text-lg mb-2">X・Threads 自動投稿</h3>
-        <p class="text-slate-400 text-sm leading-relaxed">承認した投稿は設定した時間に自動でX（Twitter）とThreadsへ投稿。画像も自動添付されます。</p>
-      </div>
-
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-brand-500/50 transition-colors">
-        <div class="w-12 h-12 bg-amber-400/10 rounded-xl flex items-center justify-center mb-4">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
-        </div>
-        <h3 class="font-bold text-lg mb-2">パフォーマンス計測</h3>
-        <p class="text-slate-400 text-sm leading-relaxed">毎日自動でいいね数・RT数・インプレッションを取得してNotionに記録。どの投稿が伸びたか一目でわかります。</p>
-      </div>
-
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:border-brand-500/50 transition-colors">
-        <div class="w-12 h-12 bg-brand-500/10 rounded-xl flex items-center justify-center mb-4">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-        </div>
-        <h3 class="font-bold text-lg mb-2">ブランドカスタマイズ</h3>
-        <p class="text-slate-400 text-sm leading-relaxed">会社カラー・ロゴ・投稿トーン・テーマを設定するだけで、自社ブランドに合ったコンテンツを自動生成します。</p>
+      <div class="card step">
+        <span class="step-tag">以降ぜんぶ自動</span>
+        <div class="emoji">📈</div>
+        <h3>投稿→分析→学習</h3>
+        <p>ベストな時間にX / Threadsへ自動投稿。夜に「いいね・表示回数」を自動計測し、<b style="color:var(--ink);">翌朝のAIが伸びた型を学習</b>します。</p>
       </div>
     </div>
+    <div class="dark-note">使えば使うほど、あなたの会社専用の<b>「伸びる投稿の型」</b>をAIが覚えていきます。</div>
   </div>
 </section>
 
-<!-- ── 使い方 ── -->
-<section id="howitworks" class="py-24 px-6">
-  <div class="max-w-5xl mx-auto">
-    <div class="text-center mb-16">
-      <p class="text-brand-400 font-bold text-sm tracking-widest uppercase mb-3">How It Works</p>
-      <h2 class="text-4xl font-black mb-4">毎日の流れは<br>たった3ステップ</h2>
+<!-- 実物ギャラリー -->
+<section id="proof" class="sec-soft">
+  <div class="wrap">
+    <div class="center mb-12">
+      <p class="eyebrow">Real output</p>
+      <h2>AIが毎朝つくる図解、実物を見てください</h2>
+      <p class="lead">デザイナーゼロ・外注ゼロ。この品質の画像が、毎日自動で仕上がります。</p>
     </div>
-
-    <div class="grid md:grid-cols-3 gap-8 relative">
-      <div class="text-center">
-        <div class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-2xl font-black text-brand-400">1</div>
-        <div class="w-12 h-12 mx-auto mb-4 text-brand-400">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        </div>
-        <h3 class="font-bold text-xl mb-3">朝7時に自動生成</h3>
-        <p class="text-slate-400 text-sm leading-relaxed">AIが業界ニュースとトレンドを収集し、投稿文5件＋図解画像を自動生成。LINEで通知が届きます。</p>
-      </div>
-
-      <div class="text-center">
-        <div class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-2xl font-black text-brand-400">2</div>
-        <div class="w-12 h-12 mx-auto mb-4 text-amber-400">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="9 15 12 18 15 15"/></svg>
-        </div>
-        <h3 class="font-bold text-xl mb-3">Notionで承認</h3>
-        <p class="text-slate-400 text-sm leading-relaxed">届いた投稿案をNotionで確認。使いたい投稿のステータスを「未投稿」に変更するだけ。所要時間1〜2分。</p>
-      </div>
-
-      <div class="text-center">
-        <div class="w-16 h-16 mx-auto mb-6 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center text-2xl font-black text-emerald-400">3</div>
-        <div class="w-12 h-12 mx-auto mb-4 text-emerald-400">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-        </div>
-        <h3 class="font-bold text-xl mb-3">自動で投稿される</h3>
-        <p class="text-slate-400 text-sm leading-relaxed">設定した時間にX・Threadsへ自動投稿。画像も添付済み。あとは翌朝の通知を待つだけです。</p>
-      </div>
+    <div class="grid3">
+      <figure class="shot">
+        <img src="assets/light_flow.png" alt="プロセス図解のサンプル" loading="lazy">
+        <figcaption><b>プロセス図解</b><span>原因→対策→次の一歩の流れを整理</span></figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/light_list.png" alt="ポイント解説のサンプル" loading="lazy">
+        <figcaption><b>ポイント解説</b><span>保存されやすいノウハウまとめ</span></figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/light_stat.png" alt="データ強調のサンプル" loading="lazy">
+        <figcaption><b>データ強調</b><span>数字のインパクトで信頼をつくる</span></figcaption>
+      </figure>
     </div>
-
-    <!-- タイムライン -->
-    <div class="mt-16 bg-slate-950 rounded-2xl border border-slate-800 p-8">
-      <p class="text-slate-400 text-sm font-bold mb-6 text-center">1日のタイムライン（自動実行）</p>
-      <div class="space-y-3">
-        <div class="flex items-center gap-4">
-          <span class="text-brand-400 font-mono text-sm w-14 shrink-0">07:00</span>
-          <div class="flex-1 h-px bg-slate-800"></div>
-          <span class="text-sm text-slate-300">AIが投稿案5件＋画像を生成 → LINEで通知</span>
-        </div>
-        <div class="flex items-center gap-4">
-          <span class="text-slate-500 font-mono text-sm w-14 shrink-0">〜朝</span>
-          <div class="flex-1 h-px bg-slate-800"></div>
-          <span class="text-sm text-slate-400">Notionで確認・承認（1〜2分）</span>
-        </div>
-        <div class="flex items-center gap-4">
-          <span class="text-emerald-400 font-mono text-sm w-14 shrink-0">09:00</span>
-          <div class="flex-1 h-px bg-slate-800"></div>
-          <span class="text-sm text-slate-300">承認済み投稿を自動投稿</span>
-        </div>
-        <div class="flex items-center gap-4">
-          <span class="text-emerald-400 font-mono text-sm w-14 shrink-0">12:00</span>
-          <div class="flex-1 h-px bg-slate-800"></div>
-          <span class="text-sm text-slate-300">次の投稿を自動投稿</span>
-        </div>
-        <div class="flex items-center gap-4">
-          <span class="text-amber-400 font-mono text-sm w-14 shrink-0">22:00</span>
-          <div class="flex-1 h-px bg-slate-800"></div>
-          <span class="text-sm text-slate-300">本日の投稿のいいね数・インプレッションを自動計測</span>
-        </div>
-      </div>
-    </div>
+    <div class="gallery-note">📚 <b>ストーリー仕立ての複数枚スライド（起承転結カルーセル）にも対応。</b>内容の濃いテーマは、AIが自動で最大4枚のスライドに構成します。</div>
   </div>
 </section>
 
-<!-- ── 料金 ── -->
-<section id="pricing" class="py-24 px-6 bg-slate-950">
-  <div class="max-w-5xl mx-auto">
-    <div class="text-center mb-16">
-      <p class="text-brand-400 font-bold text-sm tracking-widest uppercase mb-3">Pricing</p>
-      <h2 class="text-4xl font-black mb-4">シンプルな料金体系</h2>
-      <p class="text-slate-400 text-lg">すべてのプランに14日間無料トライアル付き。初期費用ゼロ。</p>
+<!-- Before / After -->
+<section>
+  <div class="wrap-narrow">
+    <div class="center mb-12">
+      <h2>導入で変わるのは「<span class="marker">時間の使い方</span>」です</h2>
+      <p class="lead">1投稿あたり約60分 × 月60投稿で運用した場合の一般的な例</p>
     </div>
-
-    <div class="grid md:grid-cols-3 gap-6 items-stretch">
-
-      <!-- ライト -->
-      <div class="bg-slate-900 border border-slate-700 rounded-2xl p-8 flex flex-col">
-        <div class="mb-6">
-          <p class="text-slate-400 font-bold text-sm mb-2">ライト</p>
-          <div class="flex items-end gap-1 mb-1">
-            <span class="text-4xl font-black">¥9,800</span>
-            <span class="text-slate-400 mb-1">/月</span>
-          </div>
-          <p class="text-slate-500 text-sm">（税抜）</p>
-        </div>
-        <p class="text-slate-400 text-sm mb-6">SNS運用をはじめたい中小企業・個人事業主に。</p>
-        <ul class="space-y-3 mb-8 flex-1">
-          <li class="flex items-start gap-2 text-sm"><svg class="w-4 h-4 text-brand-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>投稿案 3件/日</li>
-          <li class="flex items-start gap-2 text-sm"><svg class="w-4 h-4 text-brand-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>X 自動投稿</li>
-          <li class="flex items-start gap-2 text-sm"><svg class="w-4 h-4 text-brand-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Notion 承認フロー</li>
-          <li class="flex items-start gap-2 text-sm"><svg class="w-4 h-4 text-brand-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>LINE 通知</li>
-          <li class="flex items-start gap-2 text-sm text-slate-500"><svg class="w-4 h-4 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>図解画像生成（なし）</li>
-          <li class="flex items-start gap-2 text-sm text-slate-500"><svg class="w-4 h-4 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Threads 投稿（なし）</li>
+    <div class="grid2">
+      <div class="ba before">
+        <p class="label">BEFORE — 人力運用</p>
+        <ul>
+          <li><span>ネタ探し・情報収集</span><b>15分</b></li>
+          <li><span>投稿文の執筆・推敲</span><b>20分</b></li>
+          <li><span>画像の作成・修正</span><b>20分</b></li>
+          <li><span>投稿作業・効果確認</span><b>5分</b></li>
         </ul>
-        <a href="mailto:info@imadoki.co.jp?subject=PostPilot ライトプラン 申込み" class="block w-full text-center bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-bold py-3 rounded-xl transition-colors text-sm">
-          14日間 無料で試す
-        </a>
+        <div class="total"><span class="num">月 約60時間</span><small>= 約1.5人月ぶんの作業</small></div>
       </div>
-
-      <!-- スタンダード（推奨） -->
-      <div class="bg-slate-900 border-2 border-brand-500 rounded-2xl p-8 flex flex-col card-glow relative">
-        <div class="absolute -top-4 left-1/2 -translate-x-1/2">
-          <span class="bg-brand-500 text-white text-xs font-black px-4 py-1.5 rounded-full">一番人気</span>
-        </div>
-        <div class="mb-6">
-          <p class="text-brand-400 font-bold text-sm mb-2">スタンダード</p>
-          <div class="flex items-end gap-1 mb-1">
-            <span class="text-4xl font-black">¥19,800</span>
-            <span class="text-slate-400 mb-1">/月</span>
-          </div>
-          <p class="text-slate-500 text-sm">（税抜）</p>
-        </div>
-        <p class="text-slate-400 text-sm mb-6">本格的にSNS運用を強化したい企業に。</p>
-        <ul class="space-y-3 mb-8 flex-1">
-          <li class="flex items-start gap-2 text-sm"><svg class="w-4 h-4 text-brand-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>投稿案 <strong>5件/日</strong></li>
-          <li class="flex items-start gap-2 text-sm"><svg class="w-4 h-4 text-brand-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>X・<strong>Threads</strong> 自動投稿</li>
-          <li class="flex items-start gap-2 text-sm"><svg class="w-4 h-4 text-brand-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><strong>インフォグラフィック</strong>付き投稿</li>
-          <li class="flex items-start gap-2 text-sm"><svg class="w-4 h-4 text-brand-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Notion 承認フロー</li>
-          <li class="flex items-start gap-2 text-sm"><svg class="w-4 h-4 text-brand-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>LINE 通知 + エラー通知</li>
-          <li class="flex items-start gap-2 text-sm"><svg class="w-4 h-4 text-brand-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><strong>パフォーマンス計測</strong></li>
-          <li class="flex items-start gap-2 text-sm"><svg class="w-4 h-4 text-brand-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><strong>ブランドカラー</strong>カスタマイズ</li>
-          <li class="flex items-start gap-2 text-sm"><svg class="w-4 h-4 text-brand-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>メールサポート</li>
+      <div class="ba after">
+        <span class="ba-tag">PostPilot</span>
+        <p class="label">AFTER — 自動運用</p>
+        <ul>
+          <li><span>ネタ探し・情報収集</span><b>自動</b></li>
+          <li><span>投稿文の執筆・推敲</span><b>自動</b></li>
+          <li><span>画像の作成・修正</span><b>自動</b></li>
+          <li><span>投稿・分析・改善</span><b>自動</b></li>
         </ul>
-        <a href="mailto:info@imadoki.co.jp?subject=PostPilot スタンダードプラン 申込み" class="block w-full text-center bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 rounded-xl transition-colors text-sm">
-          14日間 無料で試す
-        </a>
+        <div class="total"><span class="num">月 約1時間</span><small>あなたがやるのは毎朝の承認だけ</small></div>
       </div>
+    </div>
+    <p class="center mt-10" style="font-size:18px;font-weight:700;">浮いた時間を、本来の仕事とお客様のために。</p>
+  </div>
+</section>
 
-      <!-- プロ -->
-      <div class="bg-slate-900 border border-amber-400/30 rounded-2xl p-8 flex flex-col card-glow-gold">
-        <div class="mb-6">
-          <p class="text-amber-400 font-bold text-sm mb-2">プロ</p>
-          <div class="flex items-end gap-1 mb-1">
-            <span class="text-4xl font-black">¥49,800</span>
-            <span class="text-slate-400 mb-1">/月</span>
-          </div>
-          <p class="text-slate-500 text-sm">（税抜）</p>
-        </div>
-        <p class="text-slate-400 text-sm mb-6">複数ブランド・代理店・本格運用チームに。</p>
-        <ul class="space-y-3 mb-8 flex-1">
-          <li class="flex items-start gap-2 text-sm"><svg class="w-4 h-4 text-amber-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>スタンダードの全機能</li>
-          <li class="flex items-start gap-2 text-sm"><svg class="w-4 h-4 text-amber-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>投稿案 <strong>10件/日</strong></li>
-          <li class="flex items-start gap-2 text-sm"><svg class="w-4 h-4 text-amber-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><strong>複数クライアント</strong>管理</li>
-          <li class="flex items-start gap-2 text-sm"><svg class="w-4 h-4 text-amber-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>ロゴ入り画像生成</li>
-          <li class="flex items-start gap-2 text-sm"><svg class="w-4 h-4 text-amber-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>カスタムRSSフィード 無制限</li>
-          <li class="flex items-start gap-2 text-sm"><svg class="w-4 h-4 text-amber-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><strong>専任サポート</strong>（Slack / Zoom）</li>
+<!-- 機能 -->
+<section class="sec-soft">
+  <div class="wrap">
+    <div class="center mb-12">
+      <p class="eyebrow">Features</p>
+      <h2>SNS運用に必要なもの、ぜんぶ入り。</h2>
+    </div>
+    <div class="grid3">
+      <div class="card"><div class="emoji">✍️</div><h3>AI投稿文の自動作成</h3><p>最新ニュースを分析し、「保存したくなる」投稿文を毎朝5案。X用とThreads用で文体も書き分け。</p></div>
+      <div class="card"><div class="emoji">🎨</div><h3>図解画像の自動生成</h3><p>高解像度のインフォグラフィックを自動作成。自社カラー・ロゴ・会社名入りにカスタマイズ可能。</p></div>
+      <div class="card"><div class="emoji">✅</div><h3>Notion承認フロー</h3><p>投稿前に必ず人がチェック。ボタンひとつで承認・却下。企業アカウントに必須の安全弁です。</p></div>
+      <div class="card"><div class="emoji">🚀</div><h3>X・Threads自動投稿</h3><p>承認した投稿を設定時間に自動配信。複数枚カルーセルや補足リプライまで自動でぶら下げます。</p></div>
+      <div class="card"><div class="emoji">📊</div><h3>効果測定と自動学習</h3><p>いいね・表示回数・フォロワー推移を毎日自動記録。伸びた投稿の「型」を翌日のAIが学習します。</p></div>
+      <div class="card"><div class="emoji">💬</div><h3>LINE通知</h3><p>投稿案の到着、配信完了、毎晩の成果レポートまでLINEにお届け。管理画面を開く習慣は不要です。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 料金 -->
+<section id="pricing">
+  <div class="wrap">
+    <div class="center mb-12">
+      <p class="eyebrow">Pricing</p>
+      <h2>シンプルな料金プラン</h2>
+      <p class="lead">全プラン <b style="color:var(--ink);">14日間無料</b>・初期費用0円・いつでも解約OK</p>
+    </div>
+    <div class="grid3">
+      <div class="plan">
+        <p class="tier">ライト</p>
+        <p class="price">¥9,800<small> /月</small></p>
+        <p class="tax">（税抜）</p>
+        <p class="for">まずSNSを動かし始めたい方に。</p>
+        <ul>
+          <li>投稿案 3件/日</li>
+          <li>X 自動投稿</li>
+          <li>Notion承認フロー・LINE通知</li>
+          <li class="no">図解画像・Threads・効果測定</li>
         </ul>
-        <a href="mailto:info@imadoki.co.jp?subject=PostPilot プロプラン 相談" class="block w-full text-center bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold py-3 rounded-xl transition-colors text-sm">
-          まず相談する →
-        </a>
+        <a class="btn-plan gray" href="mailto:info@imadoki.co.jp?subject=PostPilot ライトプラン 無料トライアル">無料で試す</a>
+      </div>
+      <div class="plan hot">
+        <span class="hot-tag">いちばん選ばれています</span>
+        <p class="tier">スタンダード</p>
+        <p class="price">¥19,800<small> /月</small></p>
+        <p class="tax">（税抜）</p>
+        <p class="for">本気でSNSを集客に使いたい企業に。</p>
+        <ul>
+          <li>投稿案 <b>5件/日</b></li>
+          <li>X・<b>Threads</b> 自動投稿</li>
+          <li><b>図解画像・カルーセル</b>自動生成</li>
+          <li><b>効果測定＋AI自動学習</b></li>
+          <li>ブランドカラー・会社名入り画像</li>
+          <li>メールサポート</li>
+        </ul>
+        <a class="btn-plan indigo" href="mailto:info@imadoki.co.jp?subject=PostPilot スタンダードプラン 無料トライアル">無料で試す →</a>
+      </div>
+      <div class="plan pro">
+        <p class="tier" style="color:var(--amber);">プロ</p>
+        <p class="price">¥49,800<small> /月</small></p>
+        <p class="tax">（税抜）</p>
+        <p class="for">複数ブランド・代理店・本格運用に。</p>
+        <ul>
+          <li>スタンダードの全機能</li>
+          <li>投稿案 <b>10件/日</b></li>
+          <li><b>複数アカウント・複数ブランド</b>管理</li>
+          <li>ロゴ入り画像・カスタムRSS無制限</li>
+          <li>専任サポート（Slack / Zoom）</li>
+        </ul>
+        <a class="btn-plan amber" href="mailto:info@imadoki.co.jp?subject=PostPilot プロプラン 相談">まず相談する</a>
       </div>
     </div>
-
-    <p class="text-center text-slate-500 text-sm mt-8">すべてのプランに14日間の無料トライアルが付きます。クレジットカード不要。</p>
   </div>
 </section>
 
-<!-- ── FAQ ── -->
-<section id="faq" class="py-24 px-6">
-  <div class="max-w-3xl mx-auto">
-    <div class="text-center mb-16">
-      <p class="text-brand-400 font-bold text-sm tracking-widest uppercase mb-3">FAQ</p>
-      <h2 class="text-4xl font-black">よくある質問</h2>
+<!-- FAQ -->
+<section id="faq" class="sec-soft">
+  <div class="wrap-narrow">
+    <div class="center mb-12">
+      <p class="eyebrow">FAQ</p>
+      <h2>よくある質問</h2>
     </div>
-
-    <div class="space-y-4">
-      <details class="bg-slate-800/50 border border-slate-700 rounded-xl p-6 group">
-        <summary class="font-bold cursor-pointer flex items-center justify-between list-none">
-          投稿は自動で送信されますか？承認は必要ですか？
-          <svg class="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-        </summary>
-        <p class="mt-4 text-slate-400 text-sm leading-relaxed">生成された投稿案はまずNotionに「承認待ち」として届きます。担当者がNotionでステータスを「未投稿」に変更した投稿のみ、設定した時間に自動投稿されます。承認せずにそのままにすれば投稿されません。</p>
-      </details>
-
-      <details class="bg-slate-800/50 border border-slate-700 rounded-xl p-6 group">
-        <summary class="font-bold cursor-pointer flex items-center justify-between list-none">
-          SNSの専門知識がなくても使えますか？
-          <svg class="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-        </summary>
-        <p class="mt-4 text-slate-400 text-sm leading-relaxed">はい。毎日必要な作業はNotionを開いて投稿を承認するだけです。SNSのアカウント作成とNotionアカウントは事前に必要ですが、それ以外の技術的な設定はIMAdOKIが代行します。</p>
-      </details>
-
-      <details class="bg-slate-800/50 border border-slate-700 rounded-xl p-6 group">
-        <summary class="font-bold cursor-pointer flex items-center justify-between list-none">
-          生成される投稿の内容をカスタマイズできますか？
-          <svg class="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-        </summary>
-        <p class="mt-4 text-slate-400 text-sm leading-relaxed">はい。業種・ターゲット読者・投稿トーン・メインテーマ・参照するニュースサイトなどを設定できます。「医療業界向け」「20代女性向け」「丁寧な文体」など、自社ブランドに合わせた設定が可能です。</p>
-      </details>
-
-      <details class="bg-slate-800/50 border border-slate-700 rounded-xl p-6 group">
-        <summary class="font-bold cursor-pointer flex items-center justify-between list-none">
-          解約はいつでもできますか？
-          <svg class="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-        </summary>
-        <p class="mt-4 text-slate-400 text-sm leading-relaxed">月単位の契約で、いつでも解約可能です。解約の翌月から請求は発生しません。データはNotionに保存されているためエクスポートも自由です。</p>
-      </details>
-
-      <details class="bg-slate-800/50 border border-slate-700 rounded-xl p-6 group">
-        <summary class="font-bold cursor-pointer flex items-center justify-between list-none">
-          始めるまでにどのくらいかかりますか？
-          <svg class="w-5 h-5 text-slate-400 group-open:rotate-180 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-        </summary>
-        <p class="mt-4 text-slate-400 text-sm leading-relaxed">申し込み後、IMAdOKIがAPIキーの設定・Notionのセットアップ・初期テストまで代行します。最短で申し込み翌日から自動生成が始まります。</p>
-      </details>
-    </div>
+    <details>
+      <summary>AIが勝手に投稿してしまうことはありませんか？</summary>
+      <p>ありません。投稿されるのは、あなたがNotionで承認した案だけです。承認しなかった案はそのまま破棄されます。企業アカウントの「炎上が怖い」という不安に応える設計です。</p>
+    </details>
+    <details>
+      <summary>パソコンが苦手でも使えますか？</summary>
+      <p>はい。日々の操作は「LINEの通知を見る」「Notionでボタンを押す」の2つだけで、スマホで完結します。初期設定はすべて弊社が代行するので、技術的な作業は一切ありません。</p>
+    </details>
+    <details>
+      <summary>うちの業界に合った投稿になりますか？</summary>
+      <p>導入時に業種・ターゲット層・文体・扱うテーマ・参照するニュース源を貴社専用に設定します。さらに運用開始後は、実際に伸びた投稿をAIが学習し続けるため、使うほど貴社らしい投稿になっていきます。</p>
+    </details>
+    <details>
+      <summary>始めるまでに何が必要ですか？</summary>
+      <p>X（Twitter）のアカウントと、無料のNotion・LINEだけです。セットアップは弊社が代行し、最短で申込みの翌日から投稿案が届き始めます。</p>
+    </details>
+    <details>
+      <summary>解約したらデータはどうなりますか？</summary>
+      <p>月単位でいつでも解約でき、違約金はありません。投稿履歴や実績データはすべて貴社のNotionに残るため、解約後もそのまま資産として使えます。</p>
+    </details>
   </div>
 </section>
 
-<!-- ── CTA ── -->
-<section class="py-24 px-6 bg-slate-950">
-  <div class="max-w-3xl mx-auto text-center">
-    <h2 class="text-4xl font-black mb-6">
-      今日から<span class="gradient-text">SNS運用</span>を<br>自動化しませんか？
-    </h2>
-    <p class="text-slate-400 text-lg mb-10">
-      14日間無料・初期費用ゼロ・解約はいつでも。<br>
-      まずはお気軽にお問い合わせください。
-    </p>
-    <div class="flex flex-col sm:flex-row gap-4 justify-center">
-      <a href="mailto:info@imadoki.co.jp?subject=PostPilot 無料トライアル申込み" class="bg-brand-500 hover:bg-brand-600 text-white font-bold px-10 py-4 rounded-xl text-lg transition-all hover:scale-105">
-        無料トライアルを始める
-      </a>
-      <a href="mailto:info@imadoki.co.jp?subject=PostPilot デモを見たい" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold px-10 py-4 rounded-xl text-lg transition-colors">
-        デモを見る
-      </a>
-    </div>
+<!-- 最終CTA -->
+<section class="final">
+  <div class="wrap-narrow">
+    <h2>まずは14日間、<br>AIに任せてみてください。</h2>
+    <p class="lead" style="margin-bottom:34px;">合わなければ、そのまま終了でOK。費用は一切かかりません。<br>その14日間で「SNSが勝手に動く感覚」を体験してください。</p>
+    <a class="btn btn-white" href="mailto:info@imadoki.co.jp?subject=PostPilot 無料トライアル申込み">14日間無料で試す →</a>
+    <p class="cta-note">クレジットカード登録不要・最短翌日スタート</p>
   </div>
 </section>
 
-<!-- ── フッター ── -->
-<footer class="border-t border-slate-800 py-10 px-6">
-  <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
-    <div class="flex items-center gap-3">
-      <div class="w-6 h-6 rounded bg-brand-500 flex items-center justify-center">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-        </svg>
-      </div>
-      <span class="font-bold text-slate-400">PostPilot by IMADOKI</span>
-    </div>
-    <p>© 2025 株式会社IMADOKI. All rights reserved.</p>
-    <div class="flex gap-6">
-      <a href="mailto:info@imadoki.co.jp" class="hover:text-slate-300 transition-colors">お問い合わせ</a>
-      <a href="https://imadoki.co.jp" class="hover:text-slate-300 transition-colors">会社概要</a>
+<!-- フッター -->
+<footer>
+  <div class="foot-inner">
+    <span class="logo">
+      <span class="logo-mark"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+      PostPilot by IMADOKI
+    </span>
+    <p>© 2026 株式会社IMADOKI. All rights reserved.</p>
+    <div class="foot-links">
+      <a href="mailto:info@imadoki.co.jp">お問い合わせ</a>
+      <a href="https://imadoki.co.jp">会社概要</a>
     </div>
   </div>
 </footer>

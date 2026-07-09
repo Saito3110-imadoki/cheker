@@ -193,19 +193,34 @@ export default function AnalyticsPage() {
       </div>
 
       {/* KPI row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 16, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 16, marginBottom: 20 }}>
         <div style={glassStyle}>
-          <div style={{ color: '#6b7280', fontSize: 12, marginBottom: 4 }}>総売上</div>
+          <div style={{ color: '#6b7280', fontSize: 12, marginBottom: 4 }}>期間内売上</div>
           <div style={{ color: '#a5b4fc', fontSize: 22, fontWeight: 700 }}>{fmtMoney(grandTotal)}</div>
         </div>
+        {(() => {
+          const totalCogs = clientStats.reduce((s, c) => s + c.totalCogs, 0);
+          const gpRate = grandTotal > 0 ? ((grandTotal - totalCogs) / grandTotal) * 100 : 0;
+          return (
+            <div style={glassStyle}>
+              <div style={{ color: '#6b7280', fontSize: 12, marginBottom: 4 }}>粗利率</div>
+              <div style={{ color: gpRate >= 40 ? '#4ade80' : gpRate >= 20 ? '#facc15' : '#f87171', fontSize: 22, fontWeight: 700 }}>
+                {gpRate.toFixed(1)}%
+              </div>
+              <div style={{ color: '#6b7280', fontSize: 11, marginTop: 4 }}>粗利 {fmtMoney(grandTotal - totalCogs)}</div>
+            </div>
+          );
+        })()}
         <div style={glassStyle}>
-          <div style={{ color: '#6b7280', fontSize: 12, marginBottom: 4 }}>クライアント数</div>
-          <div style={{ color: '#a5b4fc', fontSize: 22, fontWeight: 700 }}>{clientStats.length}</div>
+          <div style={{ color: '#6b7280', fontSize: 12, marginBottom: 4 }}>取引クライアント</div>
+          <div style={{ color: '#a5b4fc', fontSize: 22, fontWeight: 700 }}>{clientStats.length}<span style={{ fontSize: 14, color: '#6b7280', marginLeft: 2 }}>社</span></div>
         </div>
         <div style={{ ...glassStyle, borderColor: top3Share > 50 ? 'rgba(239,68,68,0.4)' : 'rgba(255,255,255,0.08)' }}>
-          <div style={{ color: '#6b7280', fontSize: 12, marginBottom: 4 }}>Top3集中度</div>
-          <div style={{ color: top3Share > 50 ? '#f87171' : '#a5b4fc', fontSize: 22, fontWeight: 700 }}>{top3Share.toFixed(1)}%</div>
-          {top3Share > 50 && <div style={{ color: '#f87171', fontSize: 11, marginTop: 4 }}>⚠ 売上集中リスク（50%超）</div>}
+          <div style={{ color: '#6b7280', fontSize: 12, marginBottom: 4 }}>売上依存度（上位3社）</div>
+          <div style={{ color: top3Share > 50 ? '#f87171' : '#4ade80', fontSize: 22, fontWeight: 700 }}>{top3Share.toFixed(1)}%</div>
+          <div style={{ color: top3Share > 50 ? '#f87171' : '#6b7280', fontSize: 11, marginTop: 4 }}>
+            {top3Share > 50 ? '⚠ 特定クライアントへの依存が高め' : '✓ 分散は健全な水準'}
+          </div>
         </div>
       </div>
 
@@ -216,14 +231,20 @@ export default function AnalyticsPage() {
           <h3 style={{ color: '#e2e8f0', fontSize: 15, fontWeight: 600, marginBottom: 16 }}>クライアント別売上ランキング TOP10</h3>
           <svg width="100%" viewBox={`0 0 500 ${top10.length * 36 + 10}`}>
             {top10.map((c, i) => {
-              const barW = (c.totalRevenue / maxBarRevenue) * 340;
+              const barW = Math.max((c.totalRevenue / maxBarRevenue) * 290, 4);
               const y = i * 36 + 4;
+              // 長いバーはラベルをバー内（右寄せ・白）、短いバーは外側に表示して見切れを防ぐ
+              const labelInside = barW > 70;
               return (
                 <g key={c.clientName}>
                   <text x="0" y={y + 14} fill="#9ca3af" fontSize="11">{i + 1}.</text>
                   <text x="18" y={y + 14} fill="#e2e8f0" fontSize="11" style={{ fontWeight: 500 }}>{c.clientName.slice(0, 14)}</text>
                   <rect x="150" y={y + 2} width={barW} height={20} rx="4" fill={BU_COLORS[c.businessUnit] ?? 'rgba(99,102,241,0.6)'} />
-                  <text x={154 + barW} y={y + 15} fill="#a5b4fc" fontSize="11">{fmtMoney(c.totalRevenue)}</text>
+                  {labelInside ? (
+                    <text x={150 + barW - 6} y={y + 15} textAnchor="end" fill="#ffffff" fontSize="11" fontWeight="600">{fmtMoney(c.totalRevenue)}</text>
+                  ) : (
+                    <text x={158 + barW} y={y + 15} fill="#a5b4fc" fontSize="11">{fmtMoney(c.totalRevenue)}</text>
+                  )}
                 </g>
               );
             })}

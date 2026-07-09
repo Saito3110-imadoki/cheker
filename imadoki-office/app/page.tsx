@@ -119,31 +119,39 @@ export default function Dashboard() {
 
   // Derive KPIs from real data when available
   const sortedPL = companyData?.monthlyPL ? [...companyData.monthlyPL].sort((a, b) => a.month.localeCompare(b.month)) : [];
-  const latestPL = sortedPL[sortedPL.length - 1];
-  const prevPL = sortedPL[sortedPL.length - 2];
+  // 未来月（受注見込み）はKPIから除外し、今月までの実績で「直近月」を決める
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const actualPL = sortedPL.filter(m => m.month <= currentMonth);
+  const latestPL = actualPL[actualPL.length - 1] ?? sortedPL[sortedPL.length - 1];
+  const prevPL = actualPL[actualPL.length - 2];
+  const futureRevenue = sortedPL.filter(m => m.month > currentMonth).reduce((s, m) => s + m.revenue, 0);
 
   const activeProjectCount = lsProjects.filter(p => p.status === 'active').length;
   const doneTaskCount = lsTasks.filter(t => t.status === 'done').length;
   const activeClients = companyData?.clients?.filter(c => c.status === 'active') ?? [];
   const atRiskClients = companyData?.clients?.filter(c => c.status === 'at-risk') ?? [];
+  // 契約クライアント: クライアント管理が未入力でも、PLインポートのクライアント別売上から集計
+  const revenueClientCount = companyData?.clientRevenue?.length ?? 0;
+  const clientCount = activeClients.length > 0 ? activeClients.length : revenueClientCount;
 
   const revenueDisplay = latestPL
     ? `¥${latestPL.revenue.toLocaleString()}`
     : '未入力';
 
   const revGrowthLabel = (() => {
-    if (!latestPL || !prevPL || prevPL.revenue === 0) return latestPL ? '実績値' : 'データ入力へ';
+    if (!latestPL || !prevPL || prevPL.revenue === 0) return latestPL ? `${latestPL.month.replace('-', '年')}月 実績` : 'データ入力へ';
     const growth = Math.round(((latestPL.revenue - prevPL.revenue) / prevPL.revenue) * 100);
     return `前月比${growth >= 0 ? '+' : ''}${growth}%`;
   })();
 
-  const opMarginLabel = latestPL && latestPL.revenue > 0
+  // 原価データがない月の「利益率100%」表示は誤解を招くため、原価>0の月のみ表示
+  const opMarginLabel = latestPL && latestPL.revenue > 0 && latestPL.cogs > 0
     ? `営業利益率${Math.round((latestPL.operatingProfit / latestPL.revenue) * 100)}%`
-    : '';
+    : latestPL ? `${latestPL.month.split('-')[1]}月実績` : '';
 
-  const clientCountLabel = companyData
+  const clientCountLabel = activeClients.length > 0
     ? `${activeClients.length}社契約中${atRiskClients.length > 0 ? ` / リスク${atRiskClients.length}社` : ''}`
-    : '';
+    : revenueClientCount > 0 ? '売上実績ベース' : '';
 
   const hasData = !!companyData && (companyData.monthlyPL.length > 0 || companyData.clients.length > 0);
 
@@ -190,8 +198,8 @@ export default function Dashboard() {
         />
         <KpiCard
           icon="👥"
-          label="契約クライアント"
-          value={companyData ? `${activeClients.length}社` : '未入力'}
+          label="取引クライアント"
+          value={companyData ? `${clientCount}社` : '未入力'}
           sub={clientCountLabel || '—'}
           color="#6366f1"
         />
@@ -201,7 +209,9 @@ export default function Dashboard() {
           value={companyData?.monthlyPL?.length
             ? `¥${companyData.monthlyPL.reduce((s, m) => s + m.revenue, 0).toLocaleString()}`
             : '未入力'}
-          sub={companyData?.monthlyPL?.length ? `${companyData.monthlyPL.length}ヶ月分` : '—'}
+          sub={futureRevenue > 0
+            ? `うち受注見込み ¥${futureRevenue.toLocaleString()}`
+            : companyData?.monthlyPL?.length ? `${companyData.monthlyPL.length}ヶ月分` : '—'}
           color="#a855f7"
         />
       </div>

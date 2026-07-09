@@ -119,6 +119,18 @@ h1 .hl{color:var(--indigo);}
 .sns-attach-note{display:flex;align-items:center;gap:8px;margin-top:12px;background:var(--soft);border:1px dashed #cbd5e1;border-radius:10px;padding:9px 14px;font-size:12.5px;color:var(--muted);}
 .sns-foot{display:flex;gap:34px;color:var(--faint);font-size:14px;margin-top:14px;padding-top:11px;border-top:1px solid var(--soft2);}
 
+/* 業種別カスタマイズ */
+.ind-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:1080px;margin:34px auto 0;align-items:stretch;}
+@media(max-width:860px){.ind-grid{grid-template-columns:1fr;}}
+.ind-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:22px;box-shadow:0 8px 26px rgba(15,23,42,.06);text-align:left;display:flex;flex-direction:column;}
+.ind-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.ind-emoji{width:42px;height:42px;border-radius:12px;background:var(--indigo-50);display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0;}
+.ind-name b{display:block;font-size:15px;line-height:1.3;}
+.ind-name span{font-size:12px;color:var(--faint);}
+.ind-body{font-size:13.5px;color:var(--body);line-height:1.8;white-space:pre-line;flex:1;}
+.ind-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;padding-top:12px;border-top:1px solid var(--soft2);}
+.ind-tag{font-size:11.5px;font-weight:700;color:var(--indigo);background:var(--indigo-50);border-radius:999px;padding:4px 12px;}
+
 /* ギャラリー */
 figure.shot{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 1px 4px rgba(15,23,42,.04);transition:box-shadow .2s;}
 figure.shot:hover{box-shadow:0 14px 34px rgba(15,23,42,.12);}
@@ -390,6 +402,45 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
       </div>
     </div>
     <p class="nm-caption">どちらも同じ朝に、同じテーマから自動生成された文章です。</p>
+
+    <!-- 業種別カスタマイズ -->
+    <div class="sns-sub">
+      <h3>業種が変われば、AIの書く文章も変わる</h3>
+      <p class="lead">導入時に業種・ターゲット・文体・扱うテーマを貴社専用に設定。あなたの会社の「らしさ」で投稿を企画します。</p>
+    </div>
+    <div class="ind-grid">
+      <div class="ind-card">
+        <div class="ind-head">
+          <span class="ind-emoji">🏠</span>
+          <span class="ind-name"><b>不動産会社の場合</b><span>ターゲット: 初めて家を買う30代夫婦</span></span>
+        </div>
+        <p class="ind-body">住宅ローンの『変動か固定か』、営業マンに聞くと立場によって答えが変わります。
+
+判断基準は実はシンプルで、『10年以内に繰り上げ返済の目処があるか』。今日は不動産屋が本音で解説します。</p>
+        <div class="ind-tags"><span class="ind-tag">誠実・専門家の本音</span><span class="ind-tag">住宅購入の不安解消</span></div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-head">
+          <span class="ind-emoji">🍜</span>
+          <span class="ind-name"><b>飲食店の場合</b><span>ターゲット: 近隣で働くランチ客</span></span>
+        </div>
+        <p class="ind-body">まかないで作った『鶏だし塩ラーメン』、スタッフに『これお店で出さないんですか？』と言われ続けて3ヶ月。
+
+ついに来週から数量限定で出します。仕込みの裏側、ちょっとだけ見せちゃいます🍜</p>
+        <div class="ind-tags"><span class="ind-tag">親しみ・舞台裏</span><span class="ind-tag">来店のきっかけづくり</span></div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-head">
+          <span class="ind-emoji">💇</span>
+          <span class="ind-name"><b>美容サロンの場合</b><span>ターゲット: 髪質に悩む20〜30代女性</span></span>
+        </div>
+        <p class="ind-body">『縮毛矯正とストレートパーマ、どっちがいいですか？』
+
+実はこれ、髪のダメージ履歴で答えが変わる質問なんです。カウンセリングで必ず聞いている3つの質問、公開します。</p>
+        <div class="ind-tags"><span class="ind-tag">寄り添い・プロの知見</span><span class="ind-tag">悩み相談への回答</span></div>
+      </div>
+    </div>
+    <p class="nm-caption">業種・ターゲット・文体・参照するニュース源まで、<b>すべて貴社専用にチューニング</b>してお渡しします。</p>
   </div>
 </section>
 

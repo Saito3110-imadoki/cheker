@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { members as defaultMembers, chatMessages } from '@/lib/data';
 import { CompanyData } from '@/lib/ceo-types';
 import { Member } from '@/lib/data';
+import { loadGame, levelFromXp, BADGE_DEFS } from '@/lib/gamification';
 
 function RevenueChart({ data }: { data: { month: string; revenue: number; operatingProfit: number }[] }) {
   if (data.length < 2) return (
@@ -110,6 +111,70 @@ function greeting() {
   return 'お疲れさまです';
 }
 
+// ゲーミフィケーションウィジェット
+function GameWidget() {
+  const [game, setGame] = useState<ReturnType<typeof loadGame> | null>(null);
+
+  useEffect(() => {
+    const calc = () => { try { setGame(loadGame()); } catch { /* ignore */ } };
+    calc();
+    window.addEventListener('imadoki-game-updated', calc);
+    return () => window.removeEventListener('imadoki-game-updated', calc);
+  }, []);
+
+  if (!game) return null;
+  const lv = levelFromXp(game.xp);
+  const pct = Math.min(100, (lv.currentXp / lv.nextLevelXp) * 100);
+
+  return (
+    <div className="glass rounded-xl p-5 mb-6 animate-fade-up">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        {/* Level + XP */}
+        <div className="flex items-center gap-4 flex-1 min-w-[240px]">
+          <div className="w-14 h-14 rounded-2xl flex flex-col items-center justify-center flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg,#6366f1,#a855f7)', boxShadow: '0 4px 16px rgba(99,102,241,0.4)' }}>
+            <span className="text-[10px] font-medium text-white opacity-80">Lv</span>
+            <span className="text-xl font-bold text-white" style={{ lineHeight: 1 }}>{lv.level}</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline gap-2">
+              <span className="font-bold" style={{ color: '#f1f5f9', fontSize: 15 }}>{lv.title}</span>
+              {game.streak >= 2 && (
+                <span className="text-xs font-semibold" style={{ color: '#fb923c' }}>🔥 {game.streak}日連続</span>
+              )}
+            </div>
+            <div className="mt-2 h-2 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+              <div className="h-full rounded-full transition-all duration-700"
+                style={{ width: `${pct}%`, background: 'linear-gradient(90deg,#6366f1,#a855f7)', boxShadow: '0 0 8px rgba(99,102,241,0.6)' }} />
+            </div>
+            <div className="mt-1 text-xs" style={{ color: '#64748b', fontVariantNumeric: 'tabular-nums' }}>
+              次のレベルまで {lv.nextLevelXp - lv.currentXp} XP（タスク完了+50 / 入金確認+100 / データ取込+80）
+            </div>
+          </div>
+        </div>
+        {/* Badges */}
+        <div className="flex items-center gap-1.5">
+          {BADGE_DEFS.map(def => {
+            const earned = game.badges.find(b => b.id === def.id);
+            return (
+              <div key={def.id} title={`${def.name} — ${def.desc}${earned ? '' : '（未獲得）'}`}
+                className="w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-all"
+                style={{
+                  background: earned ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.03)',
+                  border: earned ? '1px solid rgba(99,102,241,0.45)' : '1px solid rgba(255,255,255,0.06)',
+                  filter: earned ? 'none' : 'grayscale(1)',
+                  opacity: earned ? 1 : 0.35,
+                }}>
+                {def.icon}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const [members, setMembers] = useState<Member[]>(defaultMembers);
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
@@ -196,6 +261,9 @@ export default function Dashboard() {
           <span className="text-sm" style={{ color: '#fbbf24' }}>で売上・クライアントを入力すると、このダッシュボードに経営指標が表示されます。</span>
         </div>
       )}
+
+      {/* Gamification */}
+      <GameWidget />
 
       {/* KPI Cards — financial */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">

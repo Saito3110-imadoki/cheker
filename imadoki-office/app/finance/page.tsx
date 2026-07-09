@@ -505,18 +505,24 @@ export default function FinancePage() {
   const save = (inv: Invoice) => {
     const existing = loadInvoices();
     const idx = existing.findIndex(i => i.id === inv.id);
+    const isNew = idx < 0;
     if (idx >= 0) existing[idx] = inv;
     else existing.unshift(inv);
     saveInvoices(existing);
     setInvoices(existing);
     setSelected(inv);
     setTab('list');
+    if (isNew) import('@/lib/gamification').then(m => m.addXp('invoice-created'));
   };
 
   const updateStatus = (id: string, status: InvoiceStatus) => {
+    const prev = invoices.find(i => i.id === id);
     const updated = invoices.map(i => i.id === id ? { ...i, status } : i);
     saveInvoices(updated);
     setInvoices(updated);
+    if (status === 'paid' && prev && prev.status !== 'paid') {
+      import('@/lib/gamification').then(m => m.addXp('invoice-paid'));
+    }
   };
 
   const deleteInvoice = (id: string) => {
@@ -709,6 +715,7 @@ export default function FinancePage() {
             saveInvoices(updated);
             setInvoices(updated);
             setSelected({ ...selected, legalCheckResult: result });
+            import('@/lib/gamification').then(m => m.addXp('legal-check'));
           }}
         />
       )}

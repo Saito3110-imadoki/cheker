@@ -5,6 +5,117 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { members as defaultMembers, Member } from '@/lib/data';
 import CommandPalette from './CommandPalette';
+import { loadGame, levelFromXp, Badge } from '@/lib/gamification';
+
+// ---------- テーマ切替 ----------
+type Theme = 'dark' | 'light';
+
+function useTheme(): [Theme, () => void] {
+  const [theme, setTheme] = useState<Theme>('dark');
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('imadoki-theme');
+      if (saved === 'light' || saved === 'dark') setTheme(saved);
+    } catch { /* ignore */ }
+  }, []);
+  const toggle = () => {
+    setTheme(prev => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      try { localStorage.setItem('imadoki-theme', next); } catch { /* ignore */ }
+      return next;
+    });
+  };
+  return [theme, toggle];
+}
+
+// ライトモード: 反転オーバーレイ方式（fixed要素・モーダルのレイアウトを一切壊さない）
+function LightModeOverlay() {
+  return (
+    <>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 99998, pointerEvents: 'none', backdropFilter: 'hue-rotate(180deg)' }} />
+      <div style={{ position: 'fixed', inset: 0, zIndex: 99999, pointerEvents: 'none', background: '#fff', mixBlendMode: 'difference' }} />
+    </>
+  );
+}
+
+// ---------- XP獲得トースト ----------
+interface XpToast {
+  id: number;
+  gained: number;
+  label: string;
+  levelUp: boolean;
+  level: number;
+  newBadges: Badge[];
+}
+
+function XpToaster() {
+  const [toasts, setToasts] = useState<XpToast[]>([]);
+
+  useEffect(() => {
+    let seq = 0;
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as Omit<XpToast, 'id'>;
+      const id = ++seq;
+      setToasts(prev => [...prev, { ...detail, id }]);
+      setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), detail.levelUp || detail.newBadges.length > 0 ? 4500 : 2500);
+    };
+    window.addEventListener('imadoki-xp-gain', handler);
+    return () => window.removeEventListener('imadoki-xp-gain', handler);
+  }, []);
+
+  if (toasts.length === 0) return null;
+  return (
+    <div className="fixed bottom-6 right-6 z-[300] flex flex-col gap-2 pointer-events-none">
+      {toasts.map(t => (
+        <div key={t.id} className="animate-fade-up rounded-xl px-4 py-3"
+          style={{
+            background: 'rgba(13,13,26,0.96)',
+            border: t.levelUp ? '1px solid rgba(250,204,21,0.5)' : '1px solid rgba(99,102,241,0.4)',
+            boxShadow: t.levelUp ? '0 0 24px rgba(250,204,21,0.25)' : '0 4px 16px rgba(0,0,0,0.4)',
+            minWidth: 220,
+          }}>
+          <div className="flex items-center gap-2">
+            <span className="text-lg">✨</span>
+            <span className="text-sm font-bold" style={{ color: '#a5b4fc' }}>+{t.gained} XP</span>
+            <span className="text-xs" style={{ color: '#94a3b8' }}>{t.label}</span>
+          </div>
+          {t.levelUp && (
+            <div className="mt-1.5 text-sm font-bold" style={{ color: '#facc15' }}>
+              🎉 レベルアップ！ Lv.{t.level} に到達
+            </div>
+          )}
+          {t.newBadges.map(b => (
+            <div key={b.id} className="mt-1.5 flex items-center gap-2 text-xs" style={{ color: '#e2e8f0' }}>
+              <span className="text-base">{b.icon}</span>
+              <span>バッジ獲得「<b>{b.name}</b>」</span>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ---------- サイドバー用レベル表示 ----------
+function useGameLevel() {
+  const [info, setInfo] = useState({ level: 1, currentXp: 0, nextLevelXp: 100, title: '見習い経営者', streak: 0 });
+  useEffect(() => {
+    const calc = () => {
+      try {
+        const g = loadGame();
+        setInfo({ ...levelFromXp(g.xp), streak: g.streak });
+      } catch { /* ignore */ }
+    };
+    calc();
+    window.addEventListener('imadoki-game-updated', calc);
+    window.addEventListener('storage', calc);
+    return () => {
+      window.removeEventListener('imadoki-game-updated', calc);
+      window.removeEventListener('storage', calc);
+    };
+  }, []);
+  return info;
+}
 
 // Nav groups
 const NAV_GROUPS = [
@@ -91,15 +202,18 @@ function useBadgeCounts() {
   return { overdueTasks, pendingAnalysis };
 }
 
-function Sidebar({ collapsed, setCollapsed, onCmdK }: {
+function Sidebar({ collapsed, setCollapsed, onCmdK, theme, onToggleTheme }: {
   collapsed: boolean;
   setCollapsed: (v: boolean) => void;
   onCmdK: () => void;
+  theme: Theme;
+  onToggleTheme: () => void;
 }) {
   const pathname = usePathname();
   const [self, setSelf] = useState<Member | null>(null);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const { overdueTasks, pendingAnalysis } = useBadgeCounts();
+  const game = useGameLevel();
 
   useEffect(() => {
     const load = () => {
@@ -218,27 +332,72 @@ function Sidebar({ collapsed, setCollapsed, onCmdK }: {
         ))}
       </nav>
 
-      {/* Profile */}
+      {/* Theme toggle */}
+      <div className="px-3 pb-1 flex-shrink-0">
+        {!collapsed ? (
+          <button onClick={onToggleTheme}
+            className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-xs transition-all hover:opacity-80"
+            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', color: '#94a3b8' }}>
+            <span>{theme === 'dark' ? '☀️' : '🌙'}</span>
+            <span>{theme === 'dark' ? 'ライトモードに切替' : 'ダークモードに切替'}</span>
+          </button>
+        ) : (
+          <Tooltip label={theme === 'dark' ? 'ライトモード' : 'ダークモード'}>
+            <button onClick={onToggleTheme}
+              className="mx-auto w-9 h-9 flex items-center justify-center rounded-lg transition-all hover:opacity-80"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
+          </Tooltip>
+        )}
+      </div>
+
+      {/* Profile + Level */}
       <div className="px-3 py-3 border-t flex-shrink-0" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
         {!collapsed ? (
-          <div className="flex items-center gap-2 px-2 py-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
-            <div className="w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0"
-              style={{ background: 'rgba(99,102,241,0.15)' }}>
-              {self?.avatar ?? '👩‍💼'}
+          <div className="px-2 py-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.03)' }}>
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 relative"
+                style={{ background: 'rgba(99,102,241,0.15)' }}>
+                {self?.avatar ?? '👩‍💼'}
+                <span className="absolute -top-1.5 -right-1.5 text-[9px] font-bold px-1 rounded"
+                  style={{ background: 'linear-gradient(135deg,#6366f1,#a855f7)', color: '#fff' }}>
+                  {game.level}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs text-white font-medium truncate">{self?.name ?? '—'}</div>
+                <div className="text-[10px] truncate" style={{ color: '#818cf8' }}>{game.title}</div>
+              </div>
+              {game.streak >= 2 && (
+                <span className="text-[10px] flex-shrink-0" style={{ color: '#fb923c' }} title={`${game.streak}日連続`}>
+                  🔥{game.streak}
+                </span>
+              )}
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs text-white font-medium truncate">{self?.name ?? '—'}</div>
-              <div className="text-xs truncate" style={{ color: '#6b7280' }}>{self?.role?.split('/')[0]?.trim() ?? 'CEO'}</div>
+            {/* XP progress */}
+            <div className="mt-2">
+              <div className="h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                <div className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${Math.min(100, (game.currentXp / game.nextLevelXp) * 100)}%`,
+                    background: 'linear-gradient(90deg,#6366f1,#a855f7)',
+                  }} />
+              </div>
+              <div className="mt-1 text-[9px] text-right" style={{ color: '#64748b' }}>
+                {game.currentXp} / {game.nextLevelXp} XP
+              </div>
             </div>
-            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#22c55e', boxShadow: '0 0 6px #4ade80' }} />
           </div>
         ) : (
-          <Tooltip label={self?.name ?? 'CEO'}>
+          <Tooltip label={`${self?.name ?? 'CEO'} — Lv.${game.level} ${game.title}`}>
             <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm mx-auto relative cursor-default"
               style={{ background: 'rgba(99,102,241,0.15)' }}>
               {self?.avatar ?? '👩‍💼'}
-              <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2"
-                style={{ background: '#22c55e', borderColor: '#08080f' }} />
+              <span className="absolute -top-1 -right-1 text-[9px] font-bold px-1 rounded"
+                style={{ background: 'linear-gradient(135deg,#6366f1,#a855f7)', color: '#fff' }}>
+                {game.level}
+              </span>
             </div>
           </Tooltip>
         )}
@@ -316,6 +475,7 @@ function ProgressBar() {
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [cmdKOpen, setCmdKOpen] = useState(false);
+  const [theme, toggleTheme] = useTheme();
 
   // Global Cmd+K shortcut
   useEffect(() => {
@@ -331,9 +491,12 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   return (
     <div>
+      {theme === 'light' && <LightModeOverlay />}
+      <XpToaster />
       <ProgressBar />
       <CommandPalette open={cmdKOpen} onClose={() => setCmdKOpen(false)} />
-      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} onCmdK={() => setCmdKOpen(true)} />
+      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} onCmdK={() => setCmdKOpen(true)}
+        theme={theme} onToggleTheme={toggleTheme} />
       <main className="min-h-screen transition-all duration-300"
         style={{ marginLeft: collapsed ? '64px' : '220px' }}
         // On mobile, no margin (sidebar is a drawer overlay)

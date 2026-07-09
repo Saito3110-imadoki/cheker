@@ -243,6 +243,9 @@ export default function TasksPage() {
   const handleEdit = (form: Omit<Task, 'id'>) => {
     if (!editing) return;
     persist(tasks.map(t => t.id === editing.id ? { ...form, id: t.id } : t));
+    if (form.status === 'done' && editing.status !== 'done') {
+      import('@/lib/gamification').then(m => m.addXp('task-done'));
+    }
     setEditing(null);
   };
 
@@ -252,7 +255,12 @@ export default function TasksPage() {
   };
 
   const handleMove = (id: string, status: Task['status']) => {
+    const prev = tasks.find(t => t.id === id);
     persist(tasks.map(t => t.id === id ? { ...t, status } : t));
+    // 完了に移動したらXP獲得
+    if (status === 'done' && prev && prev.status !== 'done') {
+      import('@/lib/gamification').then(m => m.addXp('task-done'));
+    }
   };
 
   const openAdd = (status: Task['status']) => {

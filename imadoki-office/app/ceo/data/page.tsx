@@ -553,6 +553,7 @@ export default function DataPage() {
     merged.sort((a, b) => a.month.localeCompare(b.month));
     save({ ...data, monthlyPL: merged, clientRevenue: plExcelPreview.clientRevenue ?? data.clientRevenue });
     setPlExcelPreview(null);
+    import('@/lib/gamification').then(m => m.addXp('pl-import'));
   }
 
   return (

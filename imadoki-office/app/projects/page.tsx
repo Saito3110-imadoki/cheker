@@ -333,6 +333,9 @@ export default function ProjectsPage() {
   const handleEdit = (form: Omit<Project, 'id'>) => {
     if (!editing) return;
     persist(projects.map(p => p.id === editing.id ? { ...form, id: p.id } : p));
+    if (form.status === 'completed' && editing.status !== 'completed') {
+      import('@/lib/gamification').then(m => m.addXp('project-done'));
+    }
     setEditing(null);
   };
 

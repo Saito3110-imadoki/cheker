@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { CompanyData, ActionItem } from '@/lib/ceo-types';
+import { runAnalysisAndSave, loadLastAnalysis } from '@/lib/analysis';
 
 const categoryConfig = {
   sales: { label: '営業', icon: '💼', color: '#06b6d4' },
@@ -40,39 +41,35 @@ export default function AnalysisPage() {
   const [rejectReason, setRejectReason] = useState('');
 
   useEffect(() => {
-    const stored = localStorage.getItem('imadoki-company-data');
-    if (stored) {
-      const parsed: CompanyData = JSON.parse(stored);
-      setData(parsed);
-      setActionItems(parsed.actionItems || []);
-    }
+    const load = () => {
+      const stored = localStorage.getItem('imadoki-company-data');
+      if (stored) {
+        const parsed: CompanyData = JSON.parse(stored);
+        setData(parsed);
+        setActionItems(parsed.actionItems || []);
+      }
+      // 前回の分析結果を復元（リロードしても消えない）
+      const saved = loadLastAnalysis();
+      if (saved) setResult(saved.result);
+    };
+    load();
+    // 週次自動レポート（ダッシュボード）が走ったら反映
+    window.addEventListener('imadoki-analysis-updated', load);
+    return () => window.removeEventListener('imadoki-analysis-updated', load);
   }, []);
 
   const runAnalysis = async () => {
     if (!data) return;
     setLoading(true);
     try {
-      // 請求書データも分析材料として送る（未回収リスクの検出用）
-      let invoices: unknown[] = [];
-      try { invoices = JSON.parse(localStorage.getItem('imadoki-invoices') || '[]'); } catch { /* ignore */ }
-      const res = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, invoices }),
-      });
-      if (!res.ok) throw new Error('Analysis failed');
-      const analysisResult: AnalysisResult = await res.json();
+      const analysisResult = await runAnalysisAndSave();
       setResult(analysisResult);
-
-      const newItems: ActionItem[] = analysisResult.actions.map((a, i) => ({
-        ...a,
-        id: `action-${Date.now()}-${i}`,
-        status: 'pending',
-      }));
-      setActionItems(newItems);
-
-      const updated: CompanyData = { ...data, actionItems: newItems, lastAnalyzedAt: new Date().toISOString() };
-      localStorage.setItem('imadoki-company-data', JSON.stringify(updated));
+      const stored = localStorage.getItem('imadoki-company-data');
+      if (stored) {
+        const parsed: CompanyData = JSON.parse(stored);
+        setActionItems(parsed.actionItems || []);
+        setData(parsed);
+      }
     } catch {
       alert('分析に失敗しました。データを確認してください。');
     }

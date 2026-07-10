@@ -6,6 +6,7 @@ import { members as defaultMembers, chatMessages } from '@/lib/data';
 import { CompanyData } from '@/lib/ceo-types';
 import { Member } from '@/lib/data';
 import { loadGame, levelFromXp, BADGE_DEFS } from '@/lib/gamification';
+import { loadLastAnalysis, isAnalysisStale, hasAnalyzableData, runAnalysisAndSave, SavedAnalysis } from '@/lib/analysis';
 
 function RevenueChart({ data }: { data: { month: string; revenue: number; operatingProfit: number }[] }) {
   if (data.length < 2) return (
@@ -109,6 +110,91 @@ function greeting() {
   if (h >= 5 && h < 11) return 'おはようございます';
   if (h >= 11 && h < 18) return 'こんにちは';
   return 'お疲れさまです';
+}
+
+// 週次AIレポート — 前回分析から7日以上経っていたら自動で再分析して届ける
+function WeeklyReport() {
+  const [saved, setSaved] = useState<SavedAnalysis | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    const refresh = () => {
+      setSaved(loadLastAnalysis());
+      try {
+        const d = JSON.parse(localStorage.getItem('imadoki-company-data') || 'null');
+        setPendingCount(d?.actionItems?.filter((a: { status: string }) => a.status === 'pending').length ?? 0);
+      } catch { /* ignore */ }
+    };
+    refresh();
+    window.addEventListener('imadoki-analysis-updated', refresh);
+
+    // 自動実行: データあり & 7日以上未分析 & このセッションでまだ試していない
+    if (hasAnalyzableData() && isAnalysisStale(7) && !sessionStorage.getItem('imadoki-auto-analysis')) {
+      sessionStorage.setItem('imadoki-auto-analysis', '1');
+      setGenerating(true);
+      runAnalysisAndSave()
+        .then(() => refresh())
+        .catch(() => { /* 失敗時は静かにスキップ（手動実行は分析ページから可能） */ })
+        .finally(() => setGenerating(false));
+    }
+
+    return () => window.removeEventListener('imadoki-analysis-updated', refresh);
+  }, []);
+
+  if (generating) {
+    return (
+      <div className="glass rounded-xl p-5 mb-4 animate-fade-up flex items-center gap-3">
+        <span className="text-xl animate-spin-slow">🤖</span>
+        <div>
+          <div className="text-sm font-semibold" style={{ color: '#a5b4fc' }}>AIが今週の経営レポートを作成しています…</div>
+          <div className="text-xs mt-0.5" style={{ color: '#64748b' }}>売上トレンド・クライアントリスク・未回収をチェック中（30秒ほど）</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!saved) return null;
+  const { result, analyzedAt } = saved;
+  const riskColor = { low: '#4ade80', medium: '#fbbf24', high: '#f87171' }[result.metrics.riskLevel];
+  const riskLabel = { low: '低', medium: '中', high: '高' }[result.metrics.riskLevel];
+  const topInsights = result.insights.slice(0, 2);
+  const dateLabel = new Date(analyzedAt).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+
+  return (
+    <div className="glass rounded-xl p-5 mb-4 animate-fade-up" style={{ border: '1px solid rgba(99,102,241,0.25)' }}>
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <span>📬</span>
+        <span className="text-sm font-bold" style={{ color: '#f1f5f9' }}>AI経営レポート</span>
+        <span className="text-xs" style={{ color: '#64748b' }}>{dateLabel} 更新</span>
+        <span className="text-xs px-2 py-0.5 rounded-full font-semibold ml-auto"
+          style={{ background: `${riskColor}22`, color: riskColor }}>
+          リスク: {riskLabel}
+        </span>
+      </div>
+      <p className="text-sm mb-3" style={{ color: '#cbd5e1', lineHeight: 1.7 }}>{result.summary}</p>
+      <div className="space-y-1.5 mb-3">
+        {topInsights.map((ins, i) => (
+          <div key={i} className="text-xs flex items-start gap-2" style={{ color: '#94a3b8' }}>
+            <span>{ins.type === 'positive' ? '✅' : ins.type === 'negative' ? '⚠️' : '🔶'}</span>
+            <span>{ins.text}</span>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-3">
+        <Link href="/ceo/analysis"
+          className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-all hover:opacity-80"
+          style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.35)', color: '#a5b4fc' }}>
+          レポート全文と提案を見る →
+        </Link>
+        {pendingCount > 0 && (
+          <span className="text-xs" style={{ color: '#fbbf24' }}>
+            ⏳ {pendingCount}件のアクションが承認待ちです
+          </span>
+        )}
+      </div>
+    </div>
+  );
 }
 
 // ゲーミフィケーションウィジェット
@@ -283,6 +369,9 @@ export default function Dashboard() {
           </div>
         </Link>
       )}
+
+      {/* 週次AIレポート */}
+      <WeeklyReport />
 
       {/* Gamification */}
       <GameWidget />

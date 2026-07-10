@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>送信完了｜PostPilot</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --indigo:#4f46e5; --indigo-dark:#4338ca; --indigo-50:#eef2ff;
+  --ink:#0f172a; --muted:#64748b; --line:#e2e8f0; --soft:#f8fafc;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:'Noto Sans JP','Hiragino Sans','BIZ UDPGothic',sans-serif;
+  color:var(--ink);line-height:1.7;-webkit-font-smoothing:antialiased;
+  background:linear-gradient(180deg,var(--indigo-50) 0%,#fff 70%);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:24px;text-align:center;
+}
+.logo{display:flex;align-items:center;gap:10px;font-weight:900;font-size:18px;margin-bottom:44px;}
+.logo-mark{width:32px;height:32px;border-radius:9px;background:var(--indigo);display:flex;align-items:center;justify-content:center;}
+.logo small{color:#94a3b8;font-weight:500;font-size:12px;}
+.card{
+  background:#fff;border:1px solid var(--line);border-radius:22px;
+  padding:52px 40px;max-width:520px;width:100%;
+  box-shadow:0 24px 60px rgba(15,23,42,.10);
+}
+.check{
+  width:78px;height:78px;border-radius:50%;background:#ecfdf5;
+  display:flex;align-items:center;justify-content:center;margin:0 auto 26px;
+}
+h1{font-size:26px;font-weight:900;margin-bottom:14px;letter-spacing:-.01em;}
+p{font-size:15px;color:var(--muted);margin-bottom:8px;}
+.note{font-size:13px;color:#94a3b8;margin-top:14px;}
+.btn{
+  display:inline-block;margin-top:30px;background:var(--indigo);color:#fff;
+  font-weight:700;font-size:15.5px;padding:14px 38px;border-radius:12px;
+  text-decoration:none;transition:all .15s ease;
+  box-shadow:0 8px 20px rgba(79,70,229,.25);
+}
+.btn:hover{background:var(--indigo-dark);transform:translateY(-1px);}
+</style>
+</head>
+<body>
+  <div class="logo">
+    <span class="logo-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+    PostPilot <small>by IMADOKI</small>
+  </div>
+
+  <div class="card">
+    <div class="check">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <h1>送信ありがとうございます！</h1>
+    <p>お問い合わせを受け付けました。<br>通常<b>1営業日以内</b>に、担当者よりメールでご返信いたします。</p>
+    <p class="note">※ 返信メールが届かない場合は、お手数ですが迷惑メールフォルダをご確認ください。</p>
+    <a class="btn" href="./">← トップページに戻る</a>
+  </div>
+</body>
+</html>

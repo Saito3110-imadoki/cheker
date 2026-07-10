@@ -52,10 +52,13 @@ export default function AnalysisPage() {
     if (!data) return;
     setLoading(true);
     try {
+      // 請求書データも分析材料として送る（未回収リスクの検出用）
+      let invoices: unknown[] = [];
+      try { invoices = JSON.parse(localStorage.getItem('imadoki-invoices') || '[]'); } catch { /* ignore */ }
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, invoices }),
       });
       if (!res.ok) throw new Error('Analysis failed');
       const analysisResult: AnalysisResult = await res.json();
@@ -82,6 +85,32 @@ export default function AnalysisPage() {
     );
     setActionItems(updated);
     saveActions(updated);
+
+    // 承認したアクションは自動でタスクボードに登録（AI提案→実行のパイプライン）
+    const action = actionItems.find(a => a.id === id);
+    if (action) {
+      try {
+        const tasks = JSON.parse(localStorage.getItem('imadoki-tasks') || '[]');
+        // 期限文言 → 日付のざっくり変換
+        const d = new Date();
+        if (action.deadline?.includes('今月')) d.setMonth(d.getMonth() + 1, 0);
+        else if (action.deadline?.includes('来月')) d.setMonth(d.getMonth() + 2, 0);
+        else if (action.deadline?.includes('3ヶ月')) d.setMonth(d.getMonth() + 3);
+        else d.setDate(d.getDate() + 14);
+        tasks.unshift({
+          id: `t-ai-${Date.now()}`,
+          title: action.title,
+          projectId: '',
+          assigneeId: 'ceo',
+          priority: action.priority,
+          status: 'todo',
+          dueDate: d.toISOString().slice(0, 10),
+          isAITask: true,
+          description: `【AI提案・承認済み】${action.description}\n期待効果: ${action.expectedImpact}`,
+        });
+        localStorage.setItem('imadoki-tasks', JSON.stringify(tasks));
+      } catch { /* ignore */ }
+    }
   };
 
   const reject = (id: string) => {
@@ -108,7 +137,7 @@ export default function AnalysisPage() {
     }
   };
 
-  const noData = !data || (data.monthlyPL.length === 0 && data.clients.length === 0);
+  const noData = !data || (data.monthlyPL.length === 0 && data.clients.length === 0 && (data.clientRevenue?.length ?? 0) === 0);
 
   const riskColor = { low: '#22c55e', medium: '#f59e0b', high: '#ef4444' };
   const insightColor = { positive: '#22c55e', negative: '#ef4444', warning: '#f59e0b' };

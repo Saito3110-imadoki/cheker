@@ -502,7 +502,15 @@ export default function FinancePage() {
   const [filterStatus, setFilterStatus] = useState<InvoiceStatus | 'all'>('all');
 
   useEffect(() => {
-    setInvoices(loadInvoices());
+    // 送付済のまま支払期日を過ぎた書類を自動で「期限超過」にする
+    const list = loadInvoices();
+    const today = new Date().toISOString().slice(0, 10);
+    const flagged = list.map(i =>
+      i.status === 'sent' && i.dueDate && i.dueDate < today ? { ...i, status: 'overdue' as InvoiceStatus } : i
+    );
+    if (JSON.stringify(flagged) !== JSON.stringify(list)) saveInvoices(flagged);
+    setInvoices(flagged);
+
     const handler = () => setInvoices(loadInvoices());
     window.addEventListener('imadoki-invoices-updated', handler);
     return () => window.removeEventListener('imadoki-invoices-updated', handler);
@@ -652,7 +660,7 @@ export default function FinancePage() {
                     {formatMoney(inv.total)}
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                    {inv.status === 'sent' && (
+                    {(inv.status === 'sent' || inv.status === 'overdue') && (
                       <button onClick={() => updateStatus(inv.id, 'paid')}
                         title="入金を確認したらクリック"
                         style={{ padding: '5px 14px', borderRadius: 6, fontSize: 12, cursor: 'pointer', fontWeight: 700,

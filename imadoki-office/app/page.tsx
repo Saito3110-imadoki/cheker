@@ -180,6 +180,7 @@ export default function Dashboard() {
   const [companyData, setCompanyData] = useState<CompanyData | null>(null);
   const [lsProjects, setLsProjects] = useState<StoredProject[]>([]);
   const [lsTasks, setLsTasks] = useState<StoredTask[]>([]);
+  const [overdueInvoices, setOverdueInvoices] = useState<{ clientName: string; total: number }[]>([]);
   // displayProjects / displayTasks show real data only — no fallback to samples
 
   useEffect(() => {
@@ -187,6 +188,13 @@ export default function Dashboard() {
     try { const s = localStorage.getItem('imadoki-company-data'); if (s) setCompanyData(JSON.parse(s)); } catch { /* ignore */ }
     try { const s = localStorage.getItem('imadoki-projects'); if (s) setLsProjects(JSON.parse(s)); } catch { /* ignore */ }
     try { const s = localStorage.getItem('imadoki-tasks'); if (s) setLsTasks(JSON.parse(s)); } catch { /* ignore */ }
+    try {
+      const invoices: { status: string; dueDate?: string; clientName: string; total: number }[] =
+        JSON.parse(localStorage.getItem('imadoki-invoices') || '[]');
+      const today = new Date().toISOString().slice(0, 10);
+      setOverdueInvoices(invoices.filter(i =>
+        i.status === 'overdue' || (i.status === 'sent' && i.dueDate && i.dueDate < today)));
+    } catch { /* ignore */ }
   }, []);
 
   // Derive KPIs from real data when available
@@ -260,6 +268,20 @@ export default function Dashboard() {
           <Link href="/ceo/data" className="text-sm underline" style={{ color: '#a5b4fc' }}>データ入力ページ</Link>
           <span className="text-sm" style={{ color: '#fbbf24' }}>で売上・クライアントを入力すると、このダッシュボードに経営指標が表示されます。</span>
         </div>
+      )}
+
+      {/* 未回収アラート */}
+      {overdueInvoices.length > 0 && (
+        <Link href="/finance">
+          <div className="mb-5 px-4 py-3 rounded-xl flex items-center gap-3 cursor-pointer transition-all hover:opacity-90"
+            style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.35)' }}>
+            <span>🚨</span>
+            <span className="text-sm font-semibold" style={{ color: '#f87171' }}>
+              支払期日を過ぎた請求書が{overdueInvoices.length}件（合計 ¥{overdueInvoices.reduce((s, i) => s + i.total, 0).toLocaleString()}）あります
+            </span>
+            <span className="text-xs ml-auto" style={{ color: '#fca5a5' }}>財務・書類で確認 →</span>
+          </div>
+        </Link>
       )}
 
       {/* Gamification */}

@@ -3,18 +3,19 @@ import { CompanyData } from '@/lib/ceo-types';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+interface InvoiceLite {
+  docType: string;
+  status: string;
+  clientName: string;
+  total: number;
+  dueDate?: string;
+}
+
 export async function POST(request: Request) {
   try {
-    const data: CompanyData = await request.json();
+    const data: CompanyData & { invoices?: InvoiceLite[] } = await request.json();
 
-    const { monthlyPL, clients } = data;
-
-    const latestPL = monthlyPL[monthlyPL.length - 1];
-    const prevPL = monthlyPL[monthlyPL.length - 2];
-
-    const totalRevenue = monthlyPL.reduce((s, m) => s + m.revenue, 0);
-    const activeClients = clients.filter(c => c.status === 'active');
-    const atRiskClients = clients.filter(c => c.status === 'at-risk');
+    const { monthlyPL, clients, clientRevenue, invoices } = data;
 
     const plSummary = monthlyPL.map(m =>
       `${m.month}: 売上¥${m.revenue.toLocaleString()} 外注費¥${m.cogs.toLocaleString()} 粗利¥${m.grossProfit.toLocaleString()}(${m.revenue > 0 ? Math.round(m.grossProfit/m.revenue*100) : 0}%) 人件費¥${(m.personnelCost||0).toLocaleString()} 広告費¥${(m.adCost||0).toLocaleString()} 家賃等¥${((m.officeCost||0)+(m.otherCost||0)).toLocaleString()} 営業利益¥${m.operatingProfit.toLocaleString()}(${m.revenue > 0 ? Math.round(m.operatingProfit/m.revenue*100) : 0}%)${m.notes ? ` (${m.notes})` : ''}`
@@ -24,6 +25,24 @@ export async function POST(request: Request) {
       `${c.name}: 月額¥${c.monthlyFee.toLocaleString()} [${c.services.join('/')}] ステータス:${c.status}${c.notes ? ` (${c.notes})` : ''}`
     ).join('\n');
 
+    // Excel取込のクライアント別実績（最も信頼できる実データ）
+    const buLabel: Record<string, string> = { web: 'Web事業部', ads: '広告事業部', sns: 'SNS運用事業部', media: 'メディア事業部' };
+    const revSummary = (clientRevenue ?? [])
+      .slice()
+      .sort((a, b) => b.totalRevenue - a.totalRevenue)
+      .map(c => {
+        const gp = c.totalRevenue - c.totalCogs;
+        const rate = c.totalRevenue > 0 ? Math.round((gp / c.totalRevenue) * 100) : 0;
+        return `${c.clientName} [${buLabel[c.businessUnit] ?? c.businessUnit}]: 売上¥${c.totalRevenue.toLocaleString()} 原価¥${c.totalCogs.toLocaleString()} 粗利率${c.totalCogs > 0 ? `${rate}%` : '不明(原価未入力)'}`;
+      }).join('\n');
+
+    // 請求書の状況（未回収リスク）
+    const today = new Date().toISOString().slice(0, 10);
+    const invSummary = (invoices ?? [])
+      .filter(i => i.status === 'sent' || i.status === 'overdue')
+      .map(i => `${i.clientName}: ¥${i.total.toLocaleString()} 期日${i.dueDate || '未設定'}${i.dueDate && i.dueDate < today ? ' ⚠️期限超過' : ''}`)
+      .join('\n');
+
     const prompt = `
 あなたはIMADOKI株式会社（ベンチャーマーケティング会社）の経営アドバイザーAIです。
 以下の実際の経営データを分析して、社長への提言をJSON形式で返してください。
@@ -31,8 +50,14 @@ export async function POST(request: Request) {
 【月次P&L実績】
 ${plSummary || 'データなし'}
 
-【クライアント一覧】
+【クライアント別売上実績（Excel PLから取込・事業部別）】
+${revSummary || 'データなし'}
+
+【クライアント一覧（契約管理）】
 ${clientSummary || 'データなし'}
+
+【未回収の請求書】
+${invSummary || 'なし'}
 
 【分析してほしいこと】
 1. 収益性分析（粗利率・営業利益率・トレンド）
@@ -65,12 +90,14 @@ ${clientSummary || 'データなし'}
   ]
 }`;
 
-    const response = await client.messages.create({
+    // 実データ量が多いと思考トークンだけでmax_tokensを使い切るため、余裕を持たせてストリーミングで取得
+    const stream = client.messages.stream({
       model: 'claude-opus-4-8',
-      max_tokens: 2000,
+      max_tokens: 8000,
       thinking: { type: 'adaptive' },
       messages: [{ role: 'user', content: prompt }],
     });
+    const response = await stream.finalMessage();
 
     const textContent = response.content.find(c => c.type === 'text');
     if (!textContent || textContent.type !== 'text') {

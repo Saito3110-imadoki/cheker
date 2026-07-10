@@ -131,6 +131,17 @@ h1 .hl{color:var(--indigo);}
 .ind-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;padding-top:12px;border-top:1px solid var(--soft2);}
 .ind-tag{font-size:11.5px;font-weight:700;color:var(--indigo);background:var(--indigo-50);border-radius:999px;padding:4px 12px;}
 
+/* お客様の声 */
+.voice-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:26px;box-shadow:0 8px 26px rgba(15,23,42,.06);display:flex;flex-direction:column;text-align:left;}
+.v-pain{font-size:12.5px;font-weight:700;color:var(--amber);background:var(--amber-bg);border:1px solid #fde68a;border-radius:8px;padding:7px 12px;margin-bottom:16px;}
+.v-quote{font-size:14px;color:var(--body);line-height:1.9;flex:1;}
+.v-quote::before{content:"“";display:block;font-size:34px;line-height:.6;color:var(--indigo);font-weight:900;margin-bottom:8px;}
+.v-who{display:flex;align-items:center;gap:11px;margin-top:18px;padding-top:14px;border-top:1px solid var(--soft2);}
+.v-ava{width:40px;height:40px;border-radius:50%;background:var(--indigo-50);display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;}
+.v-who b{display:block;font-size:13.5px;line-height:1.35;}
+.v-who span{font-size:12px;color:var(--faint);}
+.v-note{text-align:center;font-size:12px;color:var(--faint);margin-top:22px;}
+
 /* ギャラリー */
 figure.shot{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 1px 4px rgba(15,23,42,.04);transition:box-shadow .2s;}
 figure.shot:hover{box-shadow:0 14px 34px rgba(15,23,42,.12);}
@@ -455,6 +466,26 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
 実はシミの種類によって適した治療は変わります。自己判断で市販品を使い続ける前に、まず種類を知ることが大切です。カウンセリングで確認している3つのポイントをご紹介します。</p>
         <div class="ind-tags"><span class="ind-tag">医学的・安心感</span><span class="ind-tag">治療の疑問に回答</span></div>
       </div>
+      <div class="ind-card">
+        <div class="ind-head">
+          <span class="ind-emoji">🤝</span>
+          <span class="ind-name"><b>人材紹介会社の場合</b><span>ターゲット: 採用に悩む中小企業の経営者・人事</span></span>
+        </div>
+        <p class="ind-body">『求人を出しても応募が来ない』の原因、給与ではなく求人票の『1行目』であることが多いんです。
+
+応募が集まる会社の求人票に共通する書き方、人材のプロが解説します。</p>
+        <div class="ind-tags"><span class="ind-tag">データ・実務ノウハウ</span><span class="ind-tag">採用課題の解決</span></div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-head">
+          <span class="ind-emoji">⚖️</span>
+          <span class="ind-name"><b>法律事務所の場合</b><span>ターゲット: 労務リスクを抱える経営者</span></span>
+        </div>
+        <p class="ind-body">『問題社員に辞めてもらいたい』というご相談、実は対応を一歩間違えると会社側が不利になるケースがあります。
+
+トラブルになる前に知っておきたい基本の3つ、弁護士がわかりやすく解説します。</p>
+        <div class="ind-tags"><span class="ind-tag">専門性・予防法務</span><span class="ind-tag">相談ハードルを下げる</span></div>
+      </div>
     </div>
     <p class="nm-caption">業種・ターゲット・文体・参照するニュース源まで、<b>すべて貴社専用にチューニング</b>してお渡しします。</p>
   </div>
@@ -494,8 +525,36 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
   </div>
 </section>
 
+<!-- お客様の声 -->
+<section id="voices" class="sec-soft">
+  <div class="wrap">
+    <div class="center mb-12">
+      <p class="eyebrow">Voice</p>
+      <h2>導入すると、こう変わります</h2>
+    </div>
+    <div class="grid3">
+      <div class="voice-card">
+        <p class="v-pain">😩 課題: 兼任で手が回らず、投稿が3ヶ月止まっていた</p>
+        <p class="v-quote">SNS担当は私ひとりで、本業が忙しくなると真っ先に止まるのがSNSでした。今は毎朝勝手に投稿案が届くので、通勤電車の中で承認するだけ。アカウントが「生きている」状態を初めて維持できています。</p>
+        <div class="v-who"><span class="v-ava">🏭</span><span><b>製造業・マーケティング兼務</b><span>30代・広報担当</span></span></div>
+      </div>
+      <div class="voice-card">
+        <p class="v-pain">⚠️ 課題: 医療系なので発信内容のリスクが怖かった</p>
+        <p class="v-quote">医療系は言葉選びひとつで問題になるので、AIに任せるのは正直不安でした。決め手は投稿前に必ず自分の目で確認できる承認制。トーンも院の雰囲気に合わせて調整されていて、患者様からの反応も柔らかくなりました。</p>
+        <div class="v-who"><span class="v-ava">🏥</span><span><b>美容クリニック</b><span>40代・院長</span></span></div>
+      </div>
+      <div class="voice-card">
+        <p class="v-pain">📉 課題: 成果が見えず、続ける意味を説明できなかった</p>
+        <p class="v-quote">今までは「投稿して終わり」でしたが、いいねや表示回数が毎日自動で記録されて、どの投稿から問い合わせにつながったのか追えるようになった。SNSが初めて「営業活動」として社内で説明できるものになりました。</p>
+        <div class="v-who"><span class="v-ava">🤝</span><span><b>人材紹介会社</b><span>40代・代表</span></span></div>
+      </div>
+    </div>
+    <p class="v-note">※ 記載の内容は、想定される活用シーンに基づく導入イメージです。</p>
+  </div>
+</section>
+
 <!-- 機能 -->
-<section class="sec-soft">
+<section>
   <div class="wrap">
     <div class="center mb-12">
       <p class="eyebrow">Features</p>
@@ -513,7 +572,7 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
 </section>
 
 <!-- 料金 -->
-<section id="pricing">
+<section id="pricing" class="sec-soft">
   <div class="wrap">
     <div class="center mb-12">
       <p class="eyebrow">Pricing</p>
@@ -570,7 +629,7 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
 </section>
 
 <!-- FAQ -->
-<section id="faq" class="sec-soft">
+<section id="faq">
   <div class="wrap-narrow">
     <div class="center mb-12">
       <p class="eyebrow">FAQ</p>

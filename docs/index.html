@@ -217,6 +217,29 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
 
 /* セクション余白ユーティリティ */
 .mt-10{margin-top:40px;}.mb-12{margin-bottom:48px;}.mb-8{margin-bottom:32px;}
+
+/* ── 視線誘導 ── */
+/* スクロール連動フェードイン */
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .65s ease,transform .65s ease;}
+.reveal.visible{opacity:1;transform:none;}
+@media(prefers-reduced-motion:reduce){.reveal{transition:none;opacity:1;transform:none;}}
+
+/* ステップ間の矢印（1→2→3） */
+.steps-flow{gap:30px;}
+.steps-flow .step:not(:last-child)::after{
+  content:"→";position:absolute;top:50%;right:-27px;transform:translateY(-50%);
+  font-size:26px;font-weight:900;color:var(--indigo);z-index:2;}
+@media(max-width:860px){
+  .steps-flow{gap:38px;}
+  .steps-flow .step:not(:last-child)::after{
+    content:"↓";right:auto;left:50%;top:auto;bottom:-34px;transform:translateX(-50%);}
+}
+
+/* 下向き誘導矢印（セクション間ブリッジ） */
+.flow-arrow{display:flex;justify-content:center;margin-top:34px;}
+.flow-arrow svg{animation:bounce 2s infinite;color:var(--indigo);}
+@keyframes bounce{0%,20%,50%,80%,100%{transform:translateY(0);}40%{transform:translateY(8px);}60%{transform:translateY(4px);}}
+@media(prefers-reduced-motion:reduce){.flow-arrow svg{animation:none;}}
 </style>
 </head>
 <body>
@@ -266,6 +289,9 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
       </div>
       <figcaption>▲ 投稿文も図解も、AIが毎朝自動生成した<b>実物</b>のセットです</figcaption>
     </figure>
+    <div class="flow-arrow" aria-hidden="true">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
   </div>
 </header>
 
@@ -295,6 +321,9 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
     <p class="center mt-10" style="font-size:17px;font-weight:500;color:var(--body);">
       原因は担当者の能力ではありません。<b>「人力で回す仕組み」そのもの</b>に限界があるんです。
     </p>
+    <div class="flow-arrow" aria-hidden="true">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
   </div>
 </section>
 
@@ -306,7 +335,7 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
       <h2>PostPilotなら、人がやるのは「選ぶ」だけ。</h2>
       <p class="lead">毎日の流れはこの3ステップ。すべてLINEとNotionで完結します。</p>
     </div>
-    <div class="grid3">
+    <div class="grid3 steps-flow">
       <div class="card step">
         <span class="step-tag">朝7時・自動</span>
         <div class="emoji">🤖</div>
@@ -465,6 +494,16 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
 
 実はシミの種類によって適した治療は変わります。自己判断で市販品を使い続ける前に、まず種類を知ることが大切です。カウンセリングで確認している3つのポイントをご紹介します。</p>
         <div class="ind-tags"><span class="ind-tag">医学的・安心感</span><span class="ind-tag">治療の疑問に回答</span></div>
+      </div>
+      <div class="ind-card">
+        <div class="ind-head">
+          <span class="ind-emoji">💇</span>
+          <span class="ind-name"><b>美容サロンの場合</b><span>ターゲット: 髪質に悩む20〜30代女性</span></span>
+        </div>
+        <p class="ind-body">『縮毛矯正とストレートパーマ、どっちがいいですか？』
+
+実はこれ、髪のダメージ履歴で答えが変わる質問なんです。カウンセリングで必ず聞いている3つの質問、公開します。</p>
+        <div class="ind-tags"><span class="ind-tag">寄り添い・プロの知見</span><span class="ind-tag">悩み相談への回答</span></div>
       </div>
       <div class="ind-card">
         <div class="ind-head">
@@ -682,6 +721,31 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
     </div>
   </div>
 </footer>
+
+<script>
+(function(){
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var targets = document.querySelectorAll(
+    '.card,.ind-card,.voice-card,.plan,.shot,.ba,details,.notion-mock,' +
+    '.dark-note,.gallery-note,.sns-grid > div,.hero-visual'
+  );
+  targets.forEach(function(el){ el.classList.add('reveal'); });
+  // 兄弟要素は少しずつ遅らせて順番に出す（視線の流れをつくる）
+  targets.forEach(function(el){
+    var sibs = Array.prototype.filter.call(
+      el.parentElement.children,
+      function(c){ return c.classList.contains('reveal'); });
+    var idx = sibs.indexOf(el);
+    el.style.transitionDelay = (Math.max(idx, 0) % 6) * 0.09 + 's';
+  });
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+  targets.forEach(function(el){ io.observe(el); });
+})();
+</script>
 
 </body>
 </html>

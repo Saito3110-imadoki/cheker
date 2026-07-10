@@ -63,8 +63,14 @@ function generateInvoiceNumber(docType: DocType, existing: Invoice[]): string {
   const prefix = docType === 'invoice' ? 'INV' : docType === 'contractor' ? 'CTR' : 'CON';
   const year = new Date().getFullYear();
   const month = String(new Date().getMonth() + 1).padStart(2, '0');
-  const seq = (existing.filter(i => i.docType === docType).length + 1).toString().padStart(3, '0');
-  return `${prefix}-${year}${month}-${seq}`;
+  // 件数ベースだと削除後に番号が重複するため、既存の最大連番+1を採番する
+  const maxSeq = existing
+    .filter(i => i.docType === docType)
+    .reduce((max, i) => {
+      const m = i.invoiceNumber.match(/-(\d+)$/);
+      return m ? Math.max(max, Number(m[1])) : max;
+    }, 0);
+  return `${prefix}-${year}${month}-${String(maxSeq + 1).padStart(3, '0')}`;
 }
 
 function loadInvoices(): Invoice[] {

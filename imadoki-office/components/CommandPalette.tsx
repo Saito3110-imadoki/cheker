@@ -17,6 +17,8 @@ const STATIC_COMMANDS: Command[] = [
   { id: 'ceo',       label: '社長室',                 icon: '👔', href: '/ceo',           group: 'ページ' },
   { id: 'data',      label: 'データ入力',             icon: '📥', href: '/ceo/data',      group: 'ページ' },
   { id: 'analysis',  label: 'AI分析・承認',           icon: '🔍', href: '/ceo/analysis',  group: 'ページ' },
+  { id: 'analytics', label: 'アナリティクス',         icon: '📈', href: '/analytics',     group: 'ページ', keywords: ['売上分析', 'クライアント別', 'グラフ'] },
+  { id: 'finance',   label: '財務・書類',             icon: '💰', href: '/finance',       group: 'ページ', keywords: ['請求書', '契約書', 'リーガルチェック', '入金'] },
   { id: 'office',    label: 'バーチャルオフィス',     icon: '🏢', href: '/office',        group: 'ページ' },
   { id: 'org',       label: '組織図',                 icon: '🌐', href: '/org',           group: 'ページ' },
   { id: 'members',   label: 'メンバー管理',           icon: '👥', href: '/members',       group: 'ページ' },

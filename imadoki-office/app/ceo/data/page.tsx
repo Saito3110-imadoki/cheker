@@ -543,6 +543,46 @@ export default function DataPage() {
     }
   }
 
+  // ---------- バックアップ / 復元 ----------
+  const BACKUP_KEYS = ['imadoki-company-data', 'imadoki-members', 'imadoki-projects', 'imadoki-tasks', 'imadoki-invoices', 'imadoki-game', 'imadoki-theme'];
+
+  function downloadBackup() {
+    const backup: Record<string, unknown> = { _meta: { app: 'imadoki-office', version: 1, exportedAt: new Date().toISOString() } };
+    BACKUP_KEYS.forEach(k => {
+      const raw = localStorage.getItem(k);
+      if (raw != null) { try { backup[k] = JSON.parse(raw); } catch { backup[k] = raw; } }
+    });
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `imadoki-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  const restoreRef = useRef<HTMLInputElement>(null);
+  async function handleRestore(file: File) {
+    try {
+      const json = JSON.parse(await file.text());
+      if (!json._meta || json._meta.app !== 'imadoki-office') {
+        setCsvError('このファイルはIMADOKI Officeのバックアップではありません');
+        return;
+      }
+      const count = BACKUP_KEYS.filter(k => k in json).length;
+      if (!confirm(`${json._meta.exportedAt?.slice(0, 10) ?? '不明な日付'}のバックアップ（${count}種類のデータ）で現在のデータを上書きします。よろしいですか？`)) return;
+      BACKUP_KEYS.forEach(k => {
+        if (k in json) {
+          localStorage.setItem(k, typeof json[k] === 'string' ? json[k] : JSON.stringify(json[k]));
+        }
+      });
+      window.location.reload();
+    } catch {
+      setCsvError('バックアップファイルの読み込みに失敗しました');
+    } finally {
+      if (restoreRef.current) restoreRef.current.value = '';
+    }
+  }
+
   function applyPlExcelImport() {
     if (!plExcelPreview) return;
     const merged = [...data.monthlyPL];
@@ -765,6 +805,27 @@ export default function DataPage() {
         <p className="text-xs mt-2.5" style={{ color: '#64748b' }}>
           💡 IMADOKIの「PL全体」「売上原価」シートを含むExcelなら「詳細PLインポート」が最速です。他社形式のCSV・Excelは汎用CSVインポートをご利用ください（列名は自動で認識されます）
         </p>
+      </div>
+
+      {/* バックアップ / 復元 */}
+      <div className="mb-5 px-4 py-3 rounded-xl flex items-center gap-3 flex-wrap"
+        style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+        <span className="text-sm" style={{ color: '#94a3b8' }}>🛡️ 大切な経営データを守る:</span>
+        <button onClick={downloadBackup}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80"
+          style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80' }}>
+          💾 バックアップをダウンロード
+        </button>
+        <button onClick={() => restoreRef.current?.click()}
+          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80"
+          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8' }}>
+          ↩️ バックアップから復元
+        </button>
+        <input ref={restoreRef} type="file" accept=".json" style={{ display: 'none' }}
+          onChange={e => { const f = e.target.files?.[0]; if (f) handleRestore(f); }} />
+        <span className="text-xs" style={{ color: '#4b5563' }}>
+          データはこのブラウザ内に保存されています。定期的なバックアップをおすすめします
+        </span>
       </div>
 
       {csvError && (

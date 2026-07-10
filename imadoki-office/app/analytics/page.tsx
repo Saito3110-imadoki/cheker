@@ -20,16 +20,25 @@ function fmtMoney(n: number): string {
   return `¥${n.toLocaleString()}`;
 }
 
+// IMADOKIの会計年度は12月始まり（第1四半期 = 12月〜2月）— PL Excelの四半期区分と一致させる
+function fiscalYearStart(now: Date): string {
+  // 12月以降なら当年12月、それ以前なら前年12月が期首
+  const y = now.getMonth() + 1 >= 12 ? now.getFullYear() : now.getFullYear() - 1;
+  return `${y}-12`;
+}
+
 function filterMonths(months: string[], period: Period, customFrom: string, customTo: string): string[] {
   const now = new Date();
-  const thisYear = now.getFullYear();
+  const fyStart = fiscalYearStart(now);
+  const fyEndYear = Number(fyStart.slice(0, 4)) + 1;
+  const fyEnd = `${fyEndYear}-11`;
   return months.filter(m => {
     if (period === 'all') return true;
-    if (period === 'thisYear') return m.startsWith(String(thisYear));
-    if (period === 'Q1') return ['01','02','03'].includes(m.slice(5,7));
-    if (period === 'Q2') return ['04','05','06'].includes(m.slice(5,7));
-    if (period === 'Q3') return ['07','08','09'].includes(m.slice(5,7));
-    if (period === 'Q4') return ['10','11','12'].includes(m.slice(5,7));
+    if (period === 'thisYear') return m >= fyStart && m <= fyEnd;
+    if (period === 'Q1') return ['12','01','02'].includes(m.slice(5,7));
+    if (period === 'Q2') return ['03','04','05'].includes(m.slice(5,7));
+    if (period === 'Q3') return ['06','07','08'].includes(m.slice(5,7));
+    if (period === 'Q4') return ['09','10','11'].includes(m.slice(5,7));
     if (period === 'custom') return m >= customFrom && m <= customTo;
     return true;
   });
@@ -178,7 +187,13 @@ export default function AnalyticsPage() {
               border: `1px solid ${period === p ? 'rgba(99,102,241,0.6)' : 'rgba(255,255,255,0.1)'}`,
               color: period === p ? '#a5b4fc' : '#9ca3af',
             }}>
-            {p === 'all' ? '全期間' : p === 'thisYear' ? '今期' : p === 'custom' ? '期間指定' : p}
+            {p === 'all' ? '全期間'
+              : p === 'thisYear' ? '今期'
+              : p === 'custom' ? '期間指定'
+              : p === 'Q1' ? '1Q（12-2月）'
+              : p === 'Q2' ? '2Q（3-5月）'
+              : p === 'Q3' ? '3Q（6-8月）'
+              : '4Q（9-11月）'}
           </button>
         ))}
         {period === 'custom' && (

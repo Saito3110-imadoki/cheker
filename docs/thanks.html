@@ -35,6 +35,12 @@ body{
 h1{font-size:26px;font-weight:900;margin-bottom:14px;letter-spacing:-.01em;}
 p{font-size:15px;color:var(--muted);margin-bottom:8px;}
 .note{font-size:13px;color:#94a3b8;margin-top:14px;}
+.flow-box{
+  background:var(--soft);border:1px solid var(--line);border-radius:14px;
+  padding:20px 24px;margin:24px 0 6px;text-align:left;
+}
+.flow-title{font-size:14px;font-weight:900;color:var(--ink);margin-bottom:8px;}
+.flow-box p{font-size:14px;}
 .btn{
   display:inline-block;margin-top:30px;background:var(--indigo);color:#fff;
   font-weight:700;font-size:15.5px;padding:14px 38px;border-radius:12px;
@@ -54,10 +60,16 @@ p{font-size:15px;color:var(--muted);margin-bottom:8px;}
     <div class="check">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
     </div>
-    <h1>送信ありがとうございます！</h1>
-    <p>お問い合わせを受け付けました。<br>通常<b>1営業日以内</b>に、担当者よりメールでご返信いたします。</p>
-    <p class="note">※ 返信メールが届かない場合は、お手数ですが迷惑メールフォルダをご確認ください。</p>
-    <a class="btn" href="./">← トップページに戻る</a>
+    <h1>お問い合わせありがとうございます</h1>
+    <p>送信が正常に完了いたしました。<br>ご入力いただいたメールアドレス宛に、自動返信の確認メールをお送りしております。</p>
+
+    <div class="flow-box">
+      <p class="flow-title">【今後の流れについて】</p>
+      <p>内容を確認の上、<b>2営業日以内</b>に担当者よりメールまたはお電話にてご連絡いたします。<br>今しばらくお待ちいただけますようお願い申し上げます。</p>
+    </div>
+
+    <p class="note">2〜3日経っても確認メールが届かない場合は、迷惑メールフォルダをご確認いただくか、お手数ですが再度お問い合わせください。</p>
+    <a class="btn" href="./">トップページへ戻る</a>
   </div>
 </body>
 </html>

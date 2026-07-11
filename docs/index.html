@@ -235,6 +235,26 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
     content:"↓";right:auto;left:50%;top:auto;bottom:-34px;transform:translateX(-50%);}
 }
 
+/* 比較表 */
+.cmp-wrap{overflow-x:auto;margin-top:36px;-webkit-overflow-scrolling:touch;}
+table.cmp{width:100%;min-width:760px;border-collapse:separate;border-spacing:0;
+  background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;
+  box-shadow:0 8px 26px rgba(15,23,42,.06);}
+table.cmp th,table.cmp td{padding:15px 18px;font-size:13.5px;text-align:center;
+  border-bottom:1px solid var(--soft2);vertical-align:middle;line-height:1.6;}
+table.cmp tr:last-child th,table.cmp tr:last-child td{border-bottom:none;}
+table.cmp thead th{background:var(--soft2);font-size:13.5px;font-weight:900;color:var(--ink);padding:16px 18px;}
+table.cmp tbody th{background:var(--soft);font-weight:700;color:var(--ink);text-align:left;width:170px;}
+table.cmp td{color:var(--muted);}
+table.cmp .col-pp{background:var(--indigo-50);color:var(--ink);font-weight:700;position:relative;}
+table.cmp thead .col-pp{background:var(--indigo);color:#fff;font-size:15px;}
+.mk{display:block;font-size:19px;font-weight:900;line-height:1;margin-bottom:5px;}
+.mk.best{color:var(--indigo);}
+.mk.ok{color:#059669;}
+.mk.so{color:var(--amber);}
+.mk.no{color:#cbd5e1;}
+.cmp-note{text-align:center;font-size:12px;color:var(--faint);margin-top:16px;}
+
 /* お問い合わせフォーム */
 .contact-form{background:#fff;border-radius:18px;padding:32px;max-width:560px;margin:36px auto 0;text-align:left;box-shadow:0 24px 60px rgba(0,0,0,.18);}
 .cf-row{margin-bottom:16px;}
@@ -654,8 +674,76 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
   </div>
 </section>
 
+<!-- 運用代行との比較 -->
+<section id="compare" class="sec-soft">
+  <div class="wrap">
+    <div class="center">
+      <p class="eyebrow">Comparison</p>
+      <h2>「運用代行と、何が違うの？」</h2>
+      <p class="lead">よくいただく質問です。正直に比較しました。</p>
+    </div>
+    <div class="cmp-wrap">
+      <table class="cmp">
+        <thead>
+          <tr>
+            <th></th>
+            <th>自分で運用</th>
+            <th>SNS運用代行</th>
+            <th class="col-pp">PostPilot</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>月額コスト</th>
+            <td><span class="mk so">△</span>人件費（月60時間分の工数）</td>
+            <td><span class="mk no">✕</span>月10〜30万円が相場</td>
+            <td class="col-pp"><span class="mk best">◎</span>月9,800円〜</td>
+          </tr>
+          <tr>
+            <th>投稿文の作成</th>
+            <td><span class="mk no">✕</span>自分で書く</td>
+            <td><span class="mk ok">○</span>代行が作成（原稿の往復確認あり）</td>
+            <td class="col-pp"><span class="mk best">◎</span>AIが毎朝5案を自動生成</td>
+          </tr>
+          <tr>
+            <th>図解画像</th>
+            <td><span class="mk no">✕</span>自作するか外注</td>
+            <td><span class="mk so">△</span>オプション扱い（追加費用）が多い</td>
+            <td class="col-pp"><span class="mk best">◎</span>標準機能で毎日自動生成</td>
+          </tr>
+          <tr>
+            <th>投稿頻度</th>
+            <td><span class="mk so">△</span>忙しくなると止まりがち</td>
+            <td><span class="mk ok">○</span>週2〜3回のプランが多い</td>
+            <td class="col-pp"><span class="mk best">◎</span>毎日（承認した分だけ）</td>
+          </tr>
+          <tr>
+            <th>効果分析と改善</th>
+            <td><span class="mk no">✕</span>手が回らない</td>
+            <td><span class="mk so">△</span>月次レポート・改善は担当者次第</td>
+            <td class="col-pp"><span class="mk best">◎</span>毎日自動計測＋AIが伸びた型を学習</td>
+          </tr>
+          <tr>
+            <th>あなたの作業</th>
+            <td><span class="mk no">✕</span>すべて（1投稿 約60分）</td>
+            <td><span class="mk so">△</span>定例MTG・原稿確認のやりとり</td>
+            <td class="col-pp"><span class="mk best">◎</span>1日2分の承認だけ</td>
+          </tr>
+          <tr>
+            <th>開始までの期間</th>
+            <td><span class="mk ok">○</span>すぐ（続けば…）</td>
+            <td><span class="mk so">△</span>契約・打ち合わせで数週間〜1ヶ月</td>
+            <td class="col-pp"><span class="mk best">◎</span>最短翌日スタート</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cmp-note">※ 運用代行の内容・料金は一般的な例です。サービスにより異なります。</p>
+  </div>
+</section>
+
 <!-- 料金 -->
-<section id="pricing" class="sec-soft">
+<section id="pricing">
   <div class="wrap">
     <div class="center mb-12">
       <p class="eyebrow">Pricing</p>
@@ -712,7 +800,7 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
 </section>
 
 <!-- FAQ -->
-<section id="faq">
+<section id="faq" class="sec-soft">
   <div class="wrap-narrow">
     <div class="center mb-12">
       <p class="eyebrow">FAQ</p>

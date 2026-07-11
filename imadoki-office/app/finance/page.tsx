@@ -490,6 +490,112 @@ function InvoicePreview({ invoice }: { invoice: Invoice }) {
   );
 }
 
+// ────────────────────────── AI書類読み込み ──────────────────────────
+
+interface ParsedDoc {
+  docType: DocType;
+  clientName: string;
+  clientAddress?: string;
+  issueDate: string;
+  dueDate?: string;
+  items: InvoiceItem[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  notes?: string;
+}
+
+function ImportDocModal({ parsed, fileName, onConfirm, onCancel }: {
+  parsed: ParsedDoc;
+  fileName: string;
+  onConfirm: (doc: ParsedDoc, status: InvoiceStatus) => void;
+  onCancel: () => void;
+}) {
+  const [status, setStatus] = useState<InvoiceStatus>('sent');
+  const docLabel = DOC_LABELS[parsed.docType] ?? '書類';
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }} onClick={onCancel}>
+      <div className="w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl overflow-hidden"
+        style={{ background: '#0d0d1a', border: '1px solid rgba(99,102,241,0.3)' }}
+        onClick={e => e.stopPropagation()}>
+        <div className="px-6 py-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+          <h3 className="text-white font-bold text-base">🤖 AIが読み取った内容の確認</h3>
+          <p className="text-xs mt-0.5" style={{ color: '#6b7280' }}>{fileName} — 内容を確認して「確定して登録」を押してください</p>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3">
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            {[
+              ['書類の種類', docLabel],
+              ['取引先', parsed.clientName || '—'],
+              ['発行日', parsed.issueDate || '—'],
+              ['支払期日', parsed.dueDate || '—'],
+            ].map(([k, v]) => (
+              <div key={k}>
+                <div className="text-xs mb-0.5" style={{ color: '#64748b' }}>{k}</div>
+                <div style={{ color: '#e2e8f0' }}>{v}</div>
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <div className="text-xs mb-1.5" style={{ color: '#64748b' }}>明細（{parsed.items.length}件）</div>
+            <div className="rounded-lg overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
+              {parsed.items.map((item, i) => (
+                <div key={i} className="flex justify-between px-3 py-1.5 text-xs"
+                  style={{ borderTop: i > 0 ? '1px solid rgba(255,255,255,0.05)' : 'none', color: '#cbd5e1' }}>
+                  <span className="truncate mr-3">{item.description}</span>
+                  <span className="flex-shrink-0" style={{ fontVariantNumeric: 'tabular-nums' }}>{formatMoney(item.amount)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <div className="text-sm space-y-0.5" style={{ minWidth: 180 }}>
+              <div className="flex justify-between text-xs" style={{ color: '#94a3b8' }}><span>小計</span><span>{formatMoney(parsed.subtotal)}</span></div>
+              <div className="flex justify-between text-xs" style={{ color: '#94a3b8' }}><span>消費税</span><span>{formatMoney(parsed.tax)}</span></div>
+              <div className="flex justify-between font-bold" style={{ color: '#e2e8f0' }}><span>合計</span><span>{formatMoney(parsed.total)}</span></div>
+            </div>
+          </div>
+
+          <div>
+            <div className="text-xs mb-1.5" style={{ color: '#64748b' }}>登録時のステータス</div>
+            <div className="flex gap-2">
+              {(['sent', 'paid', 'draft'] as InvoiceStatus[]).map(s => (
+                <button key={s} onClick={() => setStatus(s)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                  style={{
+                    background: status === s ? 'rgba(99,102,241,0.25)' : 'rgba(255,255,255,0.04)',
+                    border: status === s ? '1px solid rgba(99,102,241,0.6)' : '1px solid rgba(255,255,255,0.1)',
+                    color: status === s ? '#a5b4fc' : '#94a3b8',
+                  }}>
+                  {STATUS_CONFIG[s].label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs mt-1.5" style={{ color: '#4b5563' }}>「入金済」で登録するとダッシュボードの売上に即反映されます</p>
+          </div>
+        </div>
+
+        <div className="px-6 py-4 border-t flex justify-end gap-3" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+          <button onClick={onCancel}
+            className="px-5 py-2 rounded-lg text-sm"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8' }}>
+            キャンセル
+          </button>
+          <button onClick={() => onConfirm(parsed, status)}
+            className="px-6 py-2 rounded-lg text-sm font-semibold text-white"
+            style={{ background: 'linear-gradient(135deg,#6366f1,#a855f7)' }}>
+            ✓ 確定して登録
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ────────────────────────── Main Page ──────────────────────────
 
 type Tab = 'list' | 'create' | 'preview' | 'legal';
@@ -500,6 +606,56 @@ export default function FinancePage() {
   const [selected, setSelected] = useState<Invoice | null>(null);
   const [filterType, setFilterType] = useState<DocType | 'all'>('all');
   const [filterStatus, setFilterStatus] = useState<InvoiceStatus | 'all'>('all');
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState('');
+  const [importedDoc, setImportedDoc] = useState<{ parsed: ParsedDoc; fileName: string } | null>(null);
+  const importRef = useRef<HTMLInputElement>(null);
+
+  async function handleImportFile(file: File) {
+    setImporting(true);
+    setImportError('');
+    const form = new FormData();
+    form.append('file', file);
+    try {
+      const res = await fetch('/api/invoice-parse', { method: 'POST', body: form });
+      const json = await res.json();
+      if (json.error) throw new Error(json.error);
+      setImportedDoc({ parsed: json.invoice, fileName: file.name });
+    } catch (e) {
+      setImportError(e instanceof Error ? e.message : '読み取りに失敗しました');
+    } finally {
+      setImporting(false);
+      if (importRef.current) importRef.current.value = '';
+    }
+  }
+
+  function confirmImport(doc: ParsedDoc, status: InvoiceStatus) {
+    const existing = loadInvoices();
+    const inv: Invoice = {
+      id: crypto.randomUUID(),
+      docType: doc.docType ?? 'invoice',
+      status,
+      invoiceNumber: generateInvoiceNumber(doc.docType ?? 'invoice', existing),
+      issueDate: doc.issueDate || new Date().toISOString().slice(0, 10),
+      dueDate: doc.dueDate || '',
+      clientName: doc.clientName || '不明な取引先',
+      clientAddress: doc.clientAddress,
+      items: doc.items?.length ? doc.items : [{ description: '（明細なし）', quantity: 1, unitPrice: doc.subtotal ?? 0, amount: doc.subtotal ?? 0 }],
+      subtotal: doc.subtotal ?? 0,
+      tax: doc.tax ?? 0,
+      total: doc.total ?? 0,
+      notes: doc.notes,
+      createdAt: new Date().toISOString(),
+    };
+    existing.unshift(inv);
+    saveInvoices(existing);
+    setInvoices(existing);
+    setImportedDoc(null);
+    import('@/lib/gamification').then(m => {
+      m.addXp('invoice-created');
+      if (status === 'paid') m.addXp('invoice-paid');
+    });
+  }
 
   useEffect(() => {
     // 送付済のまま支払期日を過ぎた書類を自動で「期限超過」にする
@@ -564,11 +720,28 @@ export default function FinancePage() {
 
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+      {/* AI読み込み確認モーダル */}
+      {importedDoc && (
+        <ImportDocModal
+          parsed={importedDoc.parsed}
+          fileName={importedDoc.fileName}
+          onConfirm={confirmImport}
+          onCancel={() => setImportedDoc(null)}
+        />
+      )}
+
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ color: '#f1f5f9', fontSize: 22, fontWeight: 700, margin: 0 }}>財務・書類管理</h1>
-        <p style={{ color: '#94a3b8', fontSize: 13, marginTop: 4 }}>請求書・契約書の作成から入金管理・AI法務チェックまで、ここでワンストップ</p>
+        <p style={{ color: '#94a3b8', fontSize: 13, marginTop: 4 }}>手元の請求書・契約書はアップロードするだけでAIが自動登録 — 作成から入金管理・法務チェックまでワンストップ</p>
       </div>
+
+      {importError && (
+        <div style={{ marginBottom: 16, padding: '10px 16px', borderRadius: 10, fontSize: 13,
+          background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171' }}>
+          ⚠️ {importError}
+        </div>
+      )}
 
       {/* KPI cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: 24 }}>
@@ -613,8 +786,16 @@ export default function FinancePage() {
                 <option key={s} value={s}>{STATUS_CONFIG[s].label}</option>
               ))}
             </select>
+            <button onClick={() => importRef.current?.click()} disabled={importing}
+              style={{ marginLeft: 'auto', padding: '6px 16px', borderRadius: 8, fontSize: 13,
+                cursor: importing ? 'wait' : 'pointer', opacity: importing ? 0.7 : 1,
+                background: 'rgba(20,184,166,0.15)', border: '1px solid rgba(20,184,166,0.4)', color: '#2dd4bf', fontWeight: 600 }}>
+              {importing ? '🤖 AIが読み取り中…' : '📥 ファイルから読み込む'}
+            </button>
+            <input ref={importRef} type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.xlsx,.xls,.csv" style={{ display: 'none' }}
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleImportFile(f); }} />
             <button onClick={() => { setSelected(null); setTab('create'); }}
-              style={{ marginLeft: 'auto', padding: '6px 16px', borderRadius: 8, fontSize: 13, cursor: 'pointer',
+              style={{ padding: '6px 16px', borderRadius: 8, fontSize: 13, cursor: 'pointer',
                 background: 'linear-gradient(135deg,#6366f1,#a855f7)', border: 'none', color: '#fff', fontWeight: 600 }}>
               + 新規作成
             </button>

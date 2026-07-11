@@ -112,6 +112,172 @@ function greeting() {
   return 'お疲れさまです';
 }
 
+// ---------- チュートリアル ----------
+// 各ステップの完了はデータから自動判定。完了すると自動で次のステップに進む。
+interface TutorialStep {
+  id: string;
+  icon: string;
+  title: string;
+  desc: string;
+  href: string;
+  cta: string;
+  isDone: () => boolean;
+}
+
+const TUTORIAL_STEPS: TutorialStep[] = [
+  {
+    id: 'import', icon: '📊', title: 'PLデータを取り込む',
+    desc: 'データ入力ページの「詳細PLインポート」でIMADOKIのPL Excelをアップロード。確認画面で「確定して反映」を押すと完了です。',
+    href: '/ceo/data', cta: 'データ入力へ',
+    isDone: () => {
+      try {
+        const d = JSON.parse(localStorage.getItem('imadoki-company-data') || 'null');
+        return (d?.monthlyPL?.length ?? 0) > 0 || (d?.clientRevenue?.length ?? 0) > 0;
+      } catch { return false; }
+    },
+  },
+  {
+    id: 'analyze', icon: '🔍', title: 'AI分析を実行する',
+    desc: '取り込んだ実データをAIが分析し、経営リスクとネクストアクションを提案します（ダッシュボードを開くと自動でも実行されます）。',
+    href: '/ceo/analysis', cta: 'AI分析へ',
+    isDone: () => !!localStorage.getItem('imadoki-last-analysis'),
+  },
+  {
+    id: 'approve', icon: '✅', title: 'AI提案を承認してタスク化',
+    desc: 'AIのネクストアクションを1件「承認」してみましょう。承認するとタスクボードに自動登録されます。',
+    href: '/ceo/analysis', cta: '提案を見る',
+    isDone: () => {
+      try {
+        const d = JSON.parse(localStorage.getItem('imadoki-company-data') || 'null');
+        const approved = d?.actionItems?.some((a: { status: string }) => a.status === 'approved' || a.status === 'done');
+        const tasks = JSON.parse(localStorage.getItem('imadoki-tasks') || '[]');
+        return !!approved || tasks.length > 0;
+      } catch { return false; }
+    },
+  },
+  {
+    id: 'invoice', icon: '🧾', title: '最初の書類を作成する',
+    desc: '財務・書類ページで請求書を1件作成。入金済にするとダッシュボードの売上に自動反映されます。',
+    href: '/finance', cta: '財務・書類へ',
+    isDone: () => {
+      try { return JSON.parse(localStorage.getItem('imadoki-invoices') || '[]').length > 0; } catch { return false; }
+    },
+  },
+  {
+    id: 'backup', icon: '💾', title: 'バックアップを保存する',
+    desc: 'データはブラウザ内に保存されるため、データ入力ページの「バックアップをダウンロード」で控えを取りましょう。',
+    href: '/ceo/data', cta: 'バックアップへ',
+    isDone: () => !!localStorage.getItem('imadoki-backup-done'),
+  },
+];
+
+function TutorialWidget() {
+  const [doneIds, setDoneIds] = useState<Set<string>>(new Set());
+  const [skipped, setSkipped] = useState(true); // SSR中は非表示にしてチラつき防止
+
+  useEffect(() => {
+    const check = () => {
+      setSkipped(localStorage.getItem('imadoki-tutorial-skipped') === '1');
+      setDoneIds(new Set(TUTORIAL_STEPS.filter(s => s.isDone()).map(s => s.id)));
+    };
+    check();
+    const events = ['imadoki-game-updated', 'imadoki-analysis-updated', 'imadoki-invoices-updated', 'imadoki-tutorial-check', 'storage', 'focus'];
+    events.forEach(e => window.addEventListener(e, check));
+    return () => events.forEach(e => window.removeEventListener(e, check));
+  }, []);
+
+  const allDone = doneIds.size === TUTORIAL_STEPS.length;
+  if (skipped) return null;
+
+  const skip = () => {
+    localStorage.setItem('imadoki-tutorial-skipped', '1');
+    setSkipped(true);
+  };
+
+  // 全完了: お祝い→閉じる
+  if (allDone) {
+    return (
+      <div className="glass rounded-xl p-5 mb-4 animate-fade-up" style={{ border: '1px solid rgba(74,222,128,0.35)' }}>
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-2xl">🎉</span>
+          <div className="flex-1 min-w-[200px]">
+            <div className="text-sm font-bold" style={{ color: '#4ade80' }}>チュートリアル完了！おめでとうございます</div>
+            <div className="text-xs mt-0.5" style={{ color: '#94a3b8' }}>プラットフォームの基本操作はすべてマスターしました。あとは毎週のAIレポートと一緒に経営を伸ばすだけです。</div>
+          </div>
+          <button onClick={skip}
+            className="text-xs px-3 py-1.5 rounded-lg transition-all hover:opacity-80"
+            style={{ background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.3)', color: '#4ade80' }}>
+            閉じる
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const currentStep = TUTORIAL_STEPS.find(s => !doneIds.has(s.id))!;
+  const currentIdx = TUTORIAL_STEPS.indexOf(currentStep);
+
+  return (
+    <div className="glass rounded-xl p-5 mb-4 animate-fade-up" style={{ border: '1px solid rgba(99,102,241,0.3)' }}>
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <span>🚀</span>
+        <span className="text-sm font-bold" style={{ color: '#f1f5f9' }}>はじめてガイド</span>
+        <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(99,102,241,0.15)', color: '#a5b4fc' }}>
+          {doneIds.size} / {TUTORIAL_STEPS.length} 完了
+        </span>
+        <button onClick={skip} className="text-xs ml-auto transition-all hover:opacity-80" style={{ color: '#64748b', textDecoration: 'underline' }}>
+          チュートリアルをスキップ
+        </button>
+      </div>
+
+      {/* ステップドット */}
+      <div className="flex items-center gap-1 mb-4">
+        {TUTORIAL_STEPS.map((s, i) => {
+          const done = doneIds.has(s.id);
+          const current = i === currentIdx;
+          return (
+            <div key={s.id} className="flex items-center flex-1 last:flex-none">
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 transition-all"
+                title={s.title}
+                style={{
+                  background: done ? 'rgba(74,222,128,0.2)' : current ? 'linear-gradient(135deg,#6366f1,#a855f7)' : 'rgba(255,255,255,0.05)',
+                  border: done ? '1px solid rgba(74,222,128,0.5)' : current ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                  color: done ? '#4ade80' : current ? '#fff' : '#64748b',
+                  boxShadow: current ? '0 0 12px rgba(99,102,241,0.5)' : 'none',
+                }}>
+                {done ? '✓' : i + 1}
+              </div>
+              {i < TUTORIAL_STEPS.length - 1 && (
+                <div className="flex-1 h-0.5 mx-1 rounded-full"
+                  style={{ background: done ? 'rgba(74,222,128,0.4)' : 'rgba(255,255,255,0.07)' }} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 現在のステップ */}
+      <div className="flex items-start gap-3 flex-wrap">
+        <span className="text-2xl flex-shrink-0">{currentStep.icon}</span>
+        <div className="flex-1 min-w-[240px]">
+          <div className="text-sm font-bold mb-1" style={{ color: '#f1f5f9' }}>
+            ステップ{currentIdx + 1}: {currentStep.title}
+          </div>
+          <p className="text-xs" style={{ color: '#94a3b8', lineHeight: 1.7 }}>{currentStep.desc}</p>
+          <div className="text-xs mt-1.5" style={{ color: '#64748b' }}>
+            ✨ 操作が完了すると自動でチェックが付き、次のステップに進みます
+          </div>
+        </div>
+        <Link href={currentStep.href}
+          className="text-xs font-semibold px-4 py-2 rounded-lg flex-shrink-0 transition-all hover:opacity-90"
+          style={{ background: 'linear-gradient(135deg,#6366f1,#a855f7)', color: '#fff' }}>
+          {currentStep.cta} →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 // 週次AIレポート — 前回分析から7日以上経っていたら自動で再分析して届ける
 function WeeklyReport() {
   const [saved, setSaved] = useState<SavedAnalysis | null>(null);
@@ -369,6 +535,9 @@ export default function Dashboard() {
           </div>
         </Link>
       )}
+
+      {/* チュートリアル */}
+      <TutorialWidget />
 
       {/* 週次AIレポート */}
       <WeeklyReport />

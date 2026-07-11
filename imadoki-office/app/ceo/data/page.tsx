@@ -558,6 +558,9 @@ export default function DataPage() {
     a.download = `imadoki-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
+    // チュートリアルの完了検知用
+    localStorage.setItem('imadoki-backup-done', new Date().toISOString());
+    window.dispatchEvent(new Event('imadoki-tutorial-check'));
   }
 
   const restoreRef = useRef<HTMLInputElement>(null);

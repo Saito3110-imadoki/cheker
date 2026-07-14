@@ -835,7 +835,7 @@ table.cmp thead .col-pp{background:var(--indigo);color:#fff;font-size:15px;}
     <h2>まずは10日間、<br>AIに任せてみてください。</h2>
     <p class="lead">トライアル期間中の費用はかかりません。合わなければそのまま終了でOK。<br>下のフォームから、1分でお申し込みいただけます。</p>
 
-    <form class="contact-form" action="https://formsubmit.co/saito.kato@imadoki.co.jp" method="POST">
+    <form class="contact-form" id="contactForm" action="https://formsubmit.co/saito.kato@imadoki.co.jp" method="POST">
       <input type="hidden" name="_subject" value="【PostPilot】LPからのお問い合わせ">
       <input type="hidden" name="_captcha" value="false">
       <input type="hidden" name="_template" value="table">
@@ -889,6 +889,39 @@ table.cmp thead .col-pp{background:var(--indigo);color:#fff;font-size:15px;}
 </footer>
 
 <script>
+// ── お問い合わせフォーム: AJAX送信 + 確実なサンクスページ遷移 ──
+(function(){
+  var form = document.getElementById('contactForm');
+  if (!form) return;
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var btn = form.querySelector('.cf-submit');
+    var original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '送信中...';
+
+    fetch('https://formsubmit.co/ajax/saito.kato@imadoki.co.jp', {
+      method: 'POST',
+      headers: { 'Accept': 'application/json' },
+      body: new FormData(form)
+    }).then(function(res){
+      if (res.ok) {
+        window.location.href = 'thanks.html';
+      } else {
+        // AJAXが拒否された場合は通常送信にフォールバック
+        // （ネイティブsubmitはこのイベントを再発火しない）
+        HTMLFormElement.prototype.submit.call(form);
+      }
+    }).catch(function(){
+      // ネットワークエラー時も通常送信にフォールバック
+      HTMLFormElement.prototype.submit.call(form);
+    }).finally(function(){
+      btn.disabled = false;
+      btn.textContent = original;
+    });
+  });
+})();
+
 (function(){
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   var targets = document.querySelectorAll(

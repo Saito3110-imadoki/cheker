@@ -33,15 +33,11 @@ const CONTACT_EMAIL = 'info@imadoki.co.jp';  // ← mailto方式の宛先
 - **推奨**: [Formspree](https://formspree.io/)(無料枠あり)でフォームを作成し、`https://formspree.io/f/xxxxxxxx` 形式のURLを `FORM_ENDPOINT` に設定 → フォームから直接送信されます
 - **未設定のままの場合**: 送信ボタンでメールソフトが起動する方式(mailto)で動作します
 
-### 2. ショーリール動画
+### 2. ショーリール動画 ✅設定済み
 
-`.hero-bg` 内のコメント部分に `<video>` を配置してください。
-
-```html
-<video autoplay muted loop playsinline poster="poster.jpg">
-  <source src="showreel.mp4" type="video/mp4">
-</video>
-```
+FVの背景動画は `assets/showreel.webm`(軽量版)+ `assets/showreel.mp4`(互換用)を再生しています。
+差し替える場合は同名で上書きするか、`.hero-bg` 内の `<source>` のパスを変更してください。
+オーバーレイの暗さは `.hero-bg::after` のグラデーションで調整できます。
 
 ### 3. WORKSの実データ
 

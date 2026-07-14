@@ -3,7 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IMADOKI FILMS | 映像制作会社(ラフ案)</title>
+<title>IMADOKI FILMS | 東京の映像制作会社</title>
+<meta name="description" content="IMADOKI FILMSは、CM・プロモーション映像、採用動画、SNS縦型ショート動画などを企画から撮影・編集・配信設計までワンストップで手がける東京・南青山の映像制作会社です。">
+<meta property="og:title" content="IMADOKI FILMS | 東京の映像制作会社">
+<meta property="og:description" content="その一瞬を、記憶に残る映像へ。企画から撮影・編集・配信まで、目的に寄り添う映像制作。">
+<meta property="og:type" content="website">
+<!-- 公開時: og:image を追加してください <meta property="og:image" content="https://example.com/ogp.jpg"> -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%23101114'/%3E%3Cpath d='M12 10l11 6-11 6z' fill='%23f2f2f2'/%3E%3Ccircle cx='25' cy='7' r='3' fill='%23e5382b'/%3E%3C/svg%3E">
 <style>
 /* ============================================================
    カスタマイズ用トークン
@@ -49,9 +55,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-img, video { max-width: 100%; display: block; }
+img, video, iframe { max-width: 100%; display: block; }
 a { color: inherit; text-decoration: none; }
 ul { list-style: none; }
+section { scroll-margin-top: 24px; }
 
 .en { font-family: var(--font-en); letter-spacing: 0.02em; }
 
@@ -102,11 +109,25 @@ ul { list-style: none; }
   transition: opacity 0.9s ease, transform 0.9s ease;
 }
 .reveal.is-visible { opacity: 1; transform: none; }
+
+/* オープニング(ヒーロー内の段階表示) */
+.hero-inner > * {
+  opacity: 0;
+  transform: translateY(24px);
+  animation: heroIn 1s ease forwards;
+}
+.hero-inner > *:nth-child(1) { animation-delay: 0.15s; }
+.hero-inner > *:nth-child(2) { animation-delay: 0.4s; }
+.hero-inner > *:nth-child(3) { animation-delay: 0.65s; }
+@keyframes heroIn { to { opacity: 1; transform: none; } }
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .reveal { opacity: 1; transform: none; transition: none; }
+  .hero-inner > * { opacity: 1; transform: none; animation: none; }
   .marquee-inner { animation: none !important; }
   .hero-bg::after { animation: none !important; }
+  .hero-rec::before { animation: none !important; }
 }
 
 /* ============================================================
@@ -123,6 +144,8 @@ ul { list-style: none; }
   mix-blend-mode: difference; /* 背景の明暗に応じてロゴ・ナビが反転 */
   color: #fff;
 }
+/* モバイルメニュー展開中はブレンドを無効化(メニューが反転合成されるのを防ぐ) */
+.header.menu-open { mix-blend-mode: normal; }
 .header .logo {
   font-family: var(--font-en);
   font-weight: 700;
@@ -155,7 +178,8 @@ ul { list-style: none; }
   transition: transform 0.35s ease;
 }
 .gnav a:hover::after,
-.gnav a:focus-visible::after { transform: scaleX(1); transform-origin: left; }
+.gnav a:focus-visible::after,
+.gnav a.is-current::after { transform: scaleX(1); transform-origin: left; }
 
 .menu-btn {
   display: none;
@@ -208,6 +232,11 @@ ul { list-style: none; }
     radial-gradient(120% 90% at 80% 10%, #2a2c31 0%, transparent 55%),
     radial-gradient(90% 70% at 15% 85%, #1e2024 0%, transparent 50%),
     var(--color-dark);
+}
+.hero-bg video {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  opacity: 0.65; /* 文字の可読性確保。動画に合わせて調整 */
 }
 .hero-bg::after {
   /* 光が横切るような演出(仮)。動画を入れたら削除してOK */
@@ -491,7 +520,16 @@ ul { list-style: none; }
   grid-template-columns: repeat(3, 1fr);
   gap: clamp(20px, 3vw, 40px);
 }
-.work-card { cursor: pointer; }
+.work-card {
+  cursor: pointer;
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  padding: 0;
+  letter-spacing: inherit;
+}
 .work-card.is-hidden { display: none; }
 .work-thumb {
   aspect-ratio: 16 / 9;
@@ -535,6 +573,9 @@ ul { list-style: none; }
 .ph-4 { background: linear-gradient(135deg, #46484e, #1d1e22); }
 .ph-5 { background: linear-gradient(135deg, #333539, #141518); }
 .ph-6 { background: linear-gradient(135deg, #5e6066, #2a2b2f); }
+.ph-7 { background: linear-gradient(135deg, #404248, #17181b); }
+.ph-8 { background: linear-gradient(135deg, #52545a, #222327); }
+.ph-9 { background: linear-gradient(135deg, #35373c, #121316); }
 .work-info { padding-top: 14px; }
 .work-info .cat {
   font-family: var(--font-en);
@@ -553,24 +594,6 @@ ul { list-style: none; }
 @media (max-width: 960px) { .works-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 600px) { .works-grid { grid-template-columns: 1fr; } }
 
-.more-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 14px;
-  margin-top: 56px;
-  font-family: var(--font-en);
-  font-size: 13px;
-  letter-spacing: 0.15em;
-  font-weight: 700;
-}
-.more-link::after {
-  content: "";
-  width: 48px; height: 1px;
-  background: var(--color-ink);
-  transition: width 0.35s ease;
-}
-.more-link:hover::after { width: 72px; }
-
 /* ============================================================
    NEWS
    ============================================================ */
@@ -579,16 +602,24 @@ ul { list-style: none; }
   padding: var(--section-pad) 0;
 }
 .news-list { border-top: 1px solid var(--color-line); }
-.news-list li a {
+.news-list li button {
   display: grid;
   grid-template-columns: 110px 110px 1fr auto;
   gap: 24px;
   align-items: center;
+  width: 100%;
   padding: 26px 8px;
+  border: none;
   border-bottom: 1px solid var(--color-line);
+  background: none;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  cursor: pointer;
   transition: background 0.3s ease;
 }
-.news-list li a:hover { background: var(--color-bg); }
+.news-list li button:hover { background: var(--color-bg); }
 .news-list .date {
   font-family: var(--font-en);
   font-size: 12px;
@@ -611,9 +642,9 @@ ul { list-style: none; }
   color: var(--color-sub);
   transition: transform 0.3s ease;
 }
-.news-list li a:hover .arrow { transform: translateX(6px); }
+.news-list li button:hover .arrow { transform: translateX(6px); }
 @media (max-width: 700px) {
-  .news-list li a {
+  .news-list li button {
     grid-template-columns: auto auto 1fr;
     grid-template-rows: auto auto;
     row-gap: 8px;
@@ -704,9 +735,12 @@ ul { list-style: none; }
   padding: 18px 40px;
   border: 1px solid currentColor;
   border-radius: 999px;
+  background: none;
+  color: inherit;
+  cursor: pointer;
   transition: all 0.35s ease;
 }
-.btn:hover { background: var(--color-dark-ink); color: var(--color-dark); }
+.recruit .btn:hover { background: var(--color-dark-ink); color: var(--color-dark); }
 .btn .dot {
   width: 8px; height: 8px;
   border-radius: 50%;
@@ -714,13 +748,14 @@ ul { list-style: none; }
 }
 
 /* ============================================================
-   CONTACT
+   CONTACT(フォーム)
    ============================================================ */
-.contact {
-  padding: var(--section-pad) 0;
+.contact { padding: var(--section-pad) 0; }
+.contact .sec-intro {
   text-align: center;
+  margin-bottom: clamp(40px, 6vw, 64px);
 }
-.contact h2 {
+.contact .sec-intro h2 {
   font-family: var(--font-en);
   font-size: clamp(48px, 9vw, 120px);
   font-weight: 700;
@@ -728,17 +763,103 @@ ul { list-style: none; }
   letter-spacing: -0.02em;
   text-transform: uppercase;
 }
-.contact p {
-  margin: 24px auto 40px;
+.contact .sec-intro p {
+  margin: 24px auto 0;
   color: var(--color-sub);
   max-width: 34em;
   font-size: 14px;
 }
-.contact .btn {
-  color: var(--color-ink);
-  border-color: var(--color-ink);
+.contact-form {
+  max-width: 760px;
+  margin: 0 auto;
+  background: var(--color-surface);
+  border-radius: 4px;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.07);
+  padding: clamp(28px, 5vw, 56px);
 }
-.contact .btn:hover { background: var(--color-ink); color: #fff; }
+.form-row { margin-bottom: 28px; }
+.form-row label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+.form-row label .req {
+  color: var(--color-accent);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  margin-left: 8px;
+  vertical-align: 1px;
+}
+.form-row input,
+.form-row select,
+.form-row textarea {
+  width: 100%;
+  font: inherit;
+  letter-spacing: inherit;
+  color: var(--color-ink);
+  background: var(--color-bg);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 14px 16px;
+  transition: border-color 0.3s ease, background 0.3s ease;
+}
+.form-row input:focus,
+.form-row select:focus,
+.form-row textarea:focus {
+  outline: none;
+  border-color: var(--color-ink);
+  background: #fff;
+}
+.form-row textarea { min-height: 160px; resize: vertical; }
+.form-row.has-error input,
+.form-row.has-error select,
+.form-row.has-error textarea { border-color: var(--color-accent); }
+.form-row .err {
+  display: none;
+  font-size: 12px;
+  color: var(--color-accent);
+  margin-top: 6px;
+}
+.form-row.has-error .err { display: block; }
+.form-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 24px;
+}
+@media (max-width: 600px) { .form-2col { grid-template-columns: 1fr; } }
+/* スパム対策(人間には見えないフィールド) */
+.hp-field { position: absolute; left: -9999px; opacity: 0; height: 0; overflow: hidden; }
+.form-submit { text-align: center; margin-top: 8px; }
+.form-submit .btn { color: var(--color-ink); border-color: var(--color-ink); }
+.form-submit .btn:hover:not(:disabled) { background: var(--color-ink); color: #fff; }
+.form-submit .btn:disabled { opacity: 0.5; cursor: wait; }
+.form-note {
+  font-size: 11px;
+  color: var(--color-sub);
+  text-align: center;
+  margin-top: 16px;
+}
+.form-result {
+  display: none;
+  text-align: center;
+  padding: 48px 16px;
+}
+.form-result.is-visible { display: block; }
+.form-result .mark {
+  width: 56px; height: 56px;
+  margin: 0 auto 20px;
+  border: 1px solid var(--color-ink);
+  border-radius: 50%;
+  display: grid;
+  place-content: center;
+  font-family: var(--font-en);
+  font-size: 22px;
+}
+.form-result h3 { font-size: 17px; letter-spacing: 0.1em; margin-bottom: 12px; }
+.form-result p { font-size: 13px; color: var(--color-sub); }
 
 /* ============================================================
    フッター
@@ -794,6 +915,152 @@ ul { list-style: none; }
   letter-spacing: 0.15em;
   color: rgba(242,242,242,0.45);
 }
+.footer-bottom button {
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+.footer-bottom button:hover { color: rgba(242,242,242,0.8); }
+
+/* ============================================================
+   モーダル(WORKS詳細 / NEWS詳細 / プライバシーポリシー)
+   ============================================================ */
+dialog.modal {
+  border: none;
+  border-radius: 4px;
+  padding: 0;
+  width: min(92vw, 880px);
+  max-height: 88vh;
+  overflow-y: auto;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.35);
+}
+dialog.modal::backdrop {
+  background: rgba(12, 13, 15, 0.72);
+  backdrop-filter: blur(4px);
+}
+.modal-inner { padding: clamp(24px, 4vw, 48px); }
+.modal-close {
+  position: sticky;
+  top: 12px;
+  margin-left: auto;
+  display: grid;
+  place-content: center;
+  width: 40px; height: 40px;
+  border: 1px solid var(--color-line);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-en);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 2;
+  float: right;
+  margin-right: 12px;
+  margin-top: 12px;
+}
+.modal-close:hover { background: var(--color-ink); color: #fff; border-color: var(--color-ink); }
+/* 動画エリア: embed設定時はiframe、未設定時はプレースホルダー表示 */
+.modal-video {
+  aspect-ratio: 16 / 9;
+  background: var(--color-dark);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+  display: grid;
+  place-content: center;
+  margin-bottom: 28px;
+}
+.modal-video iframe { width: 100%; height: 100%; border: 0; position: absolute; inset: 0; }
+.modal-video .ph-note {
+  color: rgba(255,255,255,0.45);
+  font-family: var(--font-en);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-align: center;
+}
+.modal-video .ph-note::before {
+  content: "";
+  display: block;
+  width: 0; height: 0;
+  margin: 0 auto 14px;
+  border-style: solid;
+  border-width: 12px 0 12px 20px;
+  border-color: transparent transparent transparent rgba(255,255,255,0.7);
+}
+.modal-head .cat {
+  font-family: var(--font-en);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-sub);
+  display: inline-block;
+  border: 1px solid var(--color-line);
+  padding: 2px 10px;
+  border-radius: 999px;
+  margin-bottom: 12px;
+}
+.modal-head h3 {
+  font-size: clamp(18px, 2.6vw, 24px);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+}
+.modal-head .client { font-size: 13px; color: var(--color-sub); margin-top: 4px; }
+.modal-body { margin-top: 20px; font-size: 14px; color: var(--color-sub); }
+.modal-credit {
+  margin-top: 28px;
+  border-top: 1px solid var(--color-line);
+  padding-top: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px 24px;
+}
+.modal-credit div dt {
+  font-family: var(--font-en);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-sub);
+}
+.modal-credit div dd { font-size: 13px; margin: 0; }
+.modal-date {
+  font-family: var(--font-en);
+  font-size: 12px;
+  color: var(--color-sub);
+  font-variant-numeric: tabular-nums;
+}
+.modal-article h3 { margin: 10px 0 18px; }
+.modal-article .modal-body { margin-top: 0; white-space: pre-line; }
+
+/* ============================================================
+   トップへ戻る
+   ============================================================ */
+.to-top {
+  position: fixed;
+  right: clamp(16px, 3vw, 32px);
+  bottom: clamp(16px, 3vw, 32px);
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  border: 1px solid var(--color-ink);
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-en);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition: all 0.4s ease;
+  z-index: 90;
+}
+.to-top.is-visible { opacity: 1; pointer-events: auto; transform: none; }
+.to-top:hover { background: var(--color-ink); color: #fff; }
 
 /* キーボードフォーカス */
 a:focus-visible, button:focus-visible {
@@ -994,57 +1261,81 @@ a:focus-visible, button:focus-visible {
       <button type="button" data-filter="event">EVENT</button>
     </div>
     <div class="works-grid reveal">
-      <!-- 実装時: .ph を <img src="..." alt="..."> に差し替え -->
-      <article class="work-card" data-cat="cm">
-        <div class="work-thumb"><div class="ph ph-1"></div><span class="dur en">00:30</span></div>
-        <div class="work-info">
+      <!-- 実装時: .ph を <img src="..." alt="..."> に差し替え。
+           詳細情報はページ下部の WORKS_DATA(JS)で管理 -->
+      <button type="button" class="work-card" data-cat="cm" data-work="w1">
+        <span class="work-thumb"><span class="ph ph-1"></span><span class="dur en">00:30</span></span>
+        <span class="work-info">
           <span class="cat">CM</span>
           <h3>新商品プロモーションムービー(仮)</h3>
-          <p class="client">〇〇株式会社</p>
-        </div>
-      </article>
-      <article class="work-card" data-cat="recruit">
-        <div class="work-thumb"><div class="ph ph-2"></div><span class="dur en">02:15</span></div>
-        <div class="work-info">
+          <span class="client">〇〇株式会社</span>
+        </span>
+      </button>
+      <button type="button" class="work-card" data-cat="recruit" data-work="w2">
+        <span class="work-thumb"><span class="ph ph-2"></span><span class="dur en">02:15</span></span>
+        <span class="work-info">
           <span class="cat">RECRUIT</span>
           <h3>新卒採用コンセプトムービー(仮)</h3>
-          <p class="client">〇〇株式会社</p>
-        </div>
-      </article>
-      <article class="work-card" data-cat="sns">
-        <div class="work-thumb"><div class="ph ph-3"></div><span class="dur en">00:15</span></div>
-        <div class="work-info">
+          <span class="client">〇〇株式会社</span>
+        </span>
+      </button>
+      <button type="button" class="work-card" data-cat="sns" data-work="w3">
+        <span class="work-thumb"><span class="ph ph-3"></span><span class="dur en">00:15</span></span>
+        <span class="work-info">
           <span class="cat">SNS</span>
           <h3>TikTok縦型ショートドラマ(仮)</h3>
-          <p class="client">〇〇株式会社</p>
-        </div>
-      </article>
-      <article class="work-card" data-cat="web">
-        <div class="work-thumb"><div class="ph ph-4"></div><span class="dur en">01:30</span></div>
-        <div class="work-info">
+          <span class="client">〇〇株式会社</span>
+        </span>
+      </button>
+      <button type="button" class="work-card" data-cat="web" data-work="w4">
+        <span class="work-thumb"><span class="ph ph-4"></span><span class="dur en">01:30</span></span>
+        <span class="work-info">
           <span class="cat">WEB MOVIE</span>
           <h3>サービス紹介アニメーション(仮)</h3>
-          <p class="client">〇〇株式会社</p>
-        </div>
-      </article>
-      <article class="work-card" data-cat="event">
-        <div class="work-thumb"><div class="ph ph-5"></div><span class="dur en">03:00</span></div>
-        <div class="work-info">
+          <span class="client">〇〇株式会社</span>
+        </span>
+      </button>
+      <button type="button" class="work-card" data-cat="event" data-work="w5">
+        <span class="work-thumb"><span class="ph ph-5"></span><span class="dur en">03:00</span></span>
+        <span class="work-info">
           <span class="cat">EVENT</span>
           <h3>カンファレンス公式レポート映像(仮)</h3>
-          <p class="client">〇〇実行委員会</p>
-        </div>
-      </article>
-      <article class="work-card" data-cat="cm">
-        <div class="work-thumb"><div class="ph ph-6"></div><span class="dur en">00:15</span></div>
-        <div class="work-info">
+          <span class="client">〇〇実行委員会</span>
+        </span>
+      </button>
+      <button type="button" class="work-card" data-cat="cm" data-work="w6">
+        <span class="work-thumb"><span class="ph ph-6"></span><span class="dur en">00:15</span></span>
+        <span class="work-info">
           <span class="cat">CM</span>
           <h3>ブランドイメージムービー(仮)</h3>
-          <p class="client">〇〇株式会社</p>
-        </div>
-      </article>
+          <span class="client">〇〇株式会社</span>
+        </span>
+      </button>
+      <button type="button" class="work-card" data-cat="web" data-work="w7">
+        <span class="work-thumb"><span class="ph ph-7"></span><span class="dur en">04:20</span></span>
+        <span class="work-info">
+          <span class="cat">WEB MOVIE</span>
+          <h3>導入事例インタビュー映像(仮)</h3>
+          <span class="client">〇〇株式会社</span>
+        </span>
+      </button>
+      <button type="button" class="work-card" data-cat="sns" data-work="w8">
+        <span class="work-thumb"><span class="ph ph-8"></span><span class="dur en">00:30</span></span>
+        <span class="work-info">
+          <span class="cat">SNS</span>
+          <h3>Instagramリール広告シリーズ(仮)</h3>
+          <span class="client">〇〇株式会社</span>
+        </span>
+      </button>
+      <button type="button" class="work-card" data-cat="recruit" data-work="w9">
+        <span class="work-thumb"><span class="ph ph-9"></span><span class="dur en">05:00</span></span>
+        <span class="work-info">
+          <span class="cat">RECRUIT</span>
+          <h3>社員密着ドキュメンタリー(仮)</h3>
+          <span class="client">〇〇株式会社</span>
+        </span>
+      </button>
     </div>
-    <a href="#" class="more-link reveal">VIEW ALL WORKS</a>
   </div>
 </section>
 
@@ -1057,32 +1348,43 @@ a:focus-visible, button:focus-visible {
       <span class="jp">お知らせ</span>
     </div>
     <ul class="news-list reveal">
-      <li><a href="#">
+      <li><button type="button" data-news="n1">
         <span class="date">2026.07.14</span>
         <span class="tag">INFO</span>
         <span class="title">コーポレートサイトを公開しました。</span>
         <span class="arrow">→</span>
-      </a></li>
-      <li><a href="#">
+      </button></li>
+      <li><button type="button" data-news="n2">
         <span class="date">2026.06.30</span>
         <span class="tag">WORKS</span>
         <span class="title">〇〇株式会社様の採用ムービーを公開しました。</span>
         <span class="arrow">→</span>
-      </a></li>
-      <li><a href="#">
+      </button></li>
+      <li><button type="button" data-news="n3">
         <span class="date">2026.06.10</span>
         <span class="tag">INFO</span>
         <span class="title">縦型ショート動画の制作プランを開始しました。</span>
         <span class="arrow">→</span>
-      </a></li>
-      <li><a href="#">
+      </button></li>
+      <li><button type="button" data-news="n4">
         <span class="date">2026.05.28</span>
         <span class="tag">EVENT</span>
         <span class="title">〇〇展示会にて映像ブースを担当しました。</span>
         <span class="arrow">→</span>
-      </a></li>
+      </button></li>
+      <li><button type="button" data-news="n5">
+        <span class="date">2026.05.12</span>
+        <span class="tag">WORKS</span>
+        <span class="title">〇〇株式会社様のWEB CMを公開しました。</span>
+        <span class="arrow">→</span>
+      </button></li>
+      <li><button type="button" data-news="n6">
+        <span class="date">2026.04.01</span>
+        <span class="tag">INFO</span>
+        <span class="title">映像制作事業を本格始動しました。</span>
+        <span class="arrow">→</span>
+      </button></li>
     </ul>
-    <a href="#" class="more-link reveal">VIEW ALL NEWS</a>
   </div>
 </section>
 
@@ -1116,7 +1418,7 @@ a:focus-visible, button:focus-visible {
         一緒に映像をつくる仲間を募集しています。ディレクター、カメラマン、エディター、
         経験・未経験問わず「価値にこだわる」姿勢を大切にできる方を歓迎します。
       </p>
-      <a href="#" class="btn"><span class="dot" aria-hidden="true"></span>RECRUIT SITE</a>
+      <a href="#contact" class="btn" id="recruit-btn"><span class="dot" aria-hidden="true"></span>応募・お問い合わせ</a>
     </div>
   </div>
 </section>
@@ -1124,12 +1426,73 @@ a:focus-visible, button:focus-visible {
 <!-- ============ CONTACT ============ -->
 <section class="contact" id="contact">
   <div class="container reveal">
-    <h2>Contact</h2>
-    <p>
-      映像制作のご相談・お見積りはこちらから。<br>
-      「何から始めればいいかわからない」という段階でも、お気軽にご連絡ください。
-    </p>
-    <a href="#" class="btn"><span class="dot" aria-hidden="true"></span>お問い合わせフォームへ</a>
+    <div class="sec-intro">
+      <h2>Contact</h2>
+      <p>
+        映像制作のご相談・お見積りはこちらから。<br>
+        「何から始めればいいかわからない」という段階でも、お気軽にご連絡ください。
+      </p>
+    </div>
+    <div class="contact-form">
+      <form id="contact-form" novalidate>
+        <div class="form-row">
+          <label for="f-type">お問い合わせ種別<span class="req">必須</span></label>
+          <select id="f-type" name="type" required>
+            <option value="">選択してください</option>
+            <option>映像制作のご相談</option>
+            <option>お見積りのご依頼</option>
+            <option>採用について</option>
+            <option>その他</option>
+          </select>
+          <p class="err">お問い合わせ種別を選択してください。</p>
+        </div>
+        <div class="form-2col">
+          <div class="form-row">
+            <label for="f-company">会社名</label>
+            <input type="text" id="f-company" name="company" autocomplete="organization">
+          </div>
+          <div class="form-row">
+            <label for="f-name">お名前<span class="req">必須</span></label>
+            <input type="text" id="f-name" name="name" required autocomplete="name">
+            <p class="err">お名前を入力してください。</p>
+          </div>
+        </div>
+        <div class="form-row">
+          <label for="f-email">メールアドレス<span class="req">必須</span></label>
+          <input type="email" id="f-email" name="email" required autocomplete="email" placeholder="example@company.co.jp">
+          <p class="err">正しいメールアドレスを入力してください。</p>
+        </div>
+        <div class="form-row">
+          <label for="f-budget">ご予算(任意)</label>
+          <select id="f-budget" name="budget">
+            <option value="">未定・わからない</option>
+            <option>〜30万円</option>
+            <option>30〜50万円</option>
+            <option>50〜100万円</option>
+            <option>100万円以上</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="f-message">お問い合わせ内容<span class="req">必須</span></label>
+          <textarea id="f-message" name="message" required placeholder="制作したい映像の内容、納期、参考にしたい映像などをご記入ください。"></textarea>
+          <p class="err">お問い合わせ内容を入力してください。</p>
+        </div>
+        <!-- スパム対策用(入力不要) -->
+        <div class="hp-field" aria-hidden="true">
+          <label for="f-website">Website</label>
+          <input type="text" id="f-website" name="website" tabindex="-1" autocomplete="off">
+        </div>
+        <div class="form-submit">
+          <button type="submit" class="btn"><span class="dot" aria-hidden="true"></span>送信する</button>
+        </div>
+        <p class="form-note">送信いただいた内容には、2営業日以内にご返信いたします。</p>
+      </form>
+      <div class="form-result" id="form-result" role="status">
+        <div class="mark en">✓</div>
+        <h3>送信ありがとうございました</h3>
+        <p>内容を確認のうえ、2営業日以内に担当者よりご連絡いたします。</p>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -1154,13 +1517,174 @@ a:focus-visible, button:focus-visible {
     </div>
     <div class="footer-bottom">
       <span>&copy; 2026 IMADOKI Co., Ltd. All Rights Reserved.</span>
-      <span>PRIVACY POLICY</span>
+      <button type="button" id="privacy-btn">PRIVACY POLICY</button>
     </div>
   </div>
 </footer>
 
+<!-- ============ WORKS詳細モーダル ============ -->
+<dialog class="modal" id="work-modal">
+  <button type="button" class="modal-close" data-close aria-label="閉じる">✕</button>
+  <div class="modal-inner">
+    <div class="modal-video" id="wm-video">
+      <p class="ph-note">VIDEO PLACEHOLDER<br>公開時にYouTube/Vimeo埋め込みに差し替え</p>
+    </div>
+    <div class="modal-head">
+      <span class="cat" id="wm-cat"></span>
+      <h3 id="wm-title"></h3>
+      <p class="client" id="wm-client"></p>
+    </div>
+    <p class="modal-body" id="wm-desc"></p>
+    <dl class="modal-credit" id="wm-credit"></dl>
+  </div>
+</dialog>
+
+<!-- ============ NEWS詳細モーダル ============ -->
+<dialog class="modal" id="news-modal">
+  <button type="button" class="modal-close" data-close aria-label="閉じる">✕</button>
+  <div class="modal-inner modal-article">
+    <span class="modal-date" id="nm-date"></span>
+    <span class="cat" id="nm-tag" style="margin-left:12px"></span>
+    <h3 id="nm-title"></h3>
+    <p class="modal-body" id="nm-body"></p>
+  </div>
+</dialog>
+
+<!-- ============ プライバシーポリシーモーダル ============ -->
+<dialog class="modal" id="privacy-modal">
+  <button type="button" class="modal-close" data-close aria-label="閉じる">✕</button>
+  <div class="modal-inner modal-article">
+    <h3>プライバシーポリシー</h3>
+    <p class="modal-body">株式会社IMADOKI(以下「当社」)は、お客様の個人情報を以下の方針に基づき取り扱います。
+
+1. 個人情報の取得
+当社は、お問い合わせフォーム等を通じて、氏名・会社名・メールアドレス等の個人情報を取得します。
+
+2. 利用目的
+取得した個人情報は、お問い合わせへの回答、お見積りのご案内、サービスに関するご連絡のために利用し、それ以外の目的では利用しません。
+
+3. 第三者提供
+法令に基づく場合を除き、ご本人の同意なく第三者に個人情報を提供することはありません。
+
+4. 安全管理
+当社は、個人情報の漏えい・滅失・毀損の防止のため、適切な安全管理措置を講じます。
+
+5. お問い合わせ窓口
+個人情報の取り扱いに関するお問い合わせは、当サイトのお問い合わせフォームよりご連絡ください。
+
+制定日: 2026年7月14日
+株式会社IMADOKI</p>
+  </div>
+</dialog>
+
+<!-- ============ トップへ戻る ============ -->
+<button type="button" class="to-top en" id="to-top" aria-label="ページの先頭へ戻る">↑</button>
+
 <script>
-// ============ スクロールで要素をフェードイン ============
+/* ============================================================
+   設定(公開時にここを変更)
+   ============================================================ */
+// フォーム送信先。Formspree等のエンドポイントURLを設定すると
+// フォームから直接送信されます(例: 'https://formspree.io/f/xxxxxxxx')。
+// 空のままの場合はメールソフトが起動する方式(mailto)で動作します。
+const FORM_ENDPOINT = '';
+const CONTACT_EMAIL = 'info@imadoki.co.jp';
+
+/* ============================================================
+   WORKS詳細データ
+   embed にYouTube等の埋め込みURLを設定すると動画が再生されます
+   (例: 'https://www.youtube.com/embed/XXXXXXXX')
+   ============================================================ */
+const WORKS_DATA = {
+  w1: {
+    cat: 'CM', title: '新商品プロモーションムービー(仮)', client: '〇〇株式会社',
+    desc: '新商品の発売に合わせて制作した30秒のプロモーションムービー。商品の世界観を伝えるトーンを大切にしながら、WEB CMとしての態度変容も意識した構成に仕上げました。',
+    credit: { 'Producer': '〇〇 〇〇', 'Director': '〇〇 〇〇', 'Camera': '〇〇 〇〇', 'Edit': '〇〇 〇〇' },
+    embed: ''
+  },
+  w2: {
+    cat: 'RECRUIT', title: '新卒採用コンセプトムービー(仮)', client: '〇〇株式会社',
+    desc: '「入社後の自分を想像できる映像を」というご要望から、社員の一日に密着。飾らない日常の空気感をそのまま切り取ることで、共感型の採用ブランディングを実現しました。',
+    credit: { 'Producer': '〇〇 〇〇', 'Director': '〇〇 〇〇', 'Camera': '〇〇 〇〇', 'Edit': '〇〇 〇〇' },
+    embed: ''
+  },
+  w3: {
+    cat: 'SNS', title: 'TikTok縦型ショートドラマ(仮)', client: '〇〇株式会社',
+    desc: '若年層への認知拡大を目的とした縦型ショートドラマシリーズ。冒頭2秒のフックとテンポ感を徹底的に設計し、平均再生完了率の高いコンテンツとなりました。',
+    credit: { 'Planner': '〇〇 〇〇', 'Director': '〇〇 〇〇', 'Cast': '〇〇 〇〇', 'Edit': '〇〇 〇〇' },
+    embed: ''
+  },
+  w4: {
+    cat: 'WEB MOVIE', title: 'サービス紹介アニメーション(仮)', client: '〇〇株式会社',
+    desc: '無形サービスの仕組みを直感的に伝えるモーショングラフィックス。複雑な業務フローを90秒に整理し、営業資料・展示会・WEBサイトで横断的に活用いただいています。',
+    credit: { 'Producer': '〇〇 〇〇', 'Motion Design': '〇〇 〇〇', 'Narration': '〇〇 〇〇' },
+    embed: ''
+  },
+  w5: {
+    cat: 'EVENT', title: 'カンファレンス公式レポート映像(仮)', client: '〇〇実行委員会',
+    desc: '2日間のカンファレンスをマルチカメラで記録し、当日の熱量をそのまま伝えるレポート映像に。次回開催の集客ツールとしても活用されています。',
+    credit: { 'Producer': '〇〇 〇〇', 'Camera': '〇〇 〇〇 / 〇〇 〇〇', 'Edit': '〇〇 〇〇' },
+    embed: ''
+  },
+  w6: {
+    cat: 'CM', title: 'ブランドイメージムービー(仮)', client: '〇〇株式会社',
+    desc: 'リブランディングに伴うブランドイメージムービー。言葉を最小限に抑え、映像と音楽だけでブランドの姿勢を表現した15秒。',
+    credit: { 'Producer': '〇〇 〇〇', 'Director': '〇〇 〇〇', 'Music': '〇〇 〇〇' },
+    embed: ''
+  },
+  w7: {
+    cat: 'WEB MOVIE', title: '導入事例インタビュー映像(仮)', client: '〇〇株式会社',
+    desc: '導入企業3社へのインタビューを通じて、サービスの価値を第三者の言葉で伝える事例映像。商談での活用を想定し、フルver.とダイジェストver.の2本立てで納品しました。',
+    credit: { 'Producer': '〇〇 〇〇', 'Interviewer': '〇〇 〇〇', 'Camera': '〇〇 〇〇' },
+    embed: ''
+  },
+  w8: {
+    cat: 'SNS', title: 'Instagramリール広告シリーズ(仮)', client: '〇〇株式会社',
+    desc: 'ECサイトへの流入を目的としたリール広告を月4本ペースで継続制作。クリエイティブのABテストを重ね、CPAの改善に貢献しています。',
+    credit: { 'Planner': '〇〇 〇〇', 'Shooting': '〇〇 〇〇', 'Edit': '〇〇 〇〇' },
+    embed: ''
+  },
+  w9: {
+    cat: 'RECRUIT', title: '社員密着ドキュメンタリー(仮)', client: '〇〇株式会社',
+    desc: '中途採用向けに、現場で働く社員の等身大の姿を追ったドキュメンタリー。仕事の困難とやりがいの両面を描くことで、入社後のミスマッチ低減に寄与しました。',
+    credit: { 'Producer': '〇〇 〇〇', 'Director': '〇〇 〇〇', 'Camera': '〇〇 〇〇', 'Edit': '〇〇 〇〇' },
+    embed: ''
+  }
+};
+
+/* ============================================================
+   NEWS詳細データ
+   ============================================================ */
+const NEWS_DATA = {
+  n1: {
+    date: '2026.07.14', tag: 'INFO', title: 'コーポレートサイトを公開しました。',
+    body: 'この度、IMADOKI FILMSのコーポレートサイトを公開いたしました。\n制作実績やサービス内容を随時更新してまいります。今後ともよろしくお願いいたします。'
+  },
+  n2: {
+    date: '2026.06.30', tag: 'WORKS', title: '〇〇株式会社様の採用ムービーを公開しました。',
+    body: '〇〇株式会社様の新卒採用コンセプトムービーを制作いたしました。\n社員の皆様の一日に密着し、等身大の魅力を伝える映像に仕上げています。WORKSページにて公開中です。'
+  },
+  n3: {
+    date: '2026.06.10', tag: 'INFO', title: '縦型ショート動画の制作プランを開始しました。',
+    body: 'TikTok・Instagramリール・YouTubeショート向けの縦型動画に特化した月額制作プランの提供を開始しました。\n企画から撮影・編集・投稿まで一括でサポートいたします。詳細はお問い合わせください。'
+  },
+  n4: {
+    date: '2026.05.28', tag: 'EVENT', title: '〇〇展示会にて映像ブースを担当しました。',
+    body: '〇〇展示会にて、出展企業様のブース映像演出とライブ配信を担当いたしました。\n会期中の様子はレポート映像としてWORKSページに掲載予定です。'
+  },
+  n5: {
+    date: '2026.05.12', tag: 'WORKS', title: '〇〇株式会社様のWEB CMを公開しました。',
+    body: '〇〇株式会社様の新商品プロモーションムービーを制作いたしました。\nWEB CMとしてSNS広告でも配信中です。WORKSページにてご覧いただけます。'
+  },
+  n6: {
+    date: '2026.04.01', tag: 'INFO', title: '映像制作事業を本格始動しました。',
+    body: '株式会社IMADOKIは、WEB・SNSマーケティングで培った知見を活かした映像制作事業「IMADOKI FILMS」を本格始動いたしました。\n企画から配信設計まで、成果につながる映像づくりをワンストップでご支援します。'
+  }
+};
+
+/* ============================================================
+   スクロールで要素をフェードイン
+   ============================================================ */
 const observer = new IntersectionObserver((entries) => {
   entries.forEach((entry) => {
     if (entry.isIntersecting) {
@@ -1171,23 +1695,44 @@ const observer = new IntersectionObserver((entries) => {
 }, { threshold: 0.12 });
 document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
 
-// ============ モバイルメニュー ============
+/* ============================================================
+   ナビの現在地ハイライト
+   ============================================================ */
+const navLinks = document.querySelectorAll('.gnav a');
+const sectionObserver = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+    if (!entry.isIntersecting) return;
+    navLinks.forEach((a) => {
+      a.classList.toggle('is-current', a.getAttribute('href') === '#' + entry.target.id);
+    });
+  });
+}, { rootMargin: '-40% 0px -55% 0px' });
+document.querySelectorAll('section[id]').forEach((sec) => sectionObserver.observe(sec));
+
+/* ============================================================
+   モバイルメニュー
+   ============================================================ */
+const header = document.querySelector('.header');
 const menuBtn = document.querySelector('.menu-btn');
 const gnav = document.getElementById('gnav');
 menuBtn.addEventListener('click', () => {
   const open = gnav.classList.toggle('is-open');
+  header.classList.toggle('menu-open', open);
   menuBtn.textContent = open ? 'CLOSE' : 'MENU';
   menuBtn.setAttribute('aria-expanded', String(open));
 });
 gnav.querySelectorAll('a').forEach((a) => {
   a.addEventListener('click', () => {
     gnav.classList.remove('is-open');
+    header.classList.remove('menu-open');
     menuBtn.textContent = 'MENU';
     menuBtn.setAttribute('aria-expanded', 'false');
   });
 });
 
-// ============ WORKS カテゴリフィルタ ============
+/* ============================================================
+   WORKS カテゴリフィルタ
+   ============================================================ */
 const filterBtns = document.querySelectorAll('.works-filter button');
 const workCards = document.querySelectorAll('.work-card');
 filterBtns.forEach((btn) => {
@@ -1200,6 +1745,174 @@ filterBtns.forEach((btn) => {
     });
   });
 });
+
+/* ============================================================
+   モーダル共通
+   ============================================================ */
+document.querySelectorAll('dialog.modal').forEach((dialog) => {
+  // ✕ボタンで閉じる
+  dialog.querySelector('[data-close]').addEventListener('click', () => dialog.close());
+  // 背景クリックで閉じる
+  dialog.addEventListener('click', (e) => {
+    if (e.target === dialog) dialog.close();
+  });
+});
+
+/* ============================================================
+   WORKS詳細モーダル
+   ============================================================ */
+const workModal = document.getElementById('work-modal');
+workCards.forEach((card) => {
+  card.addEventListener('click', () => openWork(card.dataset.work));
+});
+function openWork(id) {
+  const data = WORKS_DATA[id];
+  if (!data) return;
+  document.getElementById('wm-cat').textContent = data.cat;
+  document.getElementById('wm-title').textContent = data.title;
+  document.getElementById('wm-client').textContent = data.client;
+  document.getElementById('wm-desc').textContent = data.desc;
+  const videoArea = document.getElementById('wm-video');
+  videoArea.innerHTML = data.embed
+    ? '<iframe src="' + data.embed + '" title="' + data.title + '" allow="autoplay; fullscreen" allowfullscreen></iframe>'
+    : '<p class="ph-note">VIDEO PLACEHOLDER<br>公開時にYouTube/Vimeo埋め込みに差し替え</p>';
+  const creditArea = document.getElementById('wm-credit');
+  creditArea.innerHTML = '';
+  Object.entries(data.credit).forEach(([role, name]) => {
+    const div = document.createElement('div');
+    const dt = document.createElement('dt');
+    const dd = document.createElement('dd');
+    dt.textContent = role;
+    dd.textContent = name;
+    div.append(dt, dd);
+    creditArea.append(div);
+  });
+  workModal.showModal();
+}
+workModal.addEventListener('close', () => {
+  // 動画再生を確実に停止
+  document.getElementById('wm-video').innerHTML =
+    '<p class="ph-note">VIDEO PLACEHOLDER<br>公開時にYouTube/Vimeo埋め込みに差し替え</p>';
+});
+
+/* ============================================================
+   NEWS詳細モーダル
+   ============================================================ */
+const newsModal = document.getElementById('news-modal');
+document.querySelectorAll('.news-list button[data-news]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const data = NEWS_DATA[btn.dataset.news];
+    if (!data) return;
+    document.getElementById('nm-date').textContent = data.date;
+    document.getElementById('nm-tag').textContent = data.tag;
+    document.getElementById('nm-title').textContent = data.title;
+    document.getElementById('nm-body').textContent = data.body;
+    newsModal.showModal();
+  });
+});
+
+/* ============================================================
+   プライバシーポリシーモーダル
+   ============================================================ */
+document.getElementById('privacy-btn').addEventListener('click', () => {
+  document.getElementById('privacy-modal').showModal();
+});
+
+/* ============================================================
+   RECRUITボタン → お問い合わせ種別を「採用について」に
+   ============================================================ */
+document.getElementById('recruit-btn').addEventListener('click', () => {
+  document.getElementById('f-type').value = '採用について';
+});
+
+/* ============================================================
+   お問い合わせフォーム
+   ============================================================ */
+const form = document.getElementById('contact-form');
+const formResult = document.getElementById('form-result');
+
+function validateField(row) {
+  const field = row.querySelector('input, select, textarea');
+  if (!field || !field.required) return true;
+  let valid = field.value.trim() !== '';
+  if (valid && field.type === 'email') {
+    valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(field.value.trim());
+  }
+  row.classList.toggle('has-error', !valid);
+  return valid;
+}
+
+form.querySelectorAll('.form-row').forEach((row) => {
+  const field = row.querySelector('input, select, textarea');
+  if (field) field.addEventListener('input', () => row.classList.remove('has-error'));
+});
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  // スパム(ボット)チェック
+  if (form.website.value !== '') return;
+
+  // バリデーション
+  const rows = [...form.querySelectorAll('.form-row')];
+  const allValid = rows.map(validateField).every(Boolean);
+  if (!allValid) {
+    form.querySelector('.has-error')?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    return;
+  }
+
+  const payload = {
+    種別: form.type.value,
+    会社名: form.company.value || '(未記入)',
+    お名前: form.name.value,
+    メールアドレス: form.email.value,
+    ご予算: form.budget.value || '未定・わからない',
+    お問い合わせ内容: form.message.value
+  };
+
+  const submitBtn = form.querySelector('[type="submit"]');
+
+  if (FORM_ENDPOINT) {
+    // フォームサービス(Formspree等)へ送信
+    submitBtn.disabled = true;
+    try {
+      const res = await fetch(FORM_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('送信に失敗しました');
+      showSuccess();
+    } catch (err) {
+      alert('送信に失敗しました。お手数ですが時間をおいて再度お試しいただくか、' + CONTACT_EMAIL + ' まで直接ご連絡ください。');
+    } finally {
+      submitBtn.disabled = false;
+    }
+  } else {
+    // エンドポイント未設定時はメールソフトを起動
+    const body = Object.entries(payload).map(([k, v]) => '【' + k + '】\n' + v).join('\n\n');
+    const mailto = 'mailto:' + CONTACT_EMAIL
+      + '?subject=' + encodeURIComponent('【お問い合わせ】' + form.type.value + ' - ' + form.name.value)
+      + '&body=' + encodeURIComponent(body);
+    window.location.href = mailto;
+    showSuccess();
+  }
+});
+
+function showSuccess() {
+  form.style.display = 'none';
+  formResult.classList.add('is-visible');
+  formResult.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
+/* ============================================================
+   トップへ戻るボタン
+   ============================================================ */
+const toTop = document.getElementById('to-top');
+window.addEventListener('scroll', () => {
+  toTop.classList.toggle('is-visible', window.scrollY > window.innerHeight * 0.8);
+}, { passive: true });
+toTop.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 </script>
 
 </body>

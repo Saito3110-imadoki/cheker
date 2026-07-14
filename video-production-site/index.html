@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IMADOKI FILMS | 映像制作会社(ラフ案)</title>
+<style>
+/* ============================================================
+   カスタマイズ用トークン
+   色・フォント・余白はすべてここを書き換えるだけで
+   サイト全体に反映されます。
+   ============================================================ */
+:root {
+  /* --- 色 --- */
+  --color-bg:        #f4f4f5;  /* ベース背景(明るいグレー) */
+  --color-surface:   #ffffff;  /* カード・セクション背景(白) */
+  --color-ink:       #17181a;  /* メイン文字色(黒) */
+  --color-sub:       #6f7178;  /* サブ文字色(グレー) */
+  --color-line:      #dcdce0;  /* 罫線 */
+  --color-dark:      #101114;  /* ダークセクション背景 */
+  --color-dark-ink:  #f2f2f2;  /* ダークセクション文字色 */
+  --color-accent:    #e5382b;  /* 差し色(RECの赤)。コーポレートカラーに変更可 */
+
+  /* --- フォント --- */
+  --font-en: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-jp: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP",
+             "Yu Gothic", Meiryo, sans-serif;
+
+  /* --- 余白・サイズ --- */
+  --section-pad: clamp(80px, 12vw, 160px); /* セクション上下余白 */
+  --side-pad:    clamp(20px, 5vw, 64px);   /* 左右余白 */
+  --radius:      2px;                      /* 角丸(ミニマル基調のためほぼ直角) */
+}
+
+/* ============================================================
+   ベース
+   ============================================================ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-jp);
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-size: 15px;
+  line-height: 1.9;
+  letter-spacing: 0.04em;
+  -webkit-font-smoothing: antialiased;
+}
+
+img, video { max-width: 100%; display: block; }
+a { color: inherit; text-decoration: none; }
+ul { list-style: none; }
+
+.en { font-family: var(--font-en); letter-spacing: 0.02em; }
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding-left: var(--side-pad);
+  padding-right: var(--side-pad);
+}
+
+/* セクション見出し(英字大+日本語小) */
+.sec-head { margin-bottom: clamp(40px, 6vw, 72px); }
+.sec-head .num {
+  font-family: var(--font-en);
+  font-size: 12px;
+  color: var(--color-sub);
+  display: block;
+  margin-bottom: 8px;
+}
+.sec-head h2 {
+  font-family: var(--font-en);
+  font-size: clamp(40px, 7vw, 88px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+.sec-head .jp {
+  display: inline-block;
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--color-sub);
+  padding-left: 28px;
+  position: relative;
+}
+.sec-head .jp::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 50%;
+  width: 20px; height: 1px;
+  background: var(--color-ink);
+}
+
+/* スクロール時のフェードイン */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.9s ease, transform 0.9s ease;
+}
+.reveal.is-visible { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .marquee-inner { animation: none !important; }
+  .hero-bg::after { animation: none !important; }
+}
+
+/* ============================================================
+   ヘッダー
+   ============================================================ */
+.header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px var(--side-pad);
+  mix-blend-mode: difference; /* 背景の明暗に応じてロゴ・ナビが反転 */
+  color: #fff;
+}
+.header .logo {
+  font-family: var(--font-en);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.06em;
+}
+.header .logo small {
+  display: block;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  opacity: 0.7;
+}
+.gnav ul { display: flex; gap: 32px; }
+.gnav a {
+  font-family: var(--font-en);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  position: relative;
+  padding-bottom: 4px;
+}
+.gnav a::after {
+  content: "";
+  position: absolute;
+  left: 0; bottom: 0;
+  width: 100%; height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.35s ease;
+}
+.gnav a:hover::after,
+.gnav a:focus-visible::after { transform: scaleX(1); transform-origin: left; }
+
+.menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: inherit;
+  font-family: var(--font-en);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  padding: 8px;
+}
+
+@media (max-width: 860px) {
+  .gnav {
+    position: fixed;
+    inset: 0;
+    background: var(--color-dark);
+    display: grid;
+    place-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  .gnav.is-open { opacity: 1; pointer-events: auto; }
+  .gnav ul { flex-direction: column; gap: 28px; text-align: center; }
+  .gnav a { font-size: 22px; }
+  .menu-btn { display: block; position: relative; z-index: 101; }
+}
+
+/* ============================================================
+   ヒーロー(ショーリール差し替え想定)
+   ============================================================ */
+.hero {
+  position: relative;
+  height: 100svh;
+  min-height: 560px;
+  background: var(--color-dark);
+  color: var(--color-dark-ink);
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+/* 動画プレースホルダー:
+   実装時はこの .hero-bg の中に <video autoplay muted loop playsinline> を配置 */
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 90% at 80% 10%, #2a2c31 0%, transparent 55%),
+    radial-gradient(90% 70% at 15% 85%, #1e2024 0%, transparent 50%),
+    var(--color-dark);
+}
+.hero-bg::after {
+  /* 光が横切るような演出(仮)。動画を入れたら削除してOK */
+  content: "";
+  position: absolute;
+  inset: -50%;
+  background: linear-gradient(105deg, transparent 42%, rgba(255,255,255,0.05) 50%, transparent 58%);
+  animation: sweep 7s ease-in-out infinite;
+}
+@keyframes sweep {
+  0%   { transform: translateX(-35%); }
+  100% { transform: translateX(35%); }
+}
+.hero-frame {
+  /* ファインダー風の四隅マーク */
+  position: absolute;
+  inset: clamp(16px, 3vw, 36px);
+  pointer-events: none;
+  opacity: 0.5;
+}
+.hero-frame i {
+  position: absolute;
+  width: 22px; height: 22px;
+  border: 1px solid var(--color-dark-ink);
+}
+.hero-frame i:nth-child(1) { top: 0; left: 0; border-width: 1px 0 0 1px; }
+.hero-frame i:nth-child(2) { top: 0; right: 0; border-width: 1px 1px 0 0; }
+.hero-frame i:nth-child(3) { bottom: 0; left: 0; border-width: 0 0 1px 1px; }
+.hero-frame i:nth-child(4) { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
+
+.hero-rec {
+  position: absolute;
+  top: clamp(70px, 9vw, 90px);
+  right: clamp(32px, 5vw, 64px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-en);
+  font-size: 11px;
+  letter-spacing: 0.3em;
+}
+.hero-rec::before {
+  content: "";
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  animation: blink 1.6s steps(2, start) infinite;
+}
+@keyframes blink { 50% { opacity: 0.15; } }
+
+.hero-inner {
+  position: relative;
+  width: 100%;
+  padding: 0 var(--side-pad) clamp(48px, 8vw, 96px);
+}
+.hero-copy-en {
+  font-family: var(--font-en);
+  font-weight: 700;
+  font-size: clamp(44px, 9.5vw, 128px);
+  line-height: 0.98;
+  letter-spacing: -0.025em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.hero-copy-en .thin { font-weight: 300; }
+.hero-copy-jp {
+  margin-top: 28px;
+  font-size: clamp(14px, 1.6vw, 17px);
+  letter-spacing: 0.14em;
+}
+.hero-meta {
+  margin-top: 36px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  border-top: 1px solid rgba(255,255,255,0.25);
+  padding-top: 16px;
+  font-family: var(--font-en);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: rgba(242,242,242,0.65);
+  flex-wrap: wrap;
+}
+.hero-scroll {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.hero-scroll::after {
+  content: "";
+  width: 40px; height: 1px;
+  background: currentColor;
+}
+
+/* ============================================================
+   マーキー(サービス帯)
+   ============================================================ */
+.marquee {
+  overflow: hidden;
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+  padding: 18px 0;
+  background: var(--color-bg);
+}
+.marquee-inner {
+  display: flex;
+  gap: 0;
+  width: max-content;
+  animation: marquee 28s linear infinite;
+}
+.marquee-inner span {
+  font-family: var(--font-en);
+  font-size: clamp(16px, 2.4vw, 24px);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  padding-right: 20px;
+}
+.marquee-inner span::after {
+  content: "/";
+  padding-left: 20px;
+  color: var(--color-sub);
+  font-weight: 300;
+}
+@keyframes marquee { to { transform: translateX(-50%); } }
+
+/* ============================================================
+   MISSION
+   ============================================================ */
+.mission { padding: var(--section-pad) 0; }
+.mission-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: clamp(32px, 6vw, 96px);
+  align-items: start;
+}
+.mission h2 {
+  font-family: var(--font-en);
+  font-size: clamp(36px, 5.4vw, 68px);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+.mission-lead {
+  font-size: clamp(20px, 2.6vw, 30px);
+  font-weight: 600;
+  line-height: 1.7;
+  letter-spacing: 0.08em;
+  margin-bottom: 28px;
+  text-wrap: balance;
+}
+.mission-body {
+  color: var(--color-sub);
+  max-width: 34em;
+}
+@media (max-width: 860px) {
+  .mission-grid { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   BUSINESS
+   ============================================================ */
+.business {
+  background: var(--color-surface);
+  padding: var(--section-pad) 0;
+}
+.biz-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid var(--color-line);
+  border-left: 1px solid var(--color-line);
+}
+.biz-item {
+  border-right: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+  padding: clamp(28px, 3.5vw, 48px);
+  position: relative;
+  transition: background 0.4s ease;
+}
+.biz-item:hover { background: var(--color-bg); }
+.biz-item .biz-num {
+  font-family: var(--font-en);
+  font-size: 11px;
+  color: var(--color-sub);
+  letter-spacing: 0.15em;
+}
+.biz-item h3 {
+  margin: 18px 0 6px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.biz-item .biz-en {
+  font-family: var(--font-en);
+  font-size: 11px;
+  color: var(--color-sub);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 16px;
+}
+.biz-item p { font-size: 13px; color: var(--color-sub); }
+@media (max-width: 960px) { .biz-list { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .biz-list { grid-template-columns: 1fr; } }
+
+/* ============================================================
+   WORKS
+   ============================================================ */
+.works { padding: var(--section-pad) 0; }
+.works-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 44px;
+}
+.works-filter button {
+  font-family: var(--font-en);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  padding: 9px 20px;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-sub);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.works-filter button:hover { border-color: var(--color-ink); color: var(--color-ink); }
+.works-filter button.is-active {
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: #fff;
+}
+.works-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(20px, 3vw, 40px);
+}
+.work-card { cursor: pointer; }
+.work-card.is-hidden { display: none; }
+.work-thumb {
+  aspect-ratio: 16 / 9;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--color-dark);
+}
+/* サムネイル(仮)。実装時は <img> に差し替え */
+.work-thumb .ph {
+  position: absolute;
+  inset: 0;
+  transition: transform 0.6s ease;
+  display: grid;
+  place-content: center;
+}
+.work-card:hover .work-thumb .ph { transform: scale(1.05); }
+.work-thumb .ph::before {
+  /* 再生ボタン(仮) */
+  content: "";
+  width: 0; height: 0;
+  border-style: solid;
+  border-width: 9px 0 9px 15px;
+  border-color: transparent transparent transparent rgba(255,255,255,0.85);
+}
+.work-thumb .dur {
+  position: absolute;
+  right: 10px; bottom: 10px;
+  font-family: var(--font-en);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #fff;
+  background: rgba(0,0,0,0.55);
+  padding: 3px 8px;
+  border-radius: var(--radius);
+}
+/* グレースケールのダミー背景バリエーション */
+.ph-1 { background: linear-gradient(135deg, #3a3d43, #191a1d); }
+.ph-2 { background: linear-gradient(135deg, #55575c, #26272b); }
+.ph-3 { background: linear-gradient(135deg, #2c2e33, #101114); }
+.ph-4 { background: linear-gradient(135deg, #46484e, #1d1e22); }
+.ph-5 { background: linear-gradient(135deg, #333539, #141518); }
+.ph-6 { background: linear-gradient(135deg, #5e6066, #2a2b2f); }
+.work-info { padding-top: 14px; }
+.work-info .cat {
+  font-family: var(--font-en);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-sub);
+  display: inline-block;
+  border: 1px solid var(--color-line);
+  padding: 2px 10px;
+  border-radius: 999px;
+  margin-bottom: 10px;
+}
+.work-info h3 { font-size: 14px; font-weight: 600; letter-spacing: 0.06em; }
+.work-info .client { font-size: 12px; color: var(--color-sub); margin-top: 2px; }
+@media (max-width: 960px) { .works-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .works-grid { grid-template-columns: 1fr; } }
+
+.more-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 56px;
+  font-family: var(--font-en);
+  font-size: 13px;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+}
+.more-link::after {
+  content: "";
+  width: 48px; height: 1px;
+  background: var(--color-ink);
+  transition: width 0.35s ease;
+}
+.more-link:hover::after { width: 72px; }
+
+/* ============================================================
+   NEWS
+   ============================================================ */
+.news {
+  background: var(--color-surface);
+  padding: var(--section-pad) 0;
+}
+.news-list { border-top: 1px solid var(--color-line); }
+.news-list li a {
+  display: grid;
+  grid-template-columns: 110px 110px 1fr auto;
+  gap: 24px;
+  align-items: center;
+  padding: 26px 8px;
+  border-bottom: 1px solid var(--color-line);
+  transition: background 0.3s ease;
+}
+.news-list li a:hover { background: var(--color-bg); }
+.news-list .date {
+  font-family: var(--font-en);
+  font-size: 12px;
+  color: var(--color-sub);
+  font-variant-numeric: tabular-nums;
+}
+.news-list .tag {
+  font-family: var(--font-en);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-align: center;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  padding: 3px 0;
+  color: var(--color-sub);
+}
+.news-list .title { font-size: 14px; }
+.news-list .arrow {
+  font-family: var(--font-en);
+  color: var(--color-sub);
+  transition: transform 0.3s ease;
+}
+.news-list li a:hover .arrow { transform: translateX(6px); }
+@media (max-width: 700px) {
+  .news-list li a {
+    grid-template-columns: auto auto 1fr;
+    grid-template-rows: auto auto;
+    row-gap: 8px;
+  }
+  .news-list .title { grid-column: 1 / -1; }
+  .news-list .arrow { display: none; }
+}
+
+/* ============================================================
+   ABOUT
+   ============================================================ */
+.about { padding: var(--section-pad) 0; }
+.about-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(32px, 6vw, 96px);
+}
+.about-photo {
+  aspect-ratio: 4 / 5;
+  background:
+    linear-gradient(160deg, #4a4c52 0%, #202126 70%),
+    var(--color-dark);
+  border-radius: var(--radius);
+  display: grid;
+  place-content: center;
+  color: rgba(255,255,255,0.4);
+  font-family: var(--font-en);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+}
+.about-table { width: 100%; border-collapse: collapse; }
+.about-table th, .about-table td {
+  text-align: left;
+  padding: 20px 8px;
+  border-bottom: 1px solid var(--color-line);
+  font-size: 14px;
+  vertical-align: top;
+  font-weight: 400;
+}
+.about-table th {
+  width: 30%;
+  color: var(--color-sub);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+@media (max-width: 860px) { .about-grid { grid-template-columns: 1fr; } }
+
+/* ============================================================
+   RECRUIT
+   ============================================================ */
+.recruit {
+  background: var(--color-dark);
+  color: var(--color-dark-ink);
+  padding: var(--section-pad) 0;
+  position: relative;
+  overflow: hidden;
+}
+.recruit .container { position: relative; }
+.recruit h2 {
+  font-family: var(--font-en);
+  font-size: clamp(56px, 12vw, 160px);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(242,242,242,0.5);
+}
+.recruit .recruit-copy {
+  margin-top: 32px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.recruit p { max-width: 30em; color: rgba(242,242,242,0.75); font-size: 14px; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--font-en);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  padding: 18px 40px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  transition: all 0.35s ease;
+}
+.btn:hover { background: var(--color-dark-ink); color: var(--color-dark); }
+.btn .dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+/* ============================================================
+   CONTACT
+   ============================================================ */
+.contact {
+  padding: var(--section-pad) 0;
+  text-align: center;
+}
+.contact h2 {
+  font-family: var(--font-en);
+  font-size: clamp(48px, 9vw, 120px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+.contact p {
+  margin: 24px auto 40px;
+  color: var(--color-sub);
+  max-width: 34em;
+  font-size: 14px;
+}
+.contact .btn {
+  color: var(--color-ink);
+  border-color: var(--color-ink);
+}
+.contact .btn:hover { background: var(--color-ink); color: #fff; }
+
+/* ============================================================
+   フッター
+   ============================================================ */
+.footer {
+  background: var(--color-dark);
+  color: var(--color-dark-ink);
+  padding: 64px 0 32px;
+}
+.footer-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 40px;
+  flex-wrap: wrap;
+  padding-bottom: 48px;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+}
+.footer .logo {
+  font-family: var(--font-en);
+  font-weight: 700;
+  font-size: 20px;
+}
+.footer .logo small {
+  display: block;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  opacity: 0.6;
+}
+.footer .addr {
+  margin-top: 16px;
+  font-size: 12px;
+  color: rgba(242,242,242,0.6);
+  font-style: normal;
+}
+.footer-nav ul { display: flex; gap: 28px; flex-wrap: wrap; }
+.footer-nav a {
+  font-family: var(--font-en);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  opacity: 0.75;
+  transition: opacity 0.3s ease;
+}
+.footer-nav a:hover { opacity: 1; }
+.footer-bottom {
+  padding-top: 28px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-family: var(--font-en);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: rgba(242,242,242,0.45);
+}
+
+/* キーボードフォーカス */
+a:focus-visible, button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+</style>
+</head>
+<body>
+
+<!-- ============ ヘッダー ============ -->
+<header class="header">
+  <a href="#top" class="logo en">IMADOKI FILMS<small>VIDEO PRODUCTION</small></a>
+  <button class="menu-btn en" type="button" aria-label="メニュー" aria-expanded="false">MENU</button>
+  <nav class="gnav" id="gnav">
+    <ul>
+      <li><a href="#business">BUSINESS</a></li>
+      <li><a href="#works">WORKS</a></li>
+      <li><a href="#news">NEWS</a></li>
+      <li><a href="#about">ABOUT</a></li>
+      <li><a href="#recruit">RECRUIT</a></li>
+      <li><a href="#contact">CONTACT</a></li>
+    </ul>
+  </nav>
+</header>
+
+<!-- ============ ヒーロー ============ -->
+<section class="hero" id="top">
+  <div class="hero-bg">
+    <!-- 実装時はここにショーリール動画を配置:
+    <video autoplay muted loop playsinline poster="poster.jpg">
+      <source src="showreel.mp4" type="video/mp4">
+    </video>
+    -->
+  </div>
+  <div class="hero-frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+  <div class="hero-rec en" aria-hidden="true">REC</div>
+  <div class="hero-inner">
+    <h1 class="hero-copy-en">
+      We craft<br>
+      <span class="thin">stories that</span><br>
+      move people.
+    </h1>
+    <p class="hero-copy-jp">その一瞬を、記憶に残る映像へ。<br>企画から撮影・編集・配信まで、目的に寄り添う映像制作。</p>
+    <div class="hero-meta">
+      <span>SHOWREEL 2026</span>
+      <span class="hero-scroll">SCROLL</span>
+      <span>TOKYO / MINAMI-AOYAMA</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ マーキー ============ -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-inner">
+    <span>CM</span><span>WEB MOVIE</span><span>SNS SHORT</span><span>RECRUIT MOVIE</span><span>EVENT</span><span>LIVE STREAMING</span>
+    <span>CM</span><span>WEB MOVIE</span><span>SNS SHORT</span><span>RECRUIT MOVIE</span><span>EVENT</span><span>LIVE STREAMING</span>
+  </div>
+</div>
+
+<!-- ============ MISSION ============ -->
+<section class="mission">
+  <div class="container mission-grid reveal">
+    <h2>Mission</h2>
+    <div>
+      <p class="mission-lead">見た人の心が動いた瞬間、<br>映像は初めて意味を持つ。</p>
+      <p class="mission-body">
+        私たちは、商品紹介・採用・プロモーションなど、目的に応じた映像コンテンツをワンストップで制作する映像プロダクションです。
+        「つくって終わり」ではなく、届けた先で成果につながる映像を。企画・構成の段階から伴走し、
+        撮影、編集、そしてWEB・SNSでの配信設計までを一貫してご支援します。
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BUSINESS ============ -->
+<section class="business" id="business">
+  <div class="container">
+    <div class="sec-head reveal">
+      <span class="num">01</span>
+      <h2>Business</h2>
+      <span class="jp">事業内容</span>
+    </div>
+    <div class="biz-list reveal">
+      <div class="biz-item">
+        <span class="biz-num">01</span>
+        <h3>CM・プロモーション映像</h3>
+        <span class="biz-en">Commercial / Promotion</span>
+        <p>商品・サービスの魅力を最大限に引き出す映像を、企画から一貫して制作。TVCMからWEB CMまで対応します。</p>
+      </div>
+      <div class="biz-item">
+        <span class="biz-num">02</span>
+        <h3>採用・ブランディング動画</h3>
+        <span class="biz-en">Recruit / Branding</span>
+        <p>企業の「らしさ」を伝える採用動画・会社紹介映像で、共感でつながる出会いをつくります。</p>
+      </div>
+      <div class="biz-item">
+        <span class="biz-num">03</span>
+        <h3>SNS・縦型ショート動画</h3>
+        <span class="biz-en">SNS / Short Movie</span>
+        <p>Instagram・TikTok・YouTubeなど、各プラットフォームの文脈に最適化した動画を企画・制作・運用します。</p>
+      </div>
+      <div class="biz-item">
+        <span class="biz-num">04</span>
+        <h3>イベント・ライブ配信</h3>
+        <span class="biz-en">Event / Live Streaming</span>
+        <p>セミナー・展示会・発表会などの記録映像から、マルチカメラでのライブ配信まで対応します。</p>
+      </div>
+      <div class="biz-item">
+        <span class="biz-num">05</span>
+        <h3>撮影・編集</h3>
+        <span class="biz-en">Shooting / Editing</span>
+        <p>実写撮影、ドローン空撮、モーショングラフィックス、カラーグレーディングまで。素材のみのご依頼も可能です。</p>
+      </div>
+      <div class="biz-item">
+        <span class="biz-num">06</span>
+        <h3>企画・配信設計</h3>
+        <span class="biz-en">Planning / Distribution</span>
+        <p>WEB・SNSマーケティングの知見を活かし、「誰に・どこで・どう届けるか」まで含めて設計します。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ WORKS ============ -->
+<section class="works" id="works">
+  <div class="container">
+    <div class="sec-head reveal">
+      <span class="num">02</span>
+      <h2>Works</h2>
+      <span class="jp">制作実績</span>
+    </div>
+    <div class="works-filter reveal" role="group" aria-label="実績カテゴリ絞り込み">
+      <button type="button" class="is-active" data-filter="all">ALL</button>
+      <button type="button" data-filter="cm">CM</button>
+      <button type="button" data-filter="web">WEB MOVIE</button>
+      <button type="button" data-filter="sns">SNS</button>
+      <button type="button" data-filter="recruit">RECRUIT</button>
+      <button type="button" data-filter="event">EVENT</button>
+    </div>
+    <div class="works-grid reveal">
+      <!-- 実装時: .ph を <img src="..." alt="..."> に差し替え -->
+      <article class="work-card" data-cat="cm">
+        <div class="work-thumb"><div class="ph ph-1"></div><span class="dur en">00:30</span></div>
+        <div class="work-info">
+          <span class="cat">CM</span>
+          <h3>新商品プロモーションムービー(仮)</h3>
+          <p class="client">〇〇株式会社</p>
+        </div>
+      </article>
+      <article class="work-card" data-cat="recruit">
+        <div class="work-thumb"><div class="ph ph-2"></div><span class="dur en">02:15</span></div>
+        <div class="work-info">
+          <span class="cat">RECRUIT</span>
+          <h3>新卒採用コンセプトムービー(仮)</h3>
+          <p class="client">〇〇株式会社</p>
+        </div>
+      </article>
+      <article class="work-card" data-cat="sns">
+        <div class="work-thumb"><div class="ph ph-3"></div><span class="dur en">00:15</span></div>
+        <div class="work-info">
+          <span class="cat">SNS</span>
+          <h3>TikTok縦型ショートドラマ(仮)</h3>
+          <p class="client">〇〇株式会社</p>
+        </div>
+      </article>
+      <article class="work-card" data-cat="web">
+        <div class="work-thumb"><div class="ph ph-4"></div><span class="dur en">01:30</span></div>
+        <div class="work-info">
+          <span class="cat">WEB MOVIE</span>
+          <h3>サービス紹介アニメーション(仮)</h3>
+          <p class="client">〇〇株式会社</p>
+        </div>
+      </article>
+      <article class="work-card" data-cat="event">
+        <div class="work-thumb"><div class="ph ph-5"></div><span class="dur en">03:00</span></div>
+        <div class="work-info">
+          <span class="cat">EVENT</span>
+          <h3>カンファレンス公式レポート映像(仮)</h3>
+          <p class="client">〇〇実行委員会</p>
+        </div>
+      </article>
+      <article class="work-card" data-cat="cm">
+        <div class="work-thumb"><div class="ph ph-6"></div><span class="dur en">00:15</span></div>
+        <div class="work-info">
+          <span class="cat">CM</span>
+          <h3>ブランドイメージムービー(仮)</h3>
+          <p class="client">〇〇株式会社</p>
+        </div>
+      </article>
+    </div>
+    <a href="#" class="more-link reveal">VIEW ALL WORKS</a>
+  </div>
+</section>
+
+<!-- ============ NEWS ============ -->
+<section class="news" id="news">
+  <div class="container">
+    <div class="sec-head reveal">
+      <span class="num">03</span>
+      <h2>News</h2>
+      <span class="jp">お知らせ</span>
+    </div>
+    <ul class="news-list reveal">
+      <li><a href="#">
+        <span class="date">2026.07.14</span>
+        <span class="tag">INFO</span>
+        <span class="title">コーポレートサイトを公開しました。</span>
+        <span class="arrow">→</span>
+      </a></li>
+      <li><a href="#">
+        <span class="date">2026.06.30</span>
+        <span class="tag">WORKS</span>
+        <span class="title">〇〇株式会社様の採用ムービーを公開しました。</span>
+        <span class="arrow">→</span>
+      </a></li>
+      <li><a href="#">
+        <span class="date">2026.06.10</span>
+        <span class="tag">INFO</span>
+        <span class="title">縦型ショート動画の制作プランを開始しました。</span>
+        <span class="arrow">→</span>
+      </a></li>
+      <li><a href="#">
+        <span class="date">2026.05.28</span>
+        <span class="tag">EVENT</span>
+        <span class="title">〇〇展示会にて映像ブースを担当しました。</span>
+        <span class="arrow">→</span>
+      </a></li>
+    </ul>
+    <a href="#" class="more-link reveal">VIEW ALL NEWS</a>
+  </div>
+</section>
+
+<!-- ============ ABOUT ============ -->
+<section class="about" id="about">
+  <div class="container">
+    <div class="sec-head reveal">
+      <span class="num">04</span>
+      <h2>About</h2>
+      <span class="jp">会社概要</span>
+    </div>
+    <div class="about-grid reveal">
+      <div class="about-photo">OFFICE / TEAM PHOTO</div>
+      <table class="about-table">
+        <tr><th>会社名</th><td>株式会社IMADOKI</td></tr>
+        <tr><th>代表者</th><td>代表取締役 加藤 倖都</td></tr>
+        <tr><th>所在地</th><td>〒107-0062<br>東京都港区南青山3-1-36</td></tr>
+        <tr><th>事業内容</th><td>映像制作(CM・プロモーション・採用・SNS動画)<br>WEB・SNSマーケティング支援</td></tr>
+        <tr><th>MISSION</th><td>あらゆる才能に、マーケティングという翼を</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RECRUIT ============ -->
+<section class="recruit" id="recruit">
+  <div class="container reveal">
+    <h2>Join us</h2>
+    <div class="recruit-copy">
+      <p>
+        一緒に映像をつくる仲間を募集しています。ディレクター、カメラマン、エディター、
+        経験・未経験問わず「価値にこだわる」姿勢を大切にできる方を歓迎します。
+      </p>
+      <a href="#" class="btn"><span class="dot" aria-hidden="true"></span>RECRUIT SITE</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONTACT ============ -->
+<section class="contact" id="contact">
+  <div class="container reveal">
+    <h2>Contact</h2>
+    <p>
+      映像制作のご相談・お見積りはこちらから。<br>
+      「何から始めればいいかわからない」という段階でも、お気軽にご連絡ください。
+    </p>
+    <a href="#" class="btn"><span class="dot" aria-hidden="true"></span>お問い合わせフォームへ</a>
+  </div>
+</section>
+
+<!-- ============ フッター ============ -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-top">
+      <div>
+        <p class="logo en">IMADOKI FILMS<small>VIDEO PRODUCTION</small></p>
+        <address class="addr">〒107-0062 東京都港区南青山3-1-36</address>
+      </div>
+      <nav class="footer-nav" aria-label="フッターナビゲーション">
+        <ul>
+          <li><a href="#business">BUSINESS</a></li>
+          <li><a href="#works">WORKS</a></li>
+          <li><a href="#news">NEWS</a></li>
+          <li><a href="#about">ABOUT</a></li>
+          <li><a href="#recruit">RECRUIT</a></li>
+          <li><a href="#contact">CONTACT</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2026 IMADOKI Co., Ltd. All Rights Reserved.</span>
+      <span>PRIVACY POLICY</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ============ スクロールで要素をフェードイン ============
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((entry) => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('is-visible');
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.12 });
+document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+
+// ============ モバイルメニュー ============
+const menuBtn = document.querySelector('.menu-btn');
+const gnav = document.getElementById('gnav');
+menuBtn.addEventListener('click', () => {
+  const open = gnav.classList.toggle('is-open');
+  menuBtn.textContent = open ? 'CLOSE' : 'MENU';
+  menuBtn.setAttribute('aria-expanded', String(open));
+});
+gnav.querySelectorAll('a').forEach((a) => {
+  a.addEventListener('click', () => {
+    gnav.classList.remove('is-open');
+    menuBtn.textContent = 'MENU';
+    menuBtn.setAttribute('aria-expanded', 'false');
+  });
+});
+
+// ============ WORKS カテゴリフィルタ ============
+const filterBtns = document.querySelectorAll('.works-filter button');
+const workCards = document.querySelectorAll('.work-card');
+filterBtns.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    filterBtns.forEach((b) => b.classList.remove('is-active'));
+    btn.classList.add('is-active');
+    const filter = btn.dataset.filter;
+    workCards.forEach((card) => {
+      card.classList.toggle('is-hidden', filter !== 'all' && card.dataset.cat !== filter);
+    });
+  });
+});
+</script>
+
+</body>
+</html>

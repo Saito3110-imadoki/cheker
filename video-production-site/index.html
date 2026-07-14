@@ -126,7 +126,6 @@ section { scroll-margin-top: 24px; }
   .reveal { opacity: 1; transform: none; transition: none; }
   .hero-inner > * { opacity: 1; transform: none; animation: none; }
   .marquee-inner { animation: none !important; }
-  .hero-bg::after { animation: none !important; }
   .hero-rec::before { animation: none !important; }
 }
 
@@ -236,19 +235,18 @@ section { scroll-margin-top: 24px; }
 .hero-bg video {
   width: 100%; height: 100%;
   object-fit: cover;
-  opacity: 0.65; /* 文字の可読性確保。動画に合わせて調整 */
 }
 .hero-bg::after {
-  /* 光が横切るような演出(仮)。動画を入れたら削除してOK */
+  /* 文字の可読性を確保する暗めのオーバーレイ。濃さはここで調整 */
   content: "";
   position: absolute;
-  inset: -50%;
-  background: linear-gradient(105deg, transparent 42%, rgba(255,255,255,0.05) 50%, transparent 58%);
-  animation: sweep 7s ease-in-out infinite;
-}
-@keyframes sweep {
-  0%   { transform: translateX(-35%); }
-  100% { transform: translateX(35%); }
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(16, 17, 20, 0.82) 0%,
+    rgba(16, 17, 20, 0.35) 45%,
+    rgba(16, 17, 20, 0.45) 100%
+  );
 }
 .hero-frame {
   /* ファインダー風の四隅マーク */
@@ -1090,11 +1088,10 @@ a:focus-visible, button:focus-visible {
 <!-- ============ ヒーロー ============ -->
 <section class="hero" id="top">
   <div class="hero-bg">
-    <!-- 実装時はここにショーリール動画を配置:
-    <video autoplay muted loop playsinline poster="poster.jpg">
-      <source src="showreel.mp4" type="video/mp4">
+    <video autoplay muted loop playsinline preload="auto" aria-hidden="true" id="hero-video">
+      <source src="assets/showreel.webm" type="video/webm">
+      <source src="assets/showreel.mp4" type="video/mp4">
     </video>
-    -->
   </div>
   <div class="hero-frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
   <div class="hero-rec en" aria-hidden="true">REC</div>
@@ -1681,6 +1678,15 @@ const NEWS_DATA = {
     body: '株式会社IMADOKIは、WEB・SNSマーケティングで培った知見を活かした映像制作事業「IMADOKI FILMS」を本格始動いたしました。\n企画から配信設計まで、成果につながる映像づくりをワンストップでご支援します。'
   }
 };
+
+/* ============================================================
+   ヒーロー動画(視差効果の抑制設定時は自動再生しない)
+   ============================================================ */
+const heroVideo = document.getElementById('hero-video');
+if (heroVideo && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  heroVideo.removeAttribute('autoplay');
+  heroVideo.pause();
+}
 
 /* ============================================================
    スクロールで要素をフェードイン

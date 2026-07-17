@@ -1058,7 +1058,9 @@ def run():
             if ok:
                 if GITHUB_REPOSITORY:
                     owner, repo = GITHUB_REPOSITORY.split("/", 1)
-                    urls.append(f"https://{owner}.github.io/{repo}/post-images/{filename}")
+                    # GitHub Pages の正規ホストは小文字。大文字混じりだと Threads が
+                    # 画像URLを直接フェッチできず失敗するため、owner を小文字化する
+                    urls.append(f"https://{owner.lower()}.github.io/{repo}/post-images/{filename}")
                 else:
                     urls.append(str(out_path))
                 slide_count += 1

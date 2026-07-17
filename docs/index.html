@@ -855,7 +855,8 @@ table.cmp thead .col-pp{background:var(--indigo);color:#fff;font-size:15px;}
     <p class="lead">トライアル期間中の費用はかかりません。合わなければそのまま終了でOK。<br>下のフォームから、1分でお申し込みいただけます。</p>
 
     <form class="contact-form" id="contactForm" action="https://formsubmit.co/saito.kato@imadoki.co.jp" method="POST">
-      <input type="hidden" name="_subject" value="【PostPilot】LPからのお問い合わせ">
+      <input type="hidden" name="_subject" id="cf-subject" value="【PostPilot】LPからのお問い合わせ">
+      <input type="hidden" name="_replyto" id="cf-replyto" value="">
       <input type="hidden" name="_captcha" value="false">
       <input type="hidden" name="_template" value="table">
       <input type="hidden" name="_next" value="https://saito3110-imadoki.github.io/cheker/thanks.html">
@@ -918,6 +919,16 @@ table.cmp thead .col-pp{background:var(--indigo);color:#fff;font-size:15px;}
     var original = btn.textContent;
     btn.disabled = true;
     btn.textContent = '送信中...';
+
+    // 件名に会社名・お名前を入れて一目で分かるようにする
+    var company = (form.querySelector('#cf-company') || {}).value || '';
+    var name    = (form.querySelector('#cf-name') || {}).value || '';
+    var email   = (form.querySelector('#cf-email') || {}).value || '';
+    var subj = form.querySelector('#cf-subject');
+    if (subj) subj.value = '【PostPilot お問い合わせ】' + company + '（' + name + '様）';
+    // 返信先を問い合わせ者のメールに設定（メールソフトで「返信」を押すと相手に届く）
+    var rep = form.querySelector('#cf-replyto');
+    if (rep) rep.value = email;
 
     fetch('https://formsubmit.co/ajax/saito.kato@imadoki.co.jp', {
       method: 'POST',

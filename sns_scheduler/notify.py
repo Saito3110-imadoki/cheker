@@ -12,9 +12,10 @@ JST = timezone(timedelta(hours=9))
 
 def send_line_message(text: str) -> bool:
     """LINEにテキストメッセージを送信。成功時True。"""
-    token   = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN", "")
-    user_id = os.environ.get("LINE_USER_ID", "")
+    token   = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN", "").strip()
+    user_id = os.environ.get("LINE_USER_ID", "").strip()
     if not token or not user_id:
+        print("  LINE通知スキップ: LINE_CHANNEL_ACCESS_TOKEN または LINE_USER_ID が未設定")
         return False
     try:
         r = requests.post(
@@ -24,7 +25,10 @@ def send_line_message(text: str) -> bool:
             json={"to": user_id, "messages": [{"type": "text", "text": text}]},
             timeout=10,
         )
-        r.raise_for_status()
+        if r.status_code != 200:
+            # LINE APIのエラー詳細（レスポンス本文）を出力。400の原因特定に必須。
+            print(f"  LINE通知エラー: HTTP {r.status_code} / {r.text}")
+            return False
         return True
     except Exception as e:
         print(f"  LINE通知エラー: {e}")

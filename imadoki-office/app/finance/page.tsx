@@ -29,6 +29,7 @@ interface Invoice {
   total: number;
   notes?: string;
   legalCheckResult?: string;
+  recurring?: boolean;
   createdAt: string;
 }
 
@@ -114,6 +115,65 @@ function syncRevenueFromInvoices(invoices: Invoice[]) {
   } catch { /* ignore */ }
 }
 
+// ────────────────────────── Recurring (monthly) auto-generation ──────────────────────────
+
+// yyyy-mm の月に、元の発行日の「日」を維持した日付を作る（月末超過は月末に丸め）
+function dateInMonth(year: number, monthIndex: number, day: number): string {
+  const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+  const d = Math.min(day, lastDay);
+  return `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// recurringな書類から今月分の下書きを生成して返す（生成件数と更新後リスト）
+function generateRecurringDrafts(list: Invoice[]): { updated: Invoice[]; count: number } {
+  const now = new Date();
+  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const updated = [...list];
+  let count = 0;
+
+  list.filter(i => i.recurring).forEach(src => {
+    if (!src.issueDate) return;
+    // 元の発行日が今月なら生成不要（元自体が今月分）
+    if (src.issueDate.slice(0, 7) === thisMonth) return;
+    // 重複判定: 同じclientName+同じ合計+issueDateが今月の書類が既に存在したら生成しない
+    const exists = updated.some(i =>
+      i.clientName === src.clientName && i.total === src.total && i.issueDate?.slice(0, 7) === thisMonth
+    );
+    if (exists) return;
+
+    const day = Number(src.issueDate.slice(8, 10)) || 1;
+    const issueDate = dateInMonth(now.getFullYear(), now.getMonth(), day);
+    let dueDate = '';
+    if (src.dueDate) {
+      const diff = Math.round(
+        (new Date(src.dueDate + 'T00:00:00').getTime() - new Date(src.issueDate + 'T00:00:00').getTime()) / 86400000
+      );
+      dueDate = addDays(issueDate, diff);
+    }
+    const copy: Invoice = {
+      ...src,
+      id: crypto.randomUUID(),
+      invoiceNumber: generateInvoiceNumber(src.docType, updated),
+      issueDate,
+      dueDate,
+      status: 'draft',
+      recurring: false,
+      legalCheckResult: undefined,
+      createdAt: new Date().toISOString(),
+    };
+    updated.unshift(copy);
+    count++;
+  });
+
+  return { updated, count };
+}
+
 // ────────────────────────── Sub-components ──────────────────────────
 
 function Badge({ status }: { status: InvoiceStatus }) {
@@ -144,6 +204,7 @@ function InvoiceForm({ initial, onSave, onCancel }: {
   const [issueDate, setIssueDate] = useState(initial?.issueDate ?? new Date().toISOString().slice(0, 10));
   const [dueDate, setDueDate] = useState(initial?.dueDate ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
+  const [recurring, setRecurring] = useState(initial?.recurring ?? false);
   const [items, setItems] = useState<InvoiceItem[]>(
     initial?.items ?? [{ description: '', quantity: 1, unitPrice: 0, amount: 0 }]
   );
@@ -185,6 +246,7 @@ function InvoiceForm({ initial, onSave, onCancel }: {
       tax,
       total,
       notes,
+      recurring,
       legalCheckResult: initial?.legalCheckResult,
       createdAt: initial?.createdAt ?? new Date().toISOString(),
     };
@@ -303,6 +365,24 @@ function InvoiceForm({ initial, onSave, onCancel }: {
             <span>合計</span><span>{formatMoney(total)}</span>
           </div>
         </div>
+      </div>
+
+      {/* Recurring */}
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
+          color: recurring ? '#a5b4fc' : '#94a3b8', fontSize: 13, fontWeight: 600,
+          background: recurring ? 'rgba(99,102,241,0.1)' : 'rgba(255,255,255,0.03)',
+          border: recurring ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 8, padding: '10px 14px' }}>
+          <input type="checkbox" checked={recurring} onChange={e => setRecurring(e.target.checked)}
+            style={{ accentColor: '#6366f1', width: 15, height: 15 }} />
+          🔁 毎月この内容で請求する（定期請求）
+        </label>
+        {recurring && (
+          <p style={{ color: '#64748b', fontSize: 11, marginTop: 6 }}>
+            毎月、この書類の発行日と同じ「日」で今月分の下書きが自動作成されます。
+          </p>
+        )}
       </div>
 
       <div style={{ marginBottom: 20 }}>
@@ -609,6 +689,7 @@ export default function FinancePage() {
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState('');
   const [importedDoc, setImportedDoc] = useState<{ parsed: ParsedDoc; fileName: string } | null>(null);
+  const [recurringNotice, setRecurringNotice] = useState(0);
   const importRef = useRef<HTMLInputElement>(null);
 
   async function handleImportFile(file: File) {
@@ -664,8 +745,11 @@ export default function FinancePage() {
     const flagged = list.map(i =>
       i.status === 'sent' && i.dueDate && i.dueDate < today ? { ...i, status: 'overdue' as InvoiceStatus } : i
     );
-    if (JSON.stringify(flagged) !== JSON.stringify(list)) saveInvoices(flagged);
-    setInvoices(flagged);
+    // 定期請求（recurring）の今月分下書きを自動生成
+    const { updated, count } = generateRecurringDrafts(flagged);
+    if (count > 0) setRecurringNotice(count);
+    if (count > 0 || JSON.stringify(flagged) !== JSON.stringify(list)) saveInvoices(updated);
+    setInvoices(updated);
 
     const handler = () => setInvoices(loadInvoices());
     window.addEventListener('imadoki-invoices-updated', handler);
@@ -693,6 +777,13 @@ export default function FinancePage() {
     if (status === 'paid' && prev && prev.status !== 'paid') {
       import('@/lib/gamification').then(m => m.addXp('invoice-paid'));
     }
+  };
+
+  const unsetRecurring = (id: string) => {
+    if (!confirm('この書類の定期請求（毎月自動生成）を解除しますか？')) return;
+    const updated = invoices.map(i => i.id === id ? { ...i, recurring: false } : i);
+    saveInvoices(updated);
+    setInvoices(updated);
   };
 
   const deleteInvoice = (id: string) => {
@@ -735,6 +826,18 @@ export default function FinancePage() {
         <h1 style={{ color: '#f1f5f9', fontSize: 22, fontWeight: 700, margin: 0 }}>財務・書類管理</h1>
         <p style={{ color: '#94a3b8', fontSize: 13, marginTop: 4 }}>手元の請求書・契約書はアップロードするだけでAIが自動登録 — 作成から入金管理・法務チェックまでワンストップ</p>
       </div>
+
+      {recurringNotice > 0 && (
+        <div style={{ marginBottom: 16, padding: '10px 16px', borderRadius: 10, fontSize: 13,
+          display: 'flex', alignItems: 'center', gap: 10,
+          background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.35)', color: '#a5b4fc' }}>
+          <span style={{ flex: 1 }}>
+            🔁 定期請求から今月分の下書きを{recurringNotice}件作成しました。内容を確認して送付済にしてください
+          </span>
+          <button onClick={() => setRecurringNotice(0)}
+            style={{ background: 'none', border: 'none', color: '#a5b4fc', cursor: 'pointer', fontSize: 15 }}>×</button>
+        </div>
+      )}
 
       {importError && (
         <div style={{ marginBottom: 16, padding: '10px 16px', borderRadius: 10, fontSize: 13,
@@ -831,6 +934,15 @@ export default function FinancePage() {
                         background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
                         {DOC_LABELS[inv.docType]}
                       </span>
+                      {inv.recurring && (
+                        <button onClick={() => unsetRecurring(inv.id)}
+                          title="毎月自動生成中 — クリックで定期請求を解除"
+                          style={{ color: '#818cf8', fontSize: 11, fontWeight: 700, padding: '1px 8px',
+                            borderRadius: 10, cursor: 'pointer',
+                            background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.4)' }}>
+                          🔁 定期 ×
+                        </button>
+                      )}
                     </div>
                     <div style={{ color: '#64748b', fontSize: 12 }}>
                       {inv.invoiceNumber} · 発行: {inv.issueDate}

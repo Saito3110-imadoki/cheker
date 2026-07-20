@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { CompanyData, MonthlyPL, Client, ClientRevenue } from '@/lib/ceo-types';
+import { FinanceSettings, FixedCost, loadFinanceSettings, saveFinanceSettings, totalMonthlyFixedCost } from '@/lib/finance-model';
 
 interface PlExcelResult {
   monthlyPL: MonthlyPL[];
@@ -445,9 +446,231 @@ const plFields: { key: keyof MonthlyPL; label: string; color?: string }[] = [
   { key: 'otherCost', label: 'その他経費' },
 ];
 
+// -------- 固定費・設定タブ --------
+const QUICK_FIXED_COSTS = ['役員報酬', '給与', '家賃', 'ツール・サブスク', '通信費'];
+
+const inputStyle = {
+  background: 'rgba(255,255,255,0.05)',
+  border: '1px solid rgba(255,255,255,0.1)',
+} as const;
+
+function FinanceTab({ onSaved }: { onSaved: () => void }) {
+  const [settings, setSettings] = useState<FinanceSettings>({ cashBalance: 0, cashBalanceAsOf: '', fixedCosts: [] });
+  const [loaded, setLoaded] = useState(false);
+  const [testState, setTestState] = useState<'idle' | 'sending' | 'ok' | 'error'>('idle');
+  const [testMessage, setTestMessage] = useState('');
+
+  useEffect(() => {
+    setSettings(loadFinanceSettings());
+    setLoaded(true);
+  }, []);
+
+  const update = (patch: Partial<FinanceSettings>) => {
+    setSettings(prev => {
+      const next = { ...prev, ...patch };
+      saveFinanceSettings(next);
+      return next;
+    });
+    onSaved();
+  };
+
+  const addFixedCost = (label = '') => {
+    const row: FixedCost = { id: `fc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, label, amount: 0 };
+    update({ fixedCosts: [...settings.fixedCosts, row] });
+  };
+  const updateFixedCost = (id: string, patch: Partial<FixedCost>) => {
+    update({ fixedCosts: settings.fixedCosts.map(c => c.id === id ? { ...c, ...patch } : c) });
+  };
+  const deleteFixedCost = (id: string) => {
+    update({ fixedCosts: settings.fixedCosts.filter(c => c.id !== id) });
+  };
+
+  async function sendSlackTest() {
+    const webhook = settings.slackWebhook?.trim();
+    if (!webhook) {
+      setTestState('error');
+      setTestMessage('Webhook URLを入力してください');
+      return;
+    }
+    setTestState('sending');
+    setTestMessage('');
+    try {
+      const res = await fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ webhook, text: '✅ IMADOKI AI OfficeからのSlack連携テストです' }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || json.error) throw new Error(json.error || `HTTP ${res.status}`);
+      setTestState('ok');
+      setTestMessage('テスト送信に成功しました。Slackチャンネルを確認してください');
+    } catch (e) {
+      setTestState('error');
+      setTestMessage('送信失敗: ' + (e instanceof Error ? e.message : String(e)));
+    }
+  }
+
+  if (!loaded) return null;
+  const total = totalMonthlyFixedCost(settings);
+  const cardStyle = { background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14 };
+
+  return (
+    <div className="space-y-5">
+      {/* 現金残高 */}
+      <div className="p-5" style={cardStyle}>
+        <h2 className="text-sm font-bold mb-1" style={{ color: '#f1f5f9' }}>💰 現金残高</h2>
+        <p className="text-xs mb-4" style={{ color: '#94a3b8' }}>
+          キャッシュフロー予測の起点になります。直近の通帳残高（月初の残高がおすすめ）と、その基準日を入れてください
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-xl">
+          <div>
+            <label className="text-xs mb-1 block" style={{ color: '#6b7280' }}>現金残高（円）</label>
+            <input
+              type="number"
+              value={settings.cashBalance || ''}
+              onChange={e => update({ cashBalance: Number(e.target.value) || 0 })}
+              placeholder="5000000"
+              className="w-full rounded-lg px-3 py-2 text-sm text-white outline-none text-right"
+              style={inputStyle}
+            />
+          </div>
+          <div>
+            <label className="text-xs mb-1 block" style={{ color: '#6b7280' }}>基準日</label>
+            <input
+              type="date"
+              value={settings.cashBalanceAsOf}
+              onChange={e => update({ cashBalanceAsOf: e.target.value })}
+              className="w-full rounded-lg px-3 py-2 text-sm text-white outline-none"
+              style={inputStyle}
+            />
+          </div>
+        </div>
+        {settings.cashBalance > 0 && (
+          <p className="text-xs mt-3" style={{ color: '#4ade80' }}>
+            現在の設定: ¥{settings.cashBalance.toLocaleString()}{settings.cashBalanceAsOf && `（${settings.cashBalanceAsOf}時点）`}
+          </p>
+        )}
+      </div>
+
+      {/* 月額固定費 */}
+      <div className="p-5" style={cardStyle}>
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-1">
+          <h2 className="text-sm font-bold" style={{ color: '#f1f5f9' }}>📌 月額固定費</h2>
+          <div className="px-4 py-2 rounded-lg text-right" style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.35)' }}>
+            <span className="text-xs mr-2" style={{ color: '#a5b4fc' }}>合計月額</span>
+            <span className="text-lg font-bold" style={{ color: '#f1f5f9' }}>¥{total.toLocaleString()}</span>
+          </div>
+        </div>
+        <p className="text-xs mb-4" style={{ color: '#94a3b8' }}>
+          ここに入れた固定費はキャッシュフロー予測と営業利益の実態把握に使われます
+        </p>
+
+        {/* クイック追加 */}
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <span className="text-xs" style={{ color: '#6b7280' }}>クイック追加:</span>
+          {QUICK_FIXED_COSTS.map(label => (
+            <button
+              key={label}
+              onClick={() => addFixedCost(label)}
+              className="text-xs px-2.5 py-1 rounded-lg transition-all hover:opacity-80"
+              style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: '#a5b4fc' }}
+            >
+              + {label}
+            </button>
+          ))}
+        </div>
+
+        {settings.fixedCosts.length === 0 ? (
+          <div className="text-center py-8 rounded-xl" style={{ background: 'rgba(255,255,255,0.02)' }}>
+            <p className="text-sm mb-1" style={{ color: '#94a3b8' }}>固定費がまだ登録されていません</p>
+            <p className="text-xs" style={{ color: '#64748b' }}>上のクイック追加ボタン、または下の「+ 行を追加」から登録できます</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {settings.fixedCosts.map(c => (
+              <div key={c.id} className="flex items-center gap-2">
+                <input
+                  value={c.label}
+                  onChange={e => updateFixedCost(c.id, { label: e.target.value })}
+                  placeholder="項目名（例：役員報酬）"
+                  className="flex-1 rounded-lg px-3 py-2 text-sm text-white outline-none"
+                  style={inputStyle}
+                />
+                <input
+                  type="number"
+                  value={c.amount || ''}
+                  onChange={e => updateFixedCost(c.id, { amount: Number(e.target.value) || 0 })}
+                  placeholder="月額（円）"
+                  className="w-40 rounded-lg px-3 py-2 text-sm text-white outline-none text-right"
+                  style={inputStyle}
+                />
+                <button
+                  onClick={() => deleteFixedCost(c.id)}
+                  className="px-2.5 py-2 rounded-lg text-xs text-red-400 hover:text-red-300 transition-colors"
+                  style={{ border: '1px solid rgba(239,68,68,0.2)' }}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <button
+          onClick={() => addFixedCost()}
+          className="mt-3 text-xs px-3 py-1.5 rounded-lg text-white"
+          style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.4)' }}
+        >
+          + 行を追加
+        </button>
+      </div>
+
+      {/* Slack通知設定 */}
+      <div className="p-5" style={cardStyle}>
+        <h2 className="text-sm font-bold mb-1" style={{ color: '#f1f5f9' }}>🔔 Slack通知設定 <span className="text-xs font-normal" style={{ color: '#6b7280' }}>（任意）</span></h2>
+        <p className="text-xs mb-4" style={{ color: '#94a3b8' }}>
+          週次AIレポート完成時と未回収発生時に通知します。SlackのIncoming Webhook URLを設定してください
+        </p>
+        <div className="flex gap-2 flex-wrap max-w-2xl">
+          <input
+            value={settings.slackWebhook ?? ''}
+            onChange={e => {
+              const v = e.target.value;
+              update({ slackWebhook: v || undefined });
+              setTestState('idle');
+              setTestMessage('');
+            }}
+            placeholder="https://hooks.slack.com/services/..."
+            className="flex-1 min-w-[280px] rounded-lg px-3 py-2 text-sm text-white outline-none"
+            style={inputStyle}
+          />
+          <button
+            onClick={sendSlackTest}
+            disabled={testState === 'sending'}
+            className="text-xs px-4 py-2 rounded-lg font-medium text-white transition-all hover:opacity-90"
+            style={{
+              background: 'rgba(99,102,241,0.2)',
+              border: '1px solid rgba(99,102,241,0.4)',
+              opacity: testState === 'sending' ? 0.6 : 1,
+              cursor: testState === 'sending' ? 'wait' : 'pointer',
+            }}
+          >
+            {testState === 'sending' ? '⏳ 送信中...' : '📨 テスト送信'}
+          </button>
+        </div>
+        {testMessage && (
+          <p className="text-xs mt-2" style={{ color: testState === 'ok' ? '#4ade80' : '#fca5a5' }}>
+            {testState === 'ok' ? '✅ ' : '⚠️ '}{testMessage}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function DataPage() {
   const [data, setData] = useState<CompanyData>({ monthlyPL: [], clients: [], actionItems: [] });
-  const [activeTab, setActiveTab] = useState<'pl' | 'clients'>('pl');
+  const [activeTab, setActiveTab] = useState<'pl' | 'clients' | 'finance'>('pl');
   const [saved, setSaved] = useState(false);
   const [csvError, setCsvError] = useState('');
   const [importModal, setImportModal] = useState<'pl' | 'clients' | null>(null);
@@ -839,10 +1062,10 @@ export default function DataPage() {
 
       {/* Tabs */}
       <div className="flex gap-2 mb-5">
-        {[{ id: 'pl', label: '📊 月次P&L' }, { id: 'clients', label: '👥 クライアント一覧' }].map(tab => (
+        {[{ id: 'pl', label: '📊 月次P&L' }, { id: 'clients', label: '👥 クライアント一覧' }, { id: 'finance', label: '💼 固定費・設定' }].map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as 'pl' | 'clients')}
+            onClick={() => setActiveTab(tab.id as 'pl' | 'clients' | 'finance')}
             className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
             style={{
               background: activeTab === tab.id ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.04)',
@@ -1094,6 +1317,11 @@ export default function DataPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* ===== Finance / Settings Tab ===== */}
+      {activeTab === 'finance' && (
+        <FinanceTab onSaved={() => { setSaved(true); setTimeout(() => setSaved(false), 2000); }} />
       )}
 
       {/* CTA */}

@@ -26,8 +26,8 @@ def _line_recipients() -> list[str]:
     return ids
 
 
-def send_line_message(text: str) -> bool:
-    """LINEにテキストメッセージを送信。全宛先に成功でTrue。"""
+def push_line_messages(messages: list[dict]) -> bool:
+    """任意のLINEメッセージ（最大5件）を全宛先にpushする。全宛先成功でTrue。"""
     token      = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN", "").strip()
     recipients = _line_recipients()
     if not token or not recipients:
@@ -40,7 +40,7 @@ def send_line_message(text: str) -> bool:
                 "https://api.line.me/v2/bot/message/push",
                 headers={"Authorization": f"Bearer {token}",
                          "Content-Type": "application/json"},
-                json={"to": uid, "messages": [{"type": "text", "text": text}]},
+                json={"to": uid, "messages": messages},
                 timeout=10,
             )
             if r.status_code != 200:
@@ -52,6 +52,20 @@ def send_line_message(text: str) -> bool:
             print(f"  LINE通知エラー（宛先 {uid[:6]}…）: {e}")
             ok_all = False
     return ok_all
+
+
+def send_line_message(text: str) -> bool:
+    """LINEにテキストメッセージを送信。成功時True。"""
+    return push_line_messages([{"type": "text", "text": text}])
+
+
+def send_line_image(image_url: str, preview_url: str = "") -> bool:
+    """LINEに画像メッセージを送信。URLはHTTPSかつJPEG/PNGであること。"""
+    return push_line_messages([{
+        "type": "image",
+        "originalContentUrl": image_url,
+        "previewImageUrl": preview_url or image_url,
+    }])
 
 
 def notify_error(context: str, detail: str) -> None:

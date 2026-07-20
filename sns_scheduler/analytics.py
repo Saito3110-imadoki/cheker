@@ -131,7 +131,10 @@ def fetch_tweet_metrics_batch(tweet_ids: list[str]) -> dict[str, dict]:
     for i in range(0, len(tweet_ids), 100):
         batch = tweet_ids[i:i + 100]
         try:
-            resp = client.get_tweets(ids=batch, tweet_fields=["public_metrics"])
+            # user_auth=True が必須。省略するとtweepyはBearer Token（未設定）で
+            # リクエストし、401 Unauthorized になる
+            resp = client.get_tweets(ids=batch, tweet_fields=["public_metrics"],
+                                     user_auth=True)
             if resp.data:
                 for tweet in resp.data:
                     if tweet.public_metrics:
@@ -140,9 +143,8 @@ def fetch_tweet_metrics_batch(tweet_ids: list[str]) -> dict[str, dict]:
             print(f"  X API エラー（バッチ {i//100 + 1}）: {e}")
             msg = str(e)
             if "401" in msg or "Unauthorized" in msg:
-                print("  ※ 投稿は成功するのにここで401の場合、X APIの読み取り"
-                      "（ツイート取得）がプランに含まれていない可能性が高いです。"
-                      "Developer Consoleでクレジット/プランを確認してください")
+                print("  ※ 401: X認証キー4点（Secrets）を確認してください。"
+                      "コード側では get_tweets に user_auth=True が付いているかも確認")
             elif "402" in msg:
                 print("  ※ 402はAPIクレジット切れです。Developer Consoleで残高を確認してください")
     return result

@@ -6,7 +6,7 @@ import { members as defaultMembers, chatMessages } from '@/lib/data';
 import { CompanyData } from '@/lib/ceo-types';
 import { Member } from '@/lib/data';
 import { loadGame, levelFromXp, BADGE_DEFS } from '@/lib/gamification';
-import { loadLastAnalysis, isAnalysisStale, hasAnalyzableData, runAnalysisAndSave, SavedAnalysis } from '@/lib/analysis';
+import { loadLastAnalysis, isAnalysisStale, hasAnalyzableData, runAnalysisAndSave, compareWithPrev, SavedAnalysis } from '@/lib/analysis';
 
 function RevenueChart({ data }: { data: { month: string; revenue: number; operatingProfit: number }[] }) {
   if (data.length < 2) return (
@@ -300,7 +300,23 @@ function WeeklyReport() {
       sessionStorage.setItem('imadoki-auto-analysis', '1');
       setGenerating(true);
       runAnalysisAndSave()
-        .then(() => refresh())
+        .then(result => {
+          refresh();
+          // Slack通知（設定されている場合のみ）
+          try {
+            const fs = JSON.parse(localStorage.getItem('imadoki-finance-settings') || 'null');
+            if (fs?.slackWebhook) {
+              fetch('/api/notify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  webhook: fs.slackWebhook,
+                  text: `📬 *週次AIレポートが完成しました*\n${result.summary}\n→ ダッシュボードで全文を確認してください`,
+                }),
+              }).catch(() => { /* ignore */ });
+            }
+          } catch { /* ignore */ }
+        })
         .catch(() => { /* 失敗時は静かにスキップ（手動実行は分析ページから可能） */ })
         .finally(() => setGenerating(false));
     }
@@ -339,6 +355,25 @@ function WeeklyReport() {
         </span>
       </div>
       <p className="text-sm mb-3" style={{ color: '#cbd5e1', lineHeight: 1.7 }}>{result.summary}</p>
+      {/* 前回レポートとの変化 */}
+      {(() => {
+        const deltas = compareWithPrev(result);
+        if (deltas.length === 0) return null;
+        return (
+          <div className="flex flex-wrap gap-2 mb-3">
+            {deltas.map((d, i) => (
+              <span key={i} className="text-xs px-2.5 py-1 rounded-full font-medium"
+                style={{
+                  background: d.tone === 'good' ? 'rgba(74,222,128,0.12)' : d.tone === 'bad' ? 'rgba(248,113,113,0.12)' : 'rgba(255,255,255,0.05)',
+                  border: `1px solid ${d.tone === 'good' ? 'rgba(74,222,128,0.35)' : d.tone === 'bad' ? 'rgba(248,113,113,0.35)' : 'rgba(255,255,255,0.1)'}`,
+                  color: d.tone === 'good' ? '#4ade80' : d.tone === 'bad' ? '#f87171' : '#94a3b8',
+                }}>
+                {d.tone === 'good' ? '📈' : d.tone === 'bad' ? '📉' : '➖'} 前回比: {d.text}
+              </span>
+            ))}
+          </div>
+        );
+      })()}
       <div className="space-y-1.5 mb-3">
         {topInsights.map((ins, i) => (
           <div key={i} className="text-xs flex items-start gap-2" style={{ color: '#94a3b8' }}>
@@ -444,8 +479,25 @@ export default function Dashboard() {
       const invoices: { status: string; dueDate?: string; clientName: string; total: number }[] =
         JSON.parse(localStorage.getItem('imadoki-invoices') || '[]');
       const today = new Date().toISOString().slice(0, 10);
-      setOverdueInvoices(invoices.filter(i =>
-        i.status === 'overdue' || (i.status === 'sent' && i.dueDate && i.dueDate < today)));
+      const overdue = invoices.filter(i =>
+        i.status === 'overdue' || (i.status === 'sent' && i.dueDate && i.dueDate < today));
+      setOverdueInvoices(overdue);
+      // 未回収があればSlack通知（1日1回まで）
+      if (overdue.length > 0 && localStorage.getItem('imadoki-overdue-notified') !== today) {
+        const fs = JSON.parse(localStorage.getItem('imadoki-finance-settings') || 'null');
+        if (fs?.slackWebhook) {
+          localStorage.setItem('imadoki-overdue-notified', today);
+          const total = overdue.reduce((s, i) => s + i.total, 0);
+          fetch('/api/notify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              webhook: fs.slackWebhook,
+              text: `🚨 *支払期日を過ぎた請求書が${overdue.length}件あります*（合計 ¥${total.toLocaleString()}）\n${overdue.map(i => `・${i.clientName}: ¥${i.total.toLocaleString()}`).join('\n')}`,
+            }),
+          }).catch(() => { /* ignore */ });
+        }
+      }
     } catch { /* ignore */ }
   }, []);
 

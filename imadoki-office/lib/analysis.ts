@@ -20,12 +20,46 @@ export interface SavedAnalysis {
 }
 
 const RESULT_KEY = 'imadoki-last-analysis';
+const HISTORY_KEY = 'imadoki-analysis-history';
 
 export function loadLastAnalysis(): SavedAnalysis | null {
   try {
     const raw = localStorage.getItem(RESULT_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch { return null; }
+}
+
+/** 前回（1つ前）の分析。週次レポートの「変化」表示に使う */
+export function loadPrevAnalysis(): SavedAnalysis | null {
+  try {
+    const hist: SavedAnalysis[] = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+    return hist[hist.length - 1] ?? null;
+  } catch { return null; }
+}
+
+/** 前回との差分サマリー（リスク変化・粗利率変化） */
+export function compareWithPrev(current: AnalysisResult): { text: string; tone: 'good' | 'bad' | 'flat' }[] {
+  const prev = loadPrevAnalysis();
+  if (!prev) return [];
+  const out: { text: string; tone: 'good' | 'bad' | 'flat' }[] = [];
+  const riskRank = { low: 0, medium: 1, high: 2 };
+  const riskLabel = { low: '低', medium: '中', high: '高' };
+  const rc = riskRank[current.metrics.riskLevel] - riskRank[prev.result.metrics.riskLevel];
+  if (rc !== 0) {
+    out.push({
+      text: `リスクレベルが「${riskLabel[prev.result.metrics.riskLevel]}」→「${riskLabel[current.metrics.riskLevel]}」に${rc > 0 ? '悪化' : '改善'}`,
+      tone: rc > 0 ? 'bad' : 'good',
+    });
+  }
+  const gmDelta = current.metrics.grossMargin - prev.result.metrics.grossMargin;
+  if (Math.abs(gmDelta) >= 1) {
+    out.push({
+      text: `粗利率が${Math.abs(gmDelta).toFixed(0)}pt${gmDelta > 0 ? '改善' : '悪化'}（${prev.result.metrics.grossMargin}%→${current.metrics.grossMargin}%）`,
+      tone: gmDelta > 0 ? 'good' : 'bad',
+    });
+  }
+  if (out.length === 0) out.push({ text: '前回から大きな変化はありません', tone: 'flat' });
+  return out;
 }
 
 export function hasAnalyzableData(): boolean {
@@ -56,6 +90,16 @@ export async function runAnalysisAndSave(): Promise<AnalysisResult> {
   });
   if (!res.ok) throw new Error('Analysis failed');
   const result: AnalysisResult = await res.json();
+
+  // 今回の結果を保存する前に、前回結果を履歴へ退避（直近12件・前週比較用）
+  const prevSaved = loadLastAnalysis();
+  if (prevSaved) {
+    try {
+      const hist: SavedAnalysis[] = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+      hist.push(prevSaved);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(hist.slice(-12)));
+    } catch { /* ignore */ }
+  }
 
   // 結果を永続化（リロードしても消えない）
   localStorage.setItem(RESULT_KEY, JSON.stringify({ result, analyzedAt: new Date().toISOString() } satisfies SavedAnalysis));

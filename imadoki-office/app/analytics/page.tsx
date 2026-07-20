@@ -3,6 +3,23 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import type { CompanyData, ClientRevenue } from '@/lib/ceo-types';
+import { forecastCashflow, type CashflowMonth } from '@/lib/finance-model';
+
+interface InvoiceLite {
+  id: string;
+  invoiceNumber: string;
+  issueDate: string;
+  clientName: string;
+  status: string;
+  total: number;
+}
+
+const INV_STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  draft: { label: '下書き', color: '#94a3b8' },
+  sent: { label: '送付済', color: '#60a5fa' },
+  paid: { label: '入金済', color: '#4ade80' },
+  overdue: { label: '期限超過', color: '#f87171' },
+};
 
 const BU_LABELS: Record<string, string> = {
   web: 'Web事業部', ads: '広告事業部', sns: 'SNS運用', media: 'メディア',
@@ -57,11 +74,21 @@ export default function AnalyticsPage() {
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
   const [buFilter, setBuFilter] = useState<string>('all');
+  const [cashflow, setCashflow] = useState<{ forecast: CashflowMonth[]; warning: string | null; hasSettings: boolean } | null>(null);
+  const [invoices, setInvoices] = useState<InvoiceLite[]>([]);
+  const [selectedClient, setSelectedClient] = useState<ClientRevenue | null>(null);
+  const [hoveredRow, setHoveredRow] = useState<number | null>(null);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem('imadoki-company-data');
       if (raw) setData(JSON.parse(raw));
+    } catch { /* ignore */ }
+    try {
+      setInvoices(JSON.parse(localStorage.getItem('imadoki-invoices') || '[]'));
+    } catch { /* ignore */ }
+    try {
+      setCashflow(forecastCashflow(6));
     } catch { /* ignore */ }
   }, []);
 
@@ -332,6 +359,60 @@ export default function AnalyticsPage() {
         </div>
       )}
 
+      {/* Cashflow forecast */}
+      {cashflow && cashflow.forecast.length > 0 && (() => {
+        const fc = cashflow.forecast;
+        const maxBal = Math.max(...fc.map(f => f.balance), 0);
+        const minBal = Math.min(...fc.map(f => f.balance), 0);
+        const range = Math.max(maxBal - minBal, 1);
+        const W = Math.max(500, fc.length * 90 + 60);
+        const chartTop = 20, chartH = 130;
+        const yOf = (v: number) => chartTop + ((maxBal - v) / range) * chartH;
+        const xOf = (i: number) => 60 + i * ((W - 100) / Math.max(fc.length - 1, 1));
+        const points = fc.map((f, i) => `${xOf(i)},${yOf(f.balance)}`).join(' ');
+        return (
+          <div style={{ ...glassStyle, marginBottom: 20 }}>
+            <h3 style={{ color: '#e2e8f0', fontSize: 15, fontWeight: 600, marginBottom: 12 }}>キャッシュフロー予測（6ヶ月）</h3>
+            {cashflow.warning && (
+              <div style={{ background: 'rgba(248,113,113,0.12)', border: '1px solid rgba(248,113,113,0.4)', borderRadius: 8, padding: '10px 14px', color: '#f87171', fontSize: 13, marginBottom: 12 }}>
+                ⚠ {cashflow.warning}
+              </div>
+            )}
+            {!cashflow.hasSettings && (
+              <div style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: 8, padding: '10px 14px', color: '#fbbf24', fontSize: 13, marginBottom: 12 }}>
+                現金残高と固定費を設定すると予測が正確になります →{' '}
+                <Link href="/ceo/data" style={{ color: '#a5b4fc', textDecoration: 'underline' }}>データ入力の固定費・設定タブへ</Link>
+              </div>
+            )}
+            <div style={{ overflowX: 'auto' }}>
+              <svg width={W} height="230" viewBox={`0 0 ${W} 230`}>
+                {/* zero line */}
+                {minBal < 0 && (
+                  <line x1={40} y1={yOf(0)} x2={W - 20} y2={yOf(0)} stroke="rgba(248,113,113,0.4)" strokeDasharray="4 4" />
+                )}
+                <polyline points={points} fill="none" stroke="#6366f1" strokeWidth="2" />
+                {fc.map((f, i) => {
+                  const neg = f.balance < 0;
+                  return (
+                    <g key={f.month}>
+                      <circle cx={xOf(i)} cy={yOf(f.balance)} r="4" fill={neg ? '#f87171' : '#6366f1'} />
+                      <text x={xOf(i)} y={yOf(f.balance) - 10} textAnchor="middle" fill={neg ? '#f87171' : '#a5b4fc'} fontSize="11" fontWeight="600">
+                        {fmtMoney(f.balance)}
+                      </text>
+                      <text x={xOf(i)} y={185} textAnchor="middle" fill={neg ? '#f87171' : '#9ca3af'} fontSize="10" fontWeight={neg ? 700 : 400}>
+                        {Number(f.month.slice(5, 7))}月
+                      </text>
+                      <text x={xOf(i)} y={202} textAnchor="middle" fill="#4ade80" fontSize="9">入 {fmtMoney(f.inflow)}</text>
+                      <text x={xOf(i)} y={216} textAnchor="middle" fill="#f87171" fontSize="9">出 {fmtMoney(f.outflow)}</text>
+                    </g>
+                  );
+                })}
+              </svg>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Client table */}
       <div style={glassStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
@@ -364,7 +445,19 @@ export default function AnalyticsPage() {
                 const grossProfit = c.totalRevenue - c.totalCogs;
                 const grossMargin = c.totalRevenue > 0 ? (grossProfit / c.totalRevenue) * 100 : 0;
                 return (
-                  <tr key={c.clientName + i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                  <tr key={c.clientName + i}
+                    onClick={() => {
+                      const full = clientRevenue.find(cr => cr.clientName === c.clientName && cr.businessUnit === c.businessUnit);
+                      if (full) setSelectedClient(full);
+                    }}
+                    onMouseEnter={() => setHoveredRow(i)}
+                    onMouseLeave={() => setHoveredRow(null)}
+                    style={{
+                      borderBottom: '1px solid rgba(255,255,255,0.04)',
+                      cursor: 'pointer',
+                      background: hoveredRow === i ? 'rgba(99,102,241,0.08)' : 'transparent',
+                      transition: 'background 0.15s',
+                    }}>
                     <td style={{ padding: '8px 12px', color: '#e2e8f0' }}>{c.clientName}</td>
                     <td style={{ padding: '8px 12px', textAlign: 'right' }}>
                       <span style={{ padding: '2px 8px', borderRadius: 4, background: BU_COLORS[c.businessUnit], color: '#fff', fontSize: 11 }}>
@@ -396,6 +489,143 @@ export default function AnalyticsPage() {
           )}
         </div>
       </div>
+
+      {/* Client detail modal */}
+      {selectedClient && (() => {
+        const c = selectedClient;
+        const monthly = [...c.monthly].sort((a, b) => a.month.localeCompare(b.month));
+        const totalRev = monthly.reduce((s, m) => s + m.revenue, 0);
+        const totalCogs = monthly.reduce((s, m) => s + m.cogs, 0);
+        const margin = totalRev > 0 ? ((totalRev - totalCogs) / totalRev) * 100 : 0;
+        const share = grandTotal > 0
+          ? ((clientStats.find(s => s.clientName === c.clientName && s.businessUnit === c.businessUnit)?.totalRevenue ?? 0) / grandTotal) * 100
+          : 0;
+        const clientInvoices = invoices.filter(inv => inv.clientName && (inv.clientName.includes(c.clientName) || c.clientName.includes(inv.clientName)));
+
+        // 自動インサイト
+        const insights: { text: string; color: string }[] = [];
+        const last3 = monthly.slice(-3);
+        if (last3.length >= 2) {
+          const first = last3[0].revenue;
+          const last = last3[last3.length - 1].revenue;
+          const diff = first > 0 ? (last - first) / first : (last > 0 ? 1 : 0);
+          if (diff > 0.1) insights.push({ text: `直近${last3.length}ヶ月の売上は増加傾向です（${fmtMoney(first)} → ${fmtMoney(last)}）`, color: '#4ade80' });
+          else if (diff < -0.1) insights.push({ text: `直近${last3.length}ヶ月の売上は減少傾向です（${fmtMoney(first)} → ${fmtMoney(last)}）。フォローを検討してください`, color: '#fbbf24' });
+          else insights.push({ text: `直近${last3.length}ヶ月の売上は横ばいです`, color: '#9ca3af' });
+        }
+        if (totalCogs > 0 && margin < 30) {
+          insights.push({ text: `粗利率${margin.toFixed(1)}%と低採算です。単価や原価の見直し余地があります`, color: '#f87171' });
+        }
+
+        // ミニチャート
+        const CW = 460, CH = 140, PAD = 10;
+        const maxV = Math.max(...monthly.map(m => Math.max(m.revenue, m.cogs)), 1);
+        const bw = monthly.length > 0 ? (CW - PAD * 2) / monthly.length : 0;
+
+        return (
+          <div onClick={() => setSelectedClient(null)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <div onClick={e => e.stopPropagation()}
+              style={{ background: '#111827', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: 24, maxWidth: 560, width: '100%', maxHeight: '85vh', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <h3 style={{ color: '#f1f5f9', fontSize: 18, fontWeight: 700 }}>{c.clientName}</h3>
+                <span style={{ padding: '2px 8px', borderRadius: 4, background: BU_COLORS[c.businessUnit], color: '#fff', fontSize: 11 }}>
+                  {BU_LABELS[c.businessUnit]}
+                </span>
+                <button onClick={() => setSelectedClient(null)}
+                  style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 6, color: '#9ca3af', padding: '4px 10px', cursor: 'pointer', fontSize: 13 }}>
+                  ✕ 閉じる
+                </button>
+              </div>
+
+              {/* KPI */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, marginBottom: 16 }}>
+                <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: 10 }}>
+                  <div style={{ color: '#6b7280', fontSize: 11 }}>累計売上</div>
+                  <div style={{ color: '#a5b4fc', fontSize: 15, fontWeight: 700 }}>{fmtMoney(totalRev)}</div>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: 10 }}>
+                  <div style={{ color: '#6b7280', fontSize: 11 }}>累計原価</div>
+                  <div style={{ color: '#9ca3af', fontSize: 15, fontWeight: 700 }}>{totalCogs === 0 ? '—' : fmtMoney(totalCogs)}</div>
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: 10 }}>
+                  <div style={{ color: '#6b7280', fontSize: 11 }}>粗利率</div>
+                  {totalCogs === 0 ? (
+                    <div style={{ color: '#64748b', fontSize: 12, fontWeight: 600, marginTop: 3 }}>原価未入力</div>
+                  ) : (
+                    <div style={{ color: margin >= 30 ? '#4ade80' : margin >= 0 ? '#fbbf24' : '#f87171', fontSize: 15, fontWeight: 700 }}>{margin.toFixed(1)}%</div>
+                  )}
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 8, padding: 10 }}>
+                  <div style={{ color: '#6b7280', fontSize: 11 }}>売上構成比</div>
+                  <div style={{ color: '#a5b4fc', fontSize: 15, fontWeight: 700 }}>{share.toFixed(1)}%</div>
+                </div>
+              </div>
+
+              {/* Insights */}
+              {insights.length > 0 && (
+                <div style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: 8, padding: '10px 14px', marginBottom: 16 }}>
+                  {insights.map((ins, i) => (
+                    <div key={i} style={{ color: ins.color, fontSize: 12, lineHeight: 1.7 }}>• {ins.text}</div>
+                  ))}
+                </div>
+              )}
+
+              {/* Mini chart */}
+              <h4 style={{ color: '#e2e8f0', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>月次売上/原価推移</h4>
+              <div style={{ overflowX: 'auto', marginBottom: 6 }}>
+                <svg width={CW} height={CH + 25} viewBox={`0 0 ${CW} ${CH + 25}`}>
+                  {monthly.map((m, i) => {
+                    const x = PAD + i * bw;
+                    const revH = (m.revenue / maxV) * (CH - 20);
+                    const cogsH = (m.cogs / maxV) * (CH - 20);
+                    return (
+                      <g key={m.month}>
+                        <rect x={x + bw * 0.15} y={CH - revH} width={bw * 0.35} height={Math.max(revH, m.revenue > 0 ? 2 : 0)} fill="#6366f1" rx="2" />
+                        <rect x={x + bw * 0.52} y={CH - cogsH} width={bw * 0.3} height={Math.max(cogsH, m.cogs > 0 ? 2 : 0)} fill="rgba(248,113,113,0.7)" rx="2" />
+                        <text x={x + bw / 2} y={CH + 14} textAnchor="middle" fill="#6b7280" fontSize="8">{m.month.slice(2).replace('-', '/')}</text>
+                      </g>
+                    );
+                  })}
+                </svg>
+              </div>
+              <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+                <span style={{ color: '#9ca3af', fontSize: 11 }}><span style={{ display: 'inline-block', width: 9, height: 9, background: '#6366f1', borderRadius: 2, marginRight: 4 }} />売上</span>
+                <span style={{ color: '#9ca3af', fontSize: 11 }}><span style={{ display: 'inline-block', width: 9, height: 9, background: 'rgba(248,113,113,0.7)', borderRadius: 2, marginRight: 4 }} />原価</span>
+              </div>
+
+              {/* Invoice history */}
+              <h4 style={{ color: '#e2e8f0', fontSize: 13, fontWeight: 600, marginBottom: 8 }}>請求書履歴</h4>
+              {clientInvoices.length === 0 ? (
+                <div style={{ color: '#6b7280', fontSize: 12, padding: '8px 0' }}>請求書履歴なし</div>
+              ) : (
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                      {['番号', '日付', '金額', 'ステータス'].map(h => (
+                        <th key={h} style={{ textAlign: h === '番号' ? 'left' : 'right', color: '#6b7280', padding: '6px 8px', fontWeight: 500 }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {clientInvoices.map(inv => {
+                      const st = INV_STATUS_LABELS[inv.status] ?? { label: inv.status, color: '#9ca3af' };
+                      return (
+                        <tr key={inv.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                          <td style={{ padding: '6px 8px', color: '#e2e8f0' }}>{inv.invoiceNumber}</td>
+                          <td style={{ padding: '6px 8px', textAlign: 'right', color: '#9ca3af' }}>{inv.issueDate}</td>
+                          <td style={{ padding: '6px 8px', textAlign: 'right', color: '#a5b4fc' }}>{fmtMoney(inv.total)}</td>
+                          <td style={{ padding: '6px 8px', textAlign: 'right', color: st.color }}>{st.label}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

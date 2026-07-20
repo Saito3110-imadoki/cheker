@@ -1,0 +1,58 @@
+name: Report (週次・月次レポート)
+
+# Notionの投稿実績を集計してLINEに配信する。
+# ・週次: 毎週月曜 8:00 JST（直近7日間）
+# ・月次: 毎月1日 9:00 JST（前月分）
+# 手動実行時は mode を選択できる。
+
+on:
+  schedule:
+    - cron: "0 23 * * 0"   # 月曜 8:00 JST = 日曜 23:00 UTC → weekly
+    - cron: "0 0 1 * *"    # 毎月1日 9:00 JST = 1日 0:00 UTC → monthly
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "レポート種別"
+        type: choice
+        options: [weekly, monthly]
+        default: weekly
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python セットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: sns_scheduler/requirements.txt
+
+      - name: 依存ライブラリのインストール
+        run: pip install -r sns_scheduler/requirements.txt
+
+      - name: レポート種別の判定
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "mode=${{ inputs.mode }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "0 0 1 * *" ]; then
+            echo "mode=monthly" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=weekly" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: レポート生成・LINE配信
+        env:
+          NOTION_TOKEN:                ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID:          ${{ secrets.NOTION_DATABASE_ID }}
+          LINE_CHANNEL_ACCESS_TOKEN:   ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_USER_ID:                ${{ secrets.LINE_USER_ID }}
+          LINE_USER_ID2:               ${{ secrets.LINE_USER_ID2 }}
+        run: python sns_scheduler/report.py --mode ${{ steps.mode.outputs.mode }}

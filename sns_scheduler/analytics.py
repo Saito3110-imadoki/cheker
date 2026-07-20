@@ -138,6 +138,13 @@ def fetch_tweet_metrics_batch(tweet_ids: list[str]) -> dict[str, dict]:
                         result[str(tweet.id)] = dict(tweet.public_metrics)
         except Exception as e:
             print(f"  X API エラー（バッチ {i//100 + 1}）: {e}")
+            msg = str(e)
+            if "401" in msg or "Unauthorized" in msg:
+                print("  ※ 投稿は成功するのにここで401の場合、X APIの読み取り"
+                      "（ツイート取得）がプランに含まれていない可能性が高いです。"
+                      "Developer Consoleでクレジット/プランを確認してください")
+            elif "402" in msg:
+                print("  ※ 402はAPIクレジット切れです。Developer Consoleで残高を確認してください")
     return result
 
 

@@ -434,10 +434,13 @@ def fetch_trending_tweets(max_tweets: int = 6) -> list[str]:
         tweets = []
         for keyword in X_KEYWORDS[:2]:
             query = f"{keyword} lang:ja -is:retweet min_faves:50"
+            # user_auth=True が必須。省略するとtweepyはBearer Token（未設定）で
+            # リクエストし、401 Unauthorized になる
             response = client.search_recent_tweets(
                 query=query, max_results=5,
                 tweet_fields=["public_metrics", "text"],
                 sort_order="relevancy",
+                user_auth=True,
             )
             if response.data:
                 for tweet in response.data:

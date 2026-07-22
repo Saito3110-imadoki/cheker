@@ -58,8 +58,8 @@ def _env(name: str, prefix: str = "", required: bool = True) -> str:
 
 
 # ── 設定値 ────────────────────────────────────────────────
-NOTION_TOKEN       = os.environ["NOTION_TOKEN"]
-NOTION_DATABASE_ID = os.environ["NOTION_DATABASE_ID"]
+NOTION_TOKEN       = os.environ["NOTION_TOKEN"].strip()
+NOTION_DATABASE_ID = os.environ["NOTION_DATABASE_ID"].strip()
 
 PROP_TEXT         = _cfg("notion", "properties", "text",         default="投稿文")
 PROP_THREADS_TEXT = _cfg("notion", "properties", "threads_text", default="Threads用文面")

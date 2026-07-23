@@ -436,8 +436,9 @@ def fetch_trending_tweets(max_tweets: int = 6) -> list[str]:
             query = f"{keyword} lang:ja -is:retweet min_faves:50"
             # user_auth=True が必須。省略するとtweepyはBearer Token（未設定）で
             # リクエストし、401 Unauthorized になる
+            # max_resultsはX APIの仕様で10〜100が必須（5だと400 Bad Request）
             response = client.search_recent_tweets(
-                query=query, max_results=5,
+                query=query, max_results=10,
                 tweet_fields=["public_metrics", "text"],
                 sort_order="relevancy",
                 user_auth=True,
@@ -643,6 +644,17 @@ def generate_posts_with_claude(
                            default="親しみやすい・専門用語なし・友達に話すような口調")
     post_min        = _cfg("content", "post_length_min", default=200)
     post_max        = _cfg("content", "post_length_max", default=400)
+    x_limit         = int(_cfg("content", "x_char_limit", default=0) or 0)
+    # 無料アカウント（x_limit>0）では超過分が途中で切れて公開されるため、
+    # 上限を絶対条件としてAIに伝える
+    if x_limit > 0:
+        length_rule = (
+            f"- 各投稿{post_min}〜{post_max}文字。⚠️上限は絶対条件。"
+            f"X無料アカウントのため、超過した投稿は途中でぶつ切りになって公開される。"
+            f"短くても薄くせず、1投稿=1メッセージに絞って必ず{post_max}文字以内に収めること\n"
+        )
+    else:
+        length_rule = f"- 各投稿{post_min}〜{post_max}文字\n"
     hashtags        = _cfg("content", "hashtags_per_post", default=1)
     emoji           = _cfg("content", "emoji_per_post", default=2)
     forbidden_list  = _cfg("content", "forbidden", default=[
@@ -706,7 +718,7 @@ def generate_posts_with_claude(
         "・ビフォーアフター:「フォロワー200人だった弊社アカウントが、3ヶ月で1万人になった話」\n"
         "禁止する書き出し: 挨拶 /「今日は〜についてお話しします」/「〜だと思います」/ 抽象的な問いかけ\n\n"
         "【本文のルール】\n"
-        f"- 各投稿{post_min}〜{post_max}文字\n"
+        f"{length_rule}"
         "- 1〜2文ごとに改行し、スマホで読んだときの視覚的リズムを作る\n"
         "- 抽象語（「効率化」「活用」だけ等）で終わらせず、必ず具体的な数字・手順・固有名詞を入れる\n"
         "- 専門用語は中学生にもわかる言葉に置き換える\n"
@@ -824,6 +836,48 @@ def generate_posts_with_claude(
 
     raw = _claude_call(prompt, max_tokens=13000)
     return _parse_json_array(raw)
+
+
+# ── 文字数ガード（X無料アカウント向け）────────────────────
+def _x_weighted_len(text: str) -> int:
+    """Xの重み付き文字数（半角=1 / 全角=2）"""
+    return sum(1 if ord(c) < 128 else 2 for c in text)
+
+
+def enforce_x_length(posts: list[dict]) -> list[dict]:
+    """x_char_limit>0（無料アカウント）のとき、上限超過の投稿をAIで短縮する。
+    超過したまま投稿すると途中で切れて公開されるため、生成段階で必ず収める。"""
+    limit = int(_cfg("content", "x_char_limit", default=0) or 0)
+    if limit <= 0:
+        return posts
+    post_max = int(_cfg("content", "post_length_max", default=135))
+    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    fixed = 0
+    for post in posts:
+        text = post.get("text", "")
+        if not text or _x_weighted_len(text) <= limit:
+            continue
+        try:
+            msg = client.messages.create(
+                model=CLAUDE_MODEL, max_tokens=500,
+                messages=[{"role": "user", "content": (
+                    f"次のX投稿を、1行目のフックの強さと内容の核を保ったまま"
+                    f"{post_max}文字以内に凝縮してください。"
+                    "箇条書きは削るか1行にまとめ、改行は最小限に。"
+                    "出力は投稿本文のみ（前置き・説明・引用符は不要）。\n\n" + text)}],
+            )
+            new_text = "".join(b.text for b in msg.content
+                               if getattr(b, "type", "") == "text").strip()
+            # 上限内に収まった、または少なくとも短くなったなら採用
+            # （それでも超過が残る分は poster 側の最終トリムが保険になる）
+            if new_text and _x_weighted_len(new_text) < _x_weighted_len(text):
+                post["text"] = new_text
+                fixed += 1
+        except Exception as e:
+            print(f"  文字数短縮スキップ: {e}")
+    if fixed:
+        print(f"  文字数ガード: {fixed}件を短縮リライト")
+    return posts
 
 
 # ── 編集長レビュー（2パス目）──────────────────────────────
@@ -1028,6 +1082,9 @@ def run():
     if _cfg("content", "editor_review", default=True):
         print("編集長レビュー中...")
         posts = review_posts_with_claude(posts, news)
+
+    # X無料アカウント向けの文字数ガード（上限超過をAIで短縮）
+    posts = enforce_x_length(posts)
 
     # 画像生成（charts配列 = カルーセル対応。旧形式の chart 単体も受け付ける）
     image_urls: dict = {}

@@ -41,6 +41,11 @@ content:
   # API利用量が約2倍になるため、不要なら false に
   editor_review: true
 
+  # AIアイキャッチ画像（fal.ai / FLUX schnell）。図解チャートが付かない投稿に
+  # 文字なしの映える画像を補完する。要: GitHub Secretに FAL_KEY を登録。
+  # 約$0.003/枚。使わないなら false のままでOK
+  ai_eyecatch: false
+
   # 投稿文字数（文字）
   post_length_min: 200
   post_length_max: 400

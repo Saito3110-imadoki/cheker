@@ -38,6 +38,11 @@ except Exception as _e:
     _HAS_WEB_RENDERER = False
 
 try:
+    import ai_image
+except Exception as _e:
+    ai_image = None
+
+try:
     from notify import notify_error
 except Exception:
     def notify_error(context: str, detail: str) -> None:  # フォールバック
@@ -1128,6 +1133,32 @@ def run():
         if urls:
             image_urls[i] = urls
             image_count += 1
+
+    # チャート図解が付かなかった投稿に、AIアイキャッチを補完
+    # （config content.ai_eyecatch: true かつ 環境変数 FAL_KEY がある時だけ動作）
+    if (_cfg("content", "ai_eyecatch", default=False)
+            and ai_image is not None and ai_image.enabled()):
+        audience    = _cfg("content", "target_audience", default="")
+        brand_color = _cfg("branding", "primary_color", default="")
+        made = 0
+        for i, post in enumerate(posts):
+            if i in image_urls:
+                continue  # 既に図解が付いている投稿はスキップ
+            filename = f"{date_str}-{i+1}-eye.png"
+            out_path = IMAGE_DIR / filename
+            if ai_image.generate(post.get("theme", ""), post.get("text", ""),
+                                 out_path, audience, brand_color):
+                if GITHUB_REPOSITORY:
+                    owner, repo = GITHUB_REPOSITORY.split("/", 1)
+                    image_urls[i] = [f"https://{owner.lower()}.github.io/{repo}/post-images/{filename}"]
+                else:
+                    image_urls[i] = [str(out_path)]
+                image_count += 1
+                slide_count += 1
+                made += 1
+        if made:
+            print(f"  AIアイキャッチ: {made}件を生成")
+
     print(f"  画像生成: {image_count}投稿 / 計{slide_count}枚")
 
     print("Notionに保存中...")

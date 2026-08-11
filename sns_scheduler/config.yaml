@@ -73,6 +73,10 @@ topics:
     - SNS運用
     - マーケティング効率化
 
+  # ベンチマークアカウント（業界の手本。この人たちの投稿も参考ソースに加える）
+  # 例: ["marketing_pro", "sns_sensei"]  ※@は不要。最大3件まで使用
+  benchmark_accounts: []
+
   # X（Twitter）での検索キーワード
   keywords_x:
     - AI活用

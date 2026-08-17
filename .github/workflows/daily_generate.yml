@@ -7,7 +7,25 @@ on:
   workflow_dispatch:
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      paused: ${{ steps.flag.outputs.paused }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: flag
+        name: 一時停止スイッチの確認
+        run: |
+          if [ -f .paused-generate ]; then
+            echo "paused=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::現在停止中です。再開するには Actions →「一時停止スイッチ」→ 再開する を実行してください"
+          else
+            echo "paused=false" >> "$GITHUB_OUTPUT"
+          fi
+
   generate:
+    needs: check
+    if: needs.check.outputs.paused != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

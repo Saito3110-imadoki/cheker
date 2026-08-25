@@ -118,6 +118,20 @@ h1 .hl{color:var(--indigo);}
 .pill.wait{background:#fdf2f8;color:#be185d;}
 .pill.no{background:var(--soft2);color:var(--faint);}
 .nm-caption{text-align:center;font-size:14.5px;color:var(--body);margin-top:18px;}
+.auto-opt{margin-top:34px;border:1px solid var(--indigo-100);background:linear-gradient(160deg,var(--indigo-50),#fff 70%);border-radius:20px;padding:30px 28px;}
+.auto-head{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.auto-badge{background:var(--indigo);color:#fff;font-size:11.5px;font-weight:900;letter-spacing:.12em;padding:5px 13px;border-radius:999px;}
+.auto-head h3{font-size:23px;font-weight:900;color:var(--ink);line-height:1.45;text-wrap:balance;}
+.auto-head h3 .hl{color:var(--indigo);}
+.auto-lead{font-size:15.5px;color:var(--body);margin-top:14px;max-width:62ch;}
+.auto-lead b{color:var(--ink);}
+.auto-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px;}
+.auto-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:17px 18px;display:flex;gap:13px;align-items:flex-start;}
+.auto-ic{font-size:22px;flex-shrink:0;}
+.auto-card b{display:block;font-size:15px;font-weight:900;color:var(--ink);}
+.auto-card span{display:block;font-size:13px;color:var(--muted);margin-top:4px;line-height:1.7;}
+.auto-note{font-size:12.5px;color:var(--muted);margin-top:18px;line-height:1.8;}
+@media(max-width:860px){.auto-grid{grid-template-columns:1fr;}.auto-head h3{font-size:20px;}}
 @media(max-width:640px){.nm-head{grid-template-columns:1fr 110px;}.nm-head span:nth-child(2){display:none;}.nm-row{grid-template-columns:1fr 110px;}.nm-row .nm-img{display:none;}}
 
 /* X / Threads 投稿モック */
@@ -848,6 +862,29 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
         <a class="btn-plan amber" href="#contact">まず相談する</a>
       </div>
     </div>
+    <div class="auto-opt">
+      <div class="auto-head">
+        <span class="auto-badge">OPTION</span>
+        <h3>承認もしない。<span class="hl">完全おまかせ運用</span>。</h3>
+      </div>
+      <p class="auto-lead">「毎朝の承認すら手が回らない」という方へ。承認をスキップして、AIが作った投稿をそのまま自動配信するモードもお選びいただけます。<b>あなたの作業は、ゼロになります。</b></p>
+      <div class="auto-grid">
+        <div class="auto-card">
+          <div class="auto-ic">🤖</div>
+          <div><b>作業ゼロ</b><span>ネタ探しから投稿まで、人が触る工程がなくなります</span></div>
+        </div>
+        <div class="auto-card">
+          <div class="auto-ic">🛡</div>
+          <div><b>止める権利は残ります</b><span>朝の生成時にLINEでお知らせ。初回投稿まで数時間の余裕があるので、気になる投稿だけ消せます</span></div>
+        </div>
+        <div class="auto-card">
+          <div class="auto-ic">✅</div>
+          <div><b>二重の品質チェック</b><span>編集長AIの審査と、業種ごとのNG表現ルールが出稿前に働きます</span></div>
+        </div>
+      </div>
+      <p class="auto-note">※ 完全おまかせ運用では、事前確認なく投稿が公開されます。ご契約時に内容をご説明のうえ、ご同意いただいた場合のみ有効化いたします。途中で承認ありの運用に戻すことも可能です。</p>
+    </div>
+
     <p class="nm-caption" style="margin-top:26px;">※ 初期構築費用は<b>0円</b>。業種チューニング・Notion環境の構築・投稿設定まで、すべて弊社が無料で代行します。<br>※ 最低契約期間は6ヶ月です。7ヶ月目以降は月単位でご解約いただけます。</p>
   </div>
 </section>
@@ -860,6 +897,10 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
       <h2>よくある質問</h2>
     </div>
     <details>
+        <summary>毎朝の承認すら難しいのですが、完全におまかせできますか？</summary>
+        <p>はい。承認をスキップして自動配信する「完全おまかせ運用」をお選びいただけます。朝の生成時にLINEでお知らせが届き、初回の投稿までは数時間の余裕があるため、気になる投稿だけを削除することも可能です。事前確認なく公開される運用のため、ご契約時にご説明のうえ、ご同意いただいた場合のみ有効化いたします。</p>
+      </details>
+      <details>
       <summary>AIが勝手に投稿してしまうことはありませんか？</summary>
       <p>ありません。投稿されるのは、あなたがNotionで承認した案だけです。承認しなかった案はそのまま破棄されます。企業アカウントの「炎上が怖い」という不安に応える設計です。</p>
     </details>

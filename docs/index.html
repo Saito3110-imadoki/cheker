@@ -90,7 +90,10 @@ h1 .hl{color:var(--indigo);}
 .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;}
 @media(max-width:860px){.grid3,.grid2{grid-template-columns:1fr;}}
 .card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:26px;box-shadow:0 1px 4px rgba(15,23,42,.04);}
-.card .emoji{font-size:30px;margin-bottom:12px;}
+.card .ico,.ba .ico{width:44px;height:44px;border-radius:12px;background:var(--indigo-50);color:var(--indigo);display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
+.card .ico svg,.ba .ico svg{width:24px;height:24px;}
+.auto-ic{width:38px;height:38px;border-radius:10px;background:var(--indigo-50);color:var(--indigo);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.auto-ic svg{width:21px;height:21px;}
 .card h3{font-size:18px;font-weight:700;margin-bottom:8px;}
 .card p{font-size:14px;color:var(--muted);}
 
@@ -388,17 +391,17 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
     </div>
     <div class="grid3">
       <div class="card">
-        <div class="emoji">😩</div>
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/><path d="M8.5 11h5"/></svg></div>
         <h3>ネタ探しだけで30分</h3>
         <p>「今日何を投稿しよう…」から始まり、書いて、画像を作って。1投稿に1時間かかることも。</p>
       </div>
       <div class="card">
-        <div class="emoji">🕐</div>
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></div>
         <h3>忙しくなると止まる</h3>
         <p>担当者が本業に追われて更新が停止。動いていないアカウントは、見た人の信頼を下げます。</p>
       </div>
       <div class="card">
-        <div class="emoji">📉</div>
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5v16h18"/><path d="M7 9l4 4 3-2 5 5"/><path d="M19 12v4h-4"/></svg></div>
         <h3>成果が見えない</h3>
         <p>頑張って投稿しても、何が良くて何がダメだったのか分からない。改善のしようがない。</p>
       </div>
@@ -423,19 +426,19 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
     <div class="grid3 steps-flow">
       <div class="card step">
         <span class="step-tag">朝7時・自動</span>
-        <div class="emoji">🤖</div>
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="8" width="16" height="11" rx="2.5"/><path d="M12 8V5"/><circle cx="12" cy="4" r="1.4"/><path d="M9 13h.01M15 13h.01"/><path d="M9.5 16h5"/></svg></div>
         <h3>AIが投稿案を生成</h3>
         <p>業界ニュースとトレンドを収集し、投稿文5案＋図解画像を自動作成。LINEに「できました」と通知が届きます。</p>
       </div>
       <div class="card step focus">
         <span class="step-tag amber">あなたの出番・2分</span>
-        <div class="emoji">👍</div>
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V11h3v10z"/><path d="M7 11l4-7a2 2 0 0 1 3 1.6V9h4.6a2 2 0 0 1 2 2.5l-1.6 7A2 2 0 0 1 17 20H7"/></svg></div>
         <h3>良い案だけ承認</h3>
         <p>Notionを開いて、投稿したい案のステータスを変えるだけ。<b style="color:var(--ink);">承認制なので「AIが勝手に変なことを言う」事故は起きません。</b></p>
       </div>
       <div class="card step">
         <span class="step-tag">以降ぜんぶ自動</span>
-        <div class="emoji">📈</div>
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5v16h18"/><path d="M7 15l4-4 3 2 5-6"/><path d="M19 7v4h-4"/></svg></div>
         <h3>投稿→分析→学習</h3>
         <p>ベストな時間にX / Threadsへ自動投稿。夜に「いいね・表示回数」を自動計測し、<b style="color:var(--ink);">翌朝のAIが伸びた型を学習</b>します。</p>
       </div>
@@ -715,12 +718,12 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
       <h2>SNS運用に必要なもの、ぜんぶ入り。</h2>
     </div>
     <div class="grid3">
-      <div class="card"><div class="emoji">✍️</div><h3>AI投稿文の自動作成</h3><p>最新ニュースを分析し、「保存したくなる」投稿文を毎朝5案。X用とThreads用で文体も書き分け。</p></div>
-      <div class="card"><div class="emoji">🎨</div><h3>図解画像の自動生成</h3><p>高解像度のインフォグラフィックを自動作成。自社カラー・ロゴ・会社名入りにカスタマイズ可能。</p></div>
-      <div class="card"><div class="emoji">✅</div><h3>Notion承認フロー</h3><p>投稿前に必ず人がチェック。ボタンひとつで承認・却下。企業アカウントに必須の安全弁です。</p></div>
-      <div class="card"><div class="emoji">🚀</div><h3>X・Threads自動投稿</h3><p>承認した投稿を設定時間に自動配信。複数枚カルーセルや補足リプライまで自動でぶら下げます。</p></div>
-      <div class="card"><div class="emoji">📊</div><h3>効果測定と自動学習</h3><p>いいね・表示回数・フォロワー推移を毎日自動記録。伸びた投稿の「型」を翌日のAIが学習します。</p></div>
-      <div class="card"><div class="emoji">📈</div><h3>週次・月次レポート自動配信</h3><p>投稿ランキング・フォロワー属性・AIの分析と「次の一手」までまとめたレポートを、毎週月曜と毎月1日にLINEへ自動でお届け。投稿案の到着や配信完了の通知もLINEに届きます。</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4l10-10a2.5 2.5 0 0 0-3.5-3.5L4.5 16.5z"/><path d="M13.5 6.5l4 4"/></svg></div><h3>AI投稿文の自動作成</h3><p>最新ニュースを分析し、「保存したくなる」投稿文を毎朝5案。X用とThreads用で文体も書き分け。</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 15l4.5-4.5 3 3 4-4L21 15"/><circle cx="8.5" cy="8.5" r="1.3"/></svg></div><h3>図解画像の自動生成</h3><p>高解像度のインフォグラフィックを自動作成。自社カラー・ロゴ・会社名入りにカスタマイズ可能。</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg></div><h3>Notion承認フロー</h3><p>投稿前に必ず人がチェック。ボタンひとつで承認・却下。企業アカウントに必須の安全弁です。</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 19.5l2-4 3.5 3.5-4 2z"/><path d="M9 15l-2-2c1-5 4.5-9 10-10 -1 5.5-5 9-10 10z"/><circle cx="14.5" cy="8.5" r="1.5"/></svg></div><h3>X・Threads自動投稿</h3><p>承認した投稿を設定時間に自動配信。複数枚カルーセルや補足リプライまで自動でぶら下げます。</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><rect x="5" y="12" width="3.5" height="7" rx="1"/><rect x="10.5" y="8" width="3.5" height="11" rx="1"/><rect x="16" y="4" width="3.5" height="15" rx="1"/></svg></div><h3>効果測定と自動学習</h3><p>いいね・表示回数・フォロワー推移を毎日自動記録。伸びた投稿の「型」を翌日のAIが学習します。</p></div>
+      <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 16l3-3 2.5 2 3-4"/><path d="M8 7h8"/></svg></div><h3>週次・月次レポート自動配信</h3><p>投稿ランキング・フォロワー属性・AIの分析と「次の一手」までまとめたレポートを、毎週月曜と毎月1日にLINEへ自動でお届け。投稿案の到着や配信完了の通知もLINEに届きます。</p></div>
     </div>
   </div>
 </section>
@@ -870,15 +873,15 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
       <p class="auto-lead">「毎朝の承認すら手が回らない」という方へ。承認をスキップして、AIが作った投稿をそのまま自動配信するモードもお選びいただけます。<b>あなたの作業は、ゼロになります。</b></p>
       <div class="auto-grid">
         <div class="auto-card">
-          <div class="auto-ic">🤖</div>
+          <div class="auto-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="11" rx="2.5"/><path d="M12 8V5"/><circle cx="12" cy="4" r="1.4"/><path d="M9 13h.01M15 13h.01"/><path d="M9.5 16h5"/></svg></div>
           <div><b>作業ゼロ</b><span>ネタ探しから投稿まで、人が触る工程がなくなります</span></div>
         </div>
         <div class="auto-card">
-          <div class="auto-ic">🛡</div>
+          <div class="auto-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.2-2.9 7.7-7 9-4.1-1.3-7-4.8-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
           <div><b>止める権利は残ります</b><span>朝の生成時にLINEでお知らせ。初回投稿まで数時間の余裕があるので、気になる投稿だけ消せます</span></div>
         </div>
         <div class="auto-card">
-          <div class="auto-ic">✅</div>
+          <div class="auto-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/></svg></div>
           <div><b>二重の品質チェック</b><span>編集長AIの審査と、業種ごとのNG表現ルールが出稿前に働きます</span></div>
         </div>
       </div>

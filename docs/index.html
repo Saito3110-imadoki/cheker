@@ -74,11 +74,24 @@ nav{position:fixed;top:0;width:100%;z-index:50;background:rgba(255,255,255,.92);
 
 /* ヒーロー */
 .hero{padding:150px 0 70px;background:var(--soft);}
-.badge{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 18px;font-size:13.5px;font-weight:500;color:var(--muted);box-shadow:0 1px 4px rgba(15,23,42,.05);margin-bottom:26px;}
+.badge{display:flex;width:fit-content;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:7px 18px;font-size:13.5px;font-weight:500;color:var(--muted);box-shadow:0 1px 4px rgba(15,23,42,.05);margin:0 auto 14px;}
 .dot{width:8px;height:8px;border-radius:50%;background:#10b981;}
 h1{font-size:52px;font-weight:900;line-height:1.28;letter-spacing:-.015em;margin-bottom:22px;}
 h1 .hl{color:var(--indigo);}
 .hero-sub{font-size:19px;color:var(--muted);max-width:640px;margin:0 auto 34px;}
+.camp{display:flex;width:fit-content;align-items:stretch;border-radius:999px;overflow:hidden;border:1.5px solid var(--indigo);margin:0 auto 24px;background:#fff;}
+.camp-l{background:var(--indigo);color:#fff;font-size:13.5px;font-weight:900;padding:8px 16px;letter-spacing:.02em;display:flex;align-items:center;}
+.camp-r{color:var(--indigo-dark);font-size:14.5px;font-weight:800;padding:8px 18px;display:flex;align-items:center;}
+.trust{list-style:none;display:flex;justify-content:center;flex-wrap:wrap;gap:10px 24px;margin:20px 0 8px;padding:0;}
+.trust li{display:inline-flex;align-items:center;gap:7px;font-size:14px;font-weight:700;color:var(--body);}
+.trust svg{width:17px;height:17px;color:var(--indigo);flex-shrink:0;}
+@media(max-width:600px){
+  .camp{flex-direction:row;}
+  .camp-l{font-size:12.5px;padding:7px 13px;}
+  .camp-r{font-size:13px;padding:7px 14px;}
+  .trust{gap:8px 16px;}
+  .trust li{font-size:13px;}
+}
 .cta-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:10px;}
 .cta-note{font-size:13.5px;color:var(--faint);margin-bottom:52px;}
 .hero-visual{max-width:660px;margin:0 auto;}
@@ -351,13 +364,18 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
 <header class="hero center" id="top">
   <div class="wrap">
     <div class="badge"><span class="dot"></span>AIが運用しながら学習する、自動企画投稿システム</div>
+    <div class="camp"><span class="camp-l">初期費用0円</span><span class="camp-r">10日間の無料トライアル実施中</span></div>
     <h1>SNS運用、あなたの仕事は<br>「<span class="hl">1日2分の承認</span>」だけ。</h1>
     <p class="hero-sub">ネタ探しから投稿文・図解画像づくり、X / Threadsへの投稿、効果分析まで。面倒なことは、ぜんぶAIが自動で回します。</p>
     <div class="cta-row">
       <a class="btn btn-primary" href="#contact">10日間無料で試す →</a>
       <a class="btn btn-ghost" href="#proof">実例を見る</a>
     </div>
-    <p class="cta-note">クレジットカード登録不要・最短翌日スタート</p>
+    <ul class="trust">
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>クレジットカード登録不要</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>初期構築費用 0円</li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12.5l5 5L20 6.5"/></svg>最短翌日スタート</li>
+    </ul>
     <figure class="hero-visual">
       <div class="sns-card hero-post">
         <div class="sns-head">

@@ -388,21 +388,20 @@ def _html_list(chart: dict) -> str:
         text = it.get("text", "")
         pic = _pict(_ITEM_PICTS[i % len(_ITEM_PICTS)], _MAIN, 34)
         rows.append(f"""
-<div style="display:flex;align-items:center;gap:20px;background:{_CARD};
+<div style="display:flex;align-items:center;gap:18px;background:{_CARD};
   border:1px solid {_BORDER};border-left:5px solid {_MAIN};
   border-radius:14px;padding:{row_pad};">
   <div style="width:{num_sz};height:{num_sz};flex-shrink:0;border-radius:14px;
     background:{_MAIN};display:flex;
     align-items:center;justify-content:center;font-size:{num_fs};font-weight:900;
     color:#ffffff;">{i+1}</div>
+  <div style="display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;">{pic}</div>
   <div style="flex:1;">
-    <div style="display:flex;align-items:center;gap:13px;margin-bottom:6px;">
-      <span style="display:flex;flex-shrink:0;">{pic}</span>
-      <span style="font-size:{head_fs};font-weight:800;color:{_TEXT};
-        line-height:1.3;">{_hl(head)}</span>
-    </div>
+    <div style="font-size:{head_fs};font-weight:800;color:{_TEXT};
+      line-height:1.3;margin-bottom:5px;">{_hl(head)}</div>
     <div style="font-size:{text_fs};color:{_MUTED};font-weight:500;
-      line-height:1.5;padding-left:47px;">{_hl(text)}</div>
+      line-height:1.5;">{_hl(text)}</div>
   </div>
 </div>""")
 

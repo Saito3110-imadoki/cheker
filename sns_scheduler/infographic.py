@@ -412,6 +412,55 @@ def _html_list(chart: dict) -> str:
 {_impact_footer(impact, caption)}""")
 
 
+# ── compare_flow チャート（左右対比＋因果） ─────────────────
+def _html_compare_flow(chart: dict) -> str:
+    """「問題 vs 解決」を左右に並べる対比型。
+    left/right それぞれに label（見出し）と items（要素の配列）を持つ。
+    左を赤系・右をブランド色にして、負の連鎖と正の打ち手を対比させる。"""
+    left    = chart.get("left", {}) or {}
+    right   = chart.get("right", {}) or {}
+    impact  = chart.get("impact", "")
+    caption = chart.get("caption", "")
+    NEG     = "#c0392b"
+
+    def _side(side: dict, color: str, tint: str, arrow: str) -> str:
+        label = side.get("label", "")
+        items = [str(x) for x in (side.get("items", []) or [])][:5]
+        n     = len(items)
+        fs    = "20px" if n <= 4 else "18px"
+        pad   = "13px 18px" if n <= 4 else "10px 16px"
+        rows  = []
+        for i, it in enumerate(items):
+            sep = (f'<div style="text-align:center;color:{color};font-size:17px;'
+                   f'line-height:1;margin:-2px 0;">{arrow}</div>') if i else ""
+            rows.append(sep + f"""
+<div style="background:#ffffff;border:1px solid {tint};border-radius:11px;
+  padding:{pad};font-size:{fs};font-weight:700;color:{_TEXT};line-height:1.45;">
+  {_hl(it)}</div>""")
+        return f"""
+<div style="flex:1;background:{tint}1a;border:2px solid {tint};border-radius:16px;
+  padding:18px 20px;display:flex;flex-direction:column;">
+  <div style="background:{color};color:#ffffff;font-size:18px;font-weight:900;
+    border-radius:9px;padding:8px 16px;text-align:center;margin-bottom:14px;
+    flex-shrink:0;">{_e(label)}</div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;
+    gap:7px;">{"".join(rows)}</div>
+</div>"""
+
+    return _base(f"""
+{_header(chart.get("title",""), chart.get("subtitle",""))}
+<div style="flex:1;display:flex;gap:22px;padding:4px 52px;align-items:stretch;">
+  {_side(left,  NEG,   "#e8b4ae", "↓")}
+  <div style="display:flex;align-items:center;flex-shrink:0;">
+    <div style="width:44px;height:44px;border-radius:50%;background:{_TEXT};
+      color:#ffffff;display:flex;align-items:center;justify-content:center;
+      font-size:22px;font-weight:900;">&#8594;</div>
+  </div>
+  {_side(right, _MAIN, "#a9dcc9", "↓")}
+</div>
+{_impact_footer(impact, caption)}""")
+
+
 # ── ページバッジ（カルーセル用）──────────────────────────
 def _apply_page_badge(html: str, page: tuple | None, role: str = "") -> str:
     """複数枚スライドのとき右上に「起 1 / 4」バッジを付ける。
@@ -456,6 +505,8 @@ def generate_infographic(chart: dict, output_path: Path,
         html = _html_comparison(chart)
     elif chart_type == "flow":
         html = _html_flow(chart)
+    elif chart_type == "compare_flow":
+        html = _html_compare_flow(chart)
     elif chart_type == "list":
         html = _html_list(chart)
     else:

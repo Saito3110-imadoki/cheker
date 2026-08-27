@@ -66,6 +66,22 @@ _ICON_ROCKET = """<svg width="42" height="42" viewBox="0 0 24 24" fill="none"
 _ICONS = [_ICON_ZAP, _ICON_COINS, _ICON_TRENDING, _ICON_ROCKET]
 
 
+def _pict(paths: str, color: str, size: int = 26) -> str:
+    """項目に添える小型ピクトグラム（線画・24pxグリッド）"""
+    return (f'<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" '
+            f'stroke="{color}" stroke-width="1.9" stroke-linecap="round" '
+            f'stroke-linejoin="round">{paths}</svg>')
+
+
+# 項目の並び順で使い分ける汎用ピクトグラム（意味が固定されない中立的な図形）
+_ITEM_PICTS = [
+    '<path d="M4 12.5l5 5L20 6.5"/>',                                        # チェック
+    '<circle cx="12" cy="12" r="9"/><path d="M12 8v5l3 2"/>',                # 時計
+    '<path d="M3 20h18"/><path d="M6 20V10M12 20V4M18 20v-7"/>',             # 棒グラフ
+    '<path d="M12 3l2.6 5.6 6.1.8-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.4l6.1-.8z"/>',  # 星
+]
+
+
 # ── ブランディング適用 ────────────────────────────────────
 def _apply_branding(html: str, branding: dict) -> str:
     """生成済みHTMLにブランドカラーとウォーターマークを適用する"""
@@ -93,7 +109,7 @@ def _apply_branding(html: str, branding: dict) -> str:
             f'letter-spacing:1px;opacity:0.85;">{_e(company_name)}</span>'
         )
         watermark = (
-            f'<div style="position:absolute;bottom:14px;right:22px;'
+            f'<div style="position:absolute;bottom:8px;right:20px;'
             f'display:flex;align-items:center;z-index:99;">{inner}</div>'
         )
         html = html.replace("</div>\n</body>", f"{watermark}\n</div>\n</body>")
@@ -141,10 +157,16 @@ def _header(title: str, subtitle: str = "") -> str:
 def _impact_footer(impact: str = "", caption: str = "") -> str:
     parts: list[str] = []
     if impact:
+        bulb = _pict('<path d="M9 19h6"/><path d="M10 22h4"/>'
+                     '<path d="M12 2a6.5 6.5 0 0 0-4 11.6c.6.5 1 1.3 1 2.1h6c0-.8.4-1.6 1-2.1'
+                     'A6.5 6.5 0 0 0 12 2z"/>', "#ffffff", 24)
         parts.append(f"""
-<div style="background:{_IMP_BG};border:1px solid {_IMP_BD};border-radius:10px;
-  padding:12px 28px;margin:0 52px 12px;text-align:center;flex-shrink:0;">
-  <span style="font-size:18px;font-weight:800;color:{_ACCENT};">{_e(impact)}</span>
+<div style="background:{_TEXT};border-radius:12px;
+  padding:15px 26px;margin:0 52px 26px;flex-shrink:0;
+  display:flex;align-items:center;gap:16px;">
+  <span style="display:flex;flex-shrink:0;">{bulb}</span>
+  <span style="font-size:19px;font-weight:800;color:#ffffff;
+    line-height:1.5;">{_hl(impact)}</span>
 </div>""")
     if caption:
         parts.append(
@@ -361,25 +383,30 @@ def _html_list(chart: dict) -> str:
     for i, it in enumerate(items):
         head = it.get("head", "")
         text = it.get("text", "")
+        pic = _pict(_ITEM_PICTS[i % len(_ITEM_PICTS)], _MAIN, 24)
         rows.append(f"""
-<div style="display:flex;align-items:center;gap:22px;background:{_CARD};
-  border:1px solid {_BORDER};border-radius:14px;padding:{row_pad};">
+<div style="display:flex;align-items:center;gap:20px;background:{_CARD};
+  border:1px solid {_BORDER};border-left:5px solid {_MAIN};
+  border-radius:14px;padding:{row_pad};">
   <div style="width:{num_sz};height:{num_sz};flex-shrink:0;border-radius:14px;
-    background:linear-gradient(135deg,{_MAIN},{_ACCENT});display:flex;
+    background:{_MAIN};display:flex;
     align-items:center;justify-content:center;font-size:{num_fs};font-weight:900;
     color:#ffffff;">{i+1}</div>
-  <div>
-    <div style="font-size:{head_fs};font-weight:800;color:{_TEXT};
-      margin-bottom:4px;line-height:1.3;">{_hl(head)}</div>
+  <div style="flex:1;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:5px;">
+      <span style="display:flex;flex-shrink:0;">{pic}</span>
+      <span style="font-size:{head_fs};font-weight:800;color:{_TEXT};
+        line-height:1.3;">{_hl(head)}</span>
+    </div>
     <div style="font-size:{text_fs};color:{_MUTED};font-weight:500;
-      line-height:1.45;">{_hl(text)}</div>
+      line-height:1.5;padding-left:34px;">{_hl(text)}</div>
   </div>
 </div>""")
 
     return _base(f"""
 {_header(chart.get("title",""), chart.get("subtitle",""))}
 <div style="flex:1;display:flex;flex-direction:column;justify-content:center;
-  gap:14px;padding:12px 52px;">
+  gap:16px;padding:4px 52px;">
   {"".join(rows)}
 </div>
 {_impact_footer(impact, caption)}""")

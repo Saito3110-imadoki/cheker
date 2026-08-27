@@ -568,7 +568,20 @@ def generate_infographic(chart: dict, output_path: Path,
     elif chart_type == "list":
         html = _html_list(chart)
     else:
-        return False
+        # 想定外のchart_typeでも画像なしにせず、データ形状から最も近い型で描く
+        print(f"  図解: 未知のchart_type「{chart_type}」→ 代替テンプレートで描画")
+        if chart.get("groups"):
+            html = _html_matrix(chart)
+        elif chart.get("left") or chart.get("right"):
+            html = _html_compare_flow(chart)
+        elif chart.get("steps"):
+            html = _html_flow(chart)
+        elif chart.get("stats"):
+            html = _html_stat(chart)
+        elif chart.get("items"):
+            html = _html_list(chart)
+        else:
+            return False
 
     html = _apply_branding(html, branding or {})
     html = _apply_page_badge(html, page, role=str(chart.get("role", "")).strip())

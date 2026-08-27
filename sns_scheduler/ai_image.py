@@ -38,7 +38,8 @@ def build_prompt(theme: str, post_text: str, audience: str = "",
     fallback = (
         f"Clean modern flat vector illustration representing '{theme}', "
         "minimal, professional, soft gradient background, symbolic objects, "
-        "social media banner, high quality, no text, no words, no letters, no numbers"
+        "social media banner, clean minimal flat design, professional business illustration, "
+        "high quality, no text, no words, no letters, no numbers, no watermark"
     )
     key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
     if not key or anthropic is None:
@@ -62,8 +63,13 @@ def build_prompt(theme: str, post_text: str, audience: str = "",
         text = "".join(b.text for b in msg.content
                        if getattr(b, "type", "") == "text").strip()
         if text:
-            # 文字混入を防ぐネガティブ指定を必ず補強する
-            return text + ", no text, no words, no letters, no numbers"
+            # スタイルを毎回そろえる接尾辞＋文字混入を防ぐネガティブ指定。
+            # schnellは細部が甘くなりやすいので、
+            # ディテール依存の少ないフラット/ミニマル方向に寄せて品質差を吸収する
+            return (text + ", clean minimal flat design, soft depth, "
+                    "professional business illustration, uncluttered composition, "
+                    "no text, no words, no letters, no numbers, no watermark, "
+                    "no realistic human faces")
     except Exception as e:
         print(f"  アイキャッチ: プロンプト生成失敗（汎用にフォールバック）: {e}")
     return fallback

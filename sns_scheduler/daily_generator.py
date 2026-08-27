@@ -1288,8 +1288,17 @@ def run():
 
     # チャート図解が付かなかった投稿に、AIアイキャッチを補完
     # （config content.ai_eyecatch: true かつ 環境変数 FAL_KEY がある時だけ動作）
-    if (_cfg("content", "ai_eyecatch", default=False)
-            and ai_image is not None and ai_image.enabled()):
+    _eye_on   = bool(_cfg("content", "ai_eyecatch", default=False))
+    _eye_mod  = ai_image is not None
+    _eye_key  = _eye_mod and ai_image.enabled()
+    if not (_eye_on and _eye_mod and _eye_key):
+        # 無言でスキップすると原因が分からないため、欠けている条件を明示する
+        _miss = []
+        if not _eye_on:  _miss.append("config content.ai_eyecatch が false")
+        if not _eye_mod: _miss.append("ai_image.py が配置されていない")
+        elif not _eye_key: _miss.append("環境変数 FAL_KEY が未設定")
+        print(f"  AIアイキャッチ: 無効（{' / '.join(_miss)}）")
+    if (_eye_on and _eye_mod and _eye_key):
         audience    = _cfg("content", "target_audience", default="")
         brand_color = _cfg("branding", "primary_color", default="")
         made = 0

@@ -66,10 +66,13 @@ _ICON_ROCKET = """<svg width="42" height="42" viewBox="0 0 24 24" fill="none"
 _ICONS = [_ICON_ZAP, _ICON_COINS, _ICON_TRENDING, _ICON_ROCKET]
 
 
-def _pict(paths: str, color: str, size: int = 26) -> str:
-    """項目に添える小型ピクトグラム（線画・24pxグリッド）"""
+def _pict(paths: str, color: str, size: int = 26, weight: float | None = None) -> str:
+    """項目に添えるピクトグラム（線画・24pxグリッド）。
+    サイズを上げると線が細く見えるため、既定の太さをサイズから決める。"""
+    if weight is None:
+        weight = 2.1 if size >= 32 else 1.9
     return (f'<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" '
-            f'stroke="{color}" stroke-width="1.9" stroke-linecap="round" '
+            f'stroke="{color}" stroke-width="{weight}" stroke-linecap="round" '
             f'stroke-linejoin="round">{paths}</svg>')
 
 
@@ -383,7 +386,7 @@ def _html_list(chart: dict) -> str:
     for i, it in enumerate(items):
         head = it.get("head", "")
         text = it.get("text", "")
-        pic = _pict(_ITEM_PICTS[i % len(_ITEM_PICTS)], _MAIN, 24)
+        pic = _pict(_ITEM_PICTS[i % len(_ITEM_PICTS)], _MAIN, 34)
         rows.append(f"""
 <div style="display:flex;align-items:center;gap:20px;background:{_CARD};
   border:1px solid {_BORDER};border-left:5px solid {_MAIN};
@@ -393,13 +396,13 @@ def _html_list(chart: dict) -> str:
     align-items:center;justify-content:center;font-size:{num_fs};font-weight:900;
     color:#ffffff;">{i+1}</div>
   <div style="flex:1;">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:5px;">
+    <div style="display:flex;align-items:center;gap:13px;margin-bottom:6px;">
       <span style="display:flex;flex-shrink:0;">{pic}</span>
       <span style="font-size:{head_fs};font-weight:800;color:{_TEXT};
         line-height:1.3;">{_hl(head)}</span>
     </div>
     <div style="font-size:{text_fs};color:{_MUTED};font-weight:500;
-      line-height:1.5;padding-left:34px;">{_hl(text)}</div>
+      line-height:1.5;padding-left:47px;">{_hl(text)}</div>
   </div>
 </div>""")
 
@@ -521,6 +524,8 @@ def _html_matrix(chart: dict) -> str:
 def _apply_page_badge(html: str, page: tuple | None, role: str = "") -> str:
     """複数枚スライドのとき右上に「起 1 / 4」バッジを付ける。
     role には起承転結のいずれかが入る。1枚目にはスワイプを促す矢印も添える。"""
+    # ページバッジは視線を散らすため表示しない（カルーセルは画像の並びで伝わる）
+    return html
     if not page or page[1] <= 1:
         return html
     cur, total = page

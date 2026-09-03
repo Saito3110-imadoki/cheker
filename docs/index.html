@@ -23,7 +23,9 @@
 <meta name="twitter:image" content="https://social-post-pilot.com/assets/ogp.png">
 
 <!-- ファビコン -->
-<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="%2300a37a"/><polygon points="13.5 4 6 14 11.2 14 10.5 20 18 10 12.8 10 13.5 4" fill="white"/></svg>'>
+<link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="%2300a37a"/><path d="M17 33.5 L27.5 44 L47 21" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>'>
+<link rel="icon" type="image/svg+xml" href="assets/logo/favicon.svg">
+<link rel="apple-touch-icon" href="assets/logo/logo_mark.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -275,6 +277,53 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
 .reveal.visible{opacity:1;transform:none;}
 @media(prefers-reduced-motion:reduce){.reveal{transition:none;opacity:1;transform:none;}}
 
+/* ── 読み込み時のオープニング（ファーストビューを順に立ち上げる）── */
+@keyframes heroIn{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:none;}}
+.hero .badge,.hero .camp,.hero h1,.hero .hero-sub,.hero .cta-row,
+.hero .trust,.hero .cta-note,.hero .hero-visual{
+  animation:heroIn .75s cubic-bezier(.2,.7,.3,1) both;}
+.hero .badge{animation-delay:.06s;}
+.hero .camp{animation-delay:.14s;}
+.hero h1{animation-delay:.22s;}
+.hero .hero-sub{animation-delay:.34s;}
+.hero .cta-row{animation-delay:.44s;}
+.hero .trust{animation-delay:.52s;}
+.hero .cta-note{animation-delay:.58s;}
+.hero .hero-visual{animation-delay:.64s;}
+
+/* ロゴのチェックマークが描かれる（初回のみ） */
+@keyframes markPop{from{transform:scale(.7);opacity:0;}to{transform:scale(1);opacity:1;}}
+@keyframes drawCheck{from{stroke-dashoffset:46;}to{stroke-dashoffset:0;}}
+nav .logo-mark{animation:markPop .45s cubic-bezier(.2,1.4,.5,1) both;}
+nav .logo-mark svg path{stroke-dasharray:46;animation:drawCheck .7s .3s cubic-bezier(.4,0,.2,1) both;}
+
+/* ホバー時の持ち上がり（マウス環境のみ） */
+@media(hover:hover){
+  .card,.ind-card,.voice-card,.plan{transition:transform .22s ease,box-shadow .22s ease;}
+  .card:hover,.ind-card:hover,.voice-card:hover{transform:translateY(-3px);
+    box-shadow:0 14px 32px rgba(15,23,42,.09);}
+  .plan:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(15,23,42,.10);}
+  .btn-primary:hover{box-shadow:0 12px 26px rgba(245,130,31,.36);}
+  .nav-links a{position:relative;}
+  .nav-links a::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:2px;
+    background:var(--indigo);border-radius:2px;transform:scaleX(0);transform-origin:left;
+    transition:transform .22s ease;}
+  .nav-links a:hover::after{transform:scaleX(1);}
+}
+
+/* 最終CTAのボタンをゆっくり呼吸させる */
+@keyframes ctaBreath{
+  0%,100%{box-shadow:0 12px 30px rgba(0,0,0,.16),0 0 0 0 rgba(255,255,255,.35);}
+  55%{box-shadow:0 14px 34px rgba(0,0,0,.20),0 0 0 10px rgba(255,255,255,0);}}
+.btn-line{animation:ctaBreath 3.4s ease-in-out 1.2s infinite;}
+
+@media(prefers-reduced-motion:reduce){
+  .hero .badge,.hero .camp,.hero h1,.hero .hero-sub,.hero .cta-row,
+  .hero .trust,.hero .cta-note,.hero .hero-visual,
+  nav .logo-mark,nav .logo-mark svg path,.btn-line{animation:none;}
+  nav .logo-mark svg path{stroke-dasharray:none;}
+}
+
 /* ステップ間の矢印（1→2→3） */
 .steps-flow{gap:30px;}
 .steps-flow .step:not(:last-child)::after{
@@ -306,25 +355,97 @@ table.cmp thead .col-pp{background:var(--indigo);color:#fff;font-size:15px;}
 .mk.no{color:#cbd5e1;}
 .cmp-note{text-align:center;font-size:12px;color:var(--faint);margin-top:16px;}
 
-/* お問い合わせフォーム */
-.contact-form{background:#fff;border-radius:18px;padding:32px;max-width:560px;margin:36px auto 0;text-align:left;box-shadow:0 24px 60px rgba(0,0,0,.18);}
-.cf-row{margin-bottom:16px;}
-.cf-row label{display:block;font-size:13px;font-weight:700;color:var(--ink);margin-bottom:6px;}
-.cf-row label small{font-weight:500;color:var(--faint);margin-left:6px;}
-.cf-row input,.cf-row select,.cf-row textarea{
-  width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:12px 14px;
-  font-size:14.5px;font-family:inherit;color:var(--ink);background:#fff;}
-.cf-row input:focus,.cf-row select:focus,.cf-row textarea:focus{
-  outline:2px solid var(--indigo);outline-offset:0;border-color:var(--indigo);}
-.cf-row textarea{min-height:110px;resize:vertical;}
-.cf-submit{width:100%;border:none;cursor:pointer;font-family:inherit;}
-.cf-note{font-size:12.5px;color:var(--muted);text-align:center;margin-top:14px;}
+/* 最終CTA: 公式LINE導線 */
+.btn-line{background:#fff;color:var(--indigo-dark);margin-top:8px;box-shadow:0 12px 30px rgba(0,0,0,.16);font-size:18px;padding:18px 40px;}
+.btn-line:hover{background:var(--indigo-50);transform:translateY(-1px);}
+.line-steps{list-style:none;max-width:520px;margin:30px auto 26px;padding:0;text-align:left;}
+.line-steps li{display:flex;align-items:flex-start;gap:14px;padding:13px 18px;margin-bottom:10px;
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);border-radius:14px;}
+.ls-n{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:#fff;color:var(--indigo-dark);
+  font-size:13px;font-weight:900;display:flex;align-items:center;justify-content:center;margin-top:2px;}
+.ls-t{font-size:14.5px;line-height:1.7;color:var(--indigo-100);}
+.ls-t b{display:block;color:#fff;font-size:15.5px;}
+.final .cta-note.sub{font-size:13px;margin-top:8px;}
+.final .cta-note.sub a{color:#fff;text-decoration:underline;}
+@media(max-width:600px){
+  .btn-line{font-size:15.5px;padding:16px 22px;width:100%;}
+  .line-steps li{padding:12px 14px;}
+  .ls-t{font-size:13.5px;}
+}
+@media(max-width:420px){
+  nav .btn-sm{padding:9px 14px;font-size:13px;}
+  .logo small{display:none;}
+}
 
 /* 下向き誘導矢印（セクション間ブリッジ） */
 .flow-arrow{display:flex;justify-content:center;margin-top:34px;}
 .flow-arrow svg{animation:bounce 2s infinite;color:var(--indigo);}
 @keyframes bounce{0%,20%,50%,80%,100%{transform:translateY(0);}40%{transform:translateY(8px);}60%{transform:translateY(4px);}}
 @media(prefers-reduced-motion:reduce){.flow-arrow svg{animation:none;}}
+
+/* ══ スマホ表示の文字サイズ・余白調整 ══════════════════════ */
+@media(max-width:600px){
+  /* 日本語は文節で改行させる（対応ブラウザのみ／未対応でも従来どおり） */
+  h1,h2,h3,.lead,.hero-sub,.dark-note,.auto-head h3,.ba-t,.sec-lead,
+  summary,details p,.card p,.voice-card p{word-break:auto-phrase;}
+
+  section{padding:62px 0;}
+  .wrap,.wrap-narrow{padding:0 20px;}
+
+  h1{font-size:31px;line-height:1.38;letter-spacing:-.02em;margin-bottom:18px;}
+  h2{font-size:23px;line-height:1.45;}
+  .eyebrow{font-size:11.5px;letter-spacing:.14em;margin-bottom:10px;}
+  .lead{font-size:14.5px;line-height:1.85;margin-top:12px;}
+  .hero-sub{font-size:15px;line-height:1.85;margin-bottom:28px;}
+  .badge{font-size:12px;padding:7px 14px;line-height:1.5;}
+  .btn{font-size:15.5px;padding:15px 26px;}
+  .cta-note{font-size:12.5px;}
+
+  .card{padding:22px;}
+  .card h3{font-size:17px;}
+  .card p{font-size:14px;line-height:1.85;}
+  .step-tag{left:20px;font-size:11.5px;}
+  .dark-note{font-size:16px;padding:22px 20px;line-height:1.75;}
+  .auto-head h3{font-size:19px;line-height:1.5;}
+  .mb-12{margin-bottom:34px;}
+
+  .plan{padding:24px 22px;}
+  .price{font-size:34px;}
+  .plan ul li{font-size:13.5px;}
+  .btn-plan{font-size:14px;padding:14px;}
+
+  summary{font-size:14.5px;gap:14px;}
+  details p{font-size:13.5px;line-height:1.9;}
+  .sns-body{font-size:14px;}
+  .foot-inner{font-size:13px;}
+}
+@media(max-width:390px){
+  h1{font-size:28px;}
+  h2{font-size:21.5px;}
+  .price{font-size:31px;}
+}
+
+/* 比較表：スマホでは横スクロールをやめ、項目ごとのカードに積み替える */
+@media(max-width:600px){
+  .cmp-wrap{overflow:visible;margin-top:28px;}
+  table.cmp,table.cmp tbody,table.cmp tr,table.cmp th,table.cmp td{display:block;width:auto;}
+  table.cmp{min-width:0;border:none;background:transparent;box-shadow:none;border-radius:0;}
+  table.cmp thead{display:none;}
+  table.cmp tbody tr{background:#fff;border:1px solid var(--line);border-radius:16px;
+    box-shadow:0 6px 18px rgba(15,23,42,.05);margin-bottom:14px;overflow:hidden;}
+  table.cmp tbody th{width:auto;text-align:left;font-size:15px;padding:12px 16px;
+    background:var(--soft2);border-bottom:1px solid var(--line);}
+  table.cmp td{display:grid;grid-template-columns:74px 20px 1fr;align-items:start;gap:10px;
+    text-align:left;font-size:13.5px;line-height:1.7;padding:11px 16px;
+    border-bottom:1px solid var(--soft2);}
+  table.cmp tbody tr td:last-child{border-bottom:none;}
+  table.cmp td::before{content:attr(data-label);font-size:12px;font-weight:700;
+    color:var(--muted);line-height:1.7;}
+  table.cmp td.col-pp{background:var(--indigo-50);}
+  table.cmp td.col-pp::before{color:var(--indigo-dark);}
+  table.cmp .mk{margin:0;font-size:16px;line-height:1.5;text-align:center;}
+  .cmp-note{font-size:11.5px;text-align:left;}
+}
 </style>
 <!-- Meta Pixel Code -->
 <script>
@@ -350,13 +471,13 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
 <nav>
   <div class="nav-inner">
     <a class="logo" href="#top">
-      <span class="logo-mark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+      <span class="logo-mark"><svg width="32" height="32" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M17 33.5 L27.5 44 L47 21" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
       マカセル <small>by IMADOKI</small>
     </a>
     <div class="nav-links">
       <a href="#solution">使い方</a><a href="#proof">実例</a><a href="#pricing">料金</a><a href="#faq">FAQ</a>
     </div>
-    <a class="btn btn-primary btn-sm" href="#contact">無料で始める</a>
+    <a class="btn btn-primary btn-sm" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener">LINEで相談</a>
   </div>
 </nav>
 
@@ -366,9 +487,9 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
     <div class="badge"><span class="dot"></span>AIが運用しながら学習する、自動企画投稿システム</div>
     <div class="camp"><span class="camp-l">初期費用0円</span><span class="camp-r">10日間の無料トライアル実施中</span></div>
     <h1>SNS運用、あなたの仕事は<br>「<span class="hl">1日2分の承認</span>」だけ。</h1>
-    <p class="hero-sub">ネタ探しから投稿文・図解画像づくり、X / Threadsへの投稿、効果分析まで。面倒なことは、ぜんぶAIが自動で回します。</p>
+    <p class="hero-sub">ネタ探しから投稿文・図解画像づくり、<span style="white-space:nowrap">X / Threads</span>への投稿、効果分析まで。面倒なことは、ぜんぶAIが自動で回します。</p>
     <div class="cta-row">
-      <a class="btn btn-primary" href="#contact">10日間無料で試す →</a>
+      <a class="btn btn-primary" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener">LINEで10日間無料おためし →</a>
       <a class="btn btn-ghost" href="#proof">実例を見る</a>
     </div>
     <ul class="trust">
@@ -784,45 +905,45 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
         <tbody>
           <tr>
             <th>月額コスト</th>
-            <td><span class="mk so">△</span>人件費（月60時間分の工数）</td>
-            <td><span class="mk no">✕</span>月10〜30万円が相場</td>
-            <td class="col-pp"><span class="mk best">◎</span>月9,800円〜</td>
+            <td data-label="自分で運用"><span class="mk so">△</span>人件費（月60時間分の工数）</td>
+            <td data-label="SNS運用代行"><span class="mk no">✕</span>月10〜30万円が相場</td>
+            <td class="col-pp" data-label="マカセル"><span class="mk best">◎</span>月9,800円〜</td>
           </tr>
           <tr>
             <th>投稿文の作成</th>
-            <td><span class="mk no">✕</span>自分で書く</td>
-            <td><span class="mk ok">○</span>代行が作成（原稿の往復確認あり）</td>
-            <td class="col-pp"><span class="mk best">◎</span>AIが毎朝5案を自動生成</td>
+            <td data-label="自分で運用"><span class="mk no">✕</span>自分で書く</td>
+            <td data-label="SNS運用代行"><span class="mk ok">○</span>代行が作成（原稿の往復確認あり）</td>
+            <td class="col-pp" data-label="マカセル"><span class="mk best">◎</span>AIが毎朝5案を自動生成</td>
           </tr>
           <tr>
             <th>図解画像</th>
-            <td><span class="mk no">✕</span>自作するか外注</td>
-            <td><span class="mk so">△</span>オプション扱い（追加費用）が多い</td>
-            <td class="col-pp"><span class="mk best">◎</span>標準機能で毎日自動生成</td>
+            <td data-label="自分で運用"><span class="mk no">✕</span>自作するか外注</td>
+            <td data-label="SNS運用代行"><span class="mk so">△</span>オプション扱い（追加費用）が多い</td>
+            <td class="col-pp" data-label="マカセル"><span class="mk best">◎</span>標準機能で毎日自動生成</td>
           </tr>
           <tr>
             <th>投稿頻度</th>
-            <td><span class="mk so">△</span>忙しくなると止まりがち</td>
-            <td><span class="mk ok">○</span>週2〜3回のプランが多い</td>
-            <td class="col-pp"><span class="mk best">◎</span>毎日（承認した分だけ）</td>
+            <td data-label="自分で運用"><span class="mk so">△</span>忙しくなると止まりがち</td>
+            <td data-label="SNS運用代行"><span class="mk ok">○</span>週2〜3回のプランが多い</td>
+            <td class="col-pp" data-label="マカセル"><span class="mk best">◎</span>毎日（承認した分だけ）</td>
           </tr>
           <tr>
             <th>効果分析と改善</th>
-            <td><span class="mk no">✕</span>手が回らない</td>
-            <td><span class="mk so">△</span>月次レポート・改善は担当者次第</td>
-            <td class="col-pp"><span class="mk best">◎</span>毎日自動計測＋週次・月次レポート自動配信＋AIが伸びた型を学習</td>
+            <td data-label="自分で運用"><span class="mk no">✕</span>手が回らない</td>
+            <td data-label="SNS運用代行"><span class="mk so">△</span>月次レポート・改善は担当者次第</td>
+            <td class="col-pp" data-label="マカセル"><span class="mk best">◎</span>毎日自動計測＋週次・月次レポート自動配信＋AIが伸びた型を学習</td>
           </tr>
           <tr>
             <th>あなたの作業</th>
-            <td><span class="mk no">✕</span>すべて（1投稿 約60分）</td>
-            <td><span class="mk so">△</span>定例MTG・原稿確認のやりとり</td>
-            <td class="col-pp"><span class="mk best">◎</span>1日2分の承認だけ</td>
+            <td data-label="自分で運用"><span class="mk no">✕</span>すべて（1投稿 約60分）</td>
+            <td data-label="SNS運用代行"><span class="mk so">△</span>定例MTG・原稿確認のやりとり</td>
+            <td class="col-pp" data-label="マカセル"><span class="mk best">◎</span>1日2分の承認だけ</td>
           </tr>
           <tr>
             <th>開始までの期間</th>
-            <td><span class="mk ok">○</span>すぐ（続けば…）</td>
-            <td><span class="mk so">△</span>契約・打ち合わせで数週間〜1ヶ月</td>
-            <td class="col-pp"><span class="mk best">◎</span>最短翌日スタート</td>
+            <td data-label="自分で運用"><span class="mk ok">○</span>すぐ（続けば…）</td>
+            <td data-label="SNS運用代行"><span class="mk so">△</span>契約・打ち合わせで数週間〜1ヶ月</td>
+            <td class="col-pp" data-label="マカセル"><span class="mk best">◎</span>最短翌日スタート</td>
           </tr>
         </tbody>
       </table>
@@ -851,7 +972,7 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
           <li>Notion承認フロー・LINE通知</li>
           <li class="no">図解画像・Threads・効果測定</li>
         </ul>
-        <a class="btn-plan gray" href="#contact">無料で試す</a>
+        <a class="btn-plan gray" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener">LINEで無料おためし</a>
       </div>
       <div class="plan hot">
         <span class="hot-tag">いちばん選ばれています</span>
@@ -867,7 +988,7 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
           <li>ブランドカラー・会社名入り画像</li>
           <li>メールサポート</li>
         </ul>
-        <a class="btn-plan indigo" href="#contact">無料で試す →</a>
+        <a class="btn-plan indigo" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener">LINEで無料おためし →</a>
       </div>
       <div class="plan pro">
         <p class="tier" style="color:var(--amber);">プロ</p>
@@ -881,7 +1002,7 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
           <li>ロゴ入り画像・カスタムRSS無制限</li>
           <li>専任サポート（Slack / Zoom）</li>
         </ul>
-        <a class="btn-plan amber" href="#contact">まず相談する</a>
+        <a class="btn-plan amber" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener">LINEで相談する</a>
       </div>
     </div>
     <div class="auto-opt">
@@ -945,52 +1066,21 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
   </div>
 </section>
 
-<!-- 最終CTA（お問い合わせフォーム） -->
+<!-- 最終CTA（公式LINE導線） -->
 <section class="final" id="contact">
   <div class="wrap-narrow">
     <h2>まずは10日間、<br>AIに任せてみてください。</h2>
-    <p class="lead">トライアル期間中の費用はかかりません。合わなければそのまま終了でOK。<br>下のフォームから、1分でお申し込みいただけます。</p>
+    <p class="lead">お申し込み・ご相談は<b>公式LINE</b>にまとめました。<br>友だち追加してメッセージを送るだけ、1分で完了します。</p>
 
-    <form class="contact-form" id="contactForm" action="https://formsubmit.co/saito.kato@imadoki.co.jp" method="POST">
-      <input type="hidden" name="_subject" id="cf-subject" value="【マカセル】LPからのお問い合わせ">
-      <input type="hidden" name="_replyto" id="cf-replyto" value="">
-      <input type="hidden" name="_captcha" value="false">
-      <input type="hidden" name="_template" value="table">
-      <input type="hidden" name="_next" value="https://social-post-pilot.com/thanks.html">
-      <input type="hidden" name="_autoresponse" value="お問い合わせありがとうございます。送信が正常に完了いたしました。内容を確認の上、2営業日以内に担当者よりメールまたはお電話にてご連絡いたします。今しばらくお待ちいただけますようお願い申し上げます。（本メールは自動返信です）株式会社IMADOKI / マカセル">
-      <input type="text" name="_honey" style="display:none">
-      <div class="cf-row">
-        <label for="cf-company">会社名・屋号</label>
-        <input type="text" id="cf-company" name="会社名" required placeholder="例: 株式会社〇〇">
-      </div>
-      <div class="cf-row">
-        <label for="cf-name">お名前</label>
-        <input type="text" id="cf-name" name="お名前" required placeholder="例: 山田 太郎">
-      </div>
-      <div class="cf-row">
-        <label for="cf-email">メールアドレス</label>
-        <input type="email" id="cf-email" name="メールアドレス" required placeholder="例: yamada@example.com">
-      </div>
-      <div class="cf-row">
-        <label for="cf-tel">電話番号</label>
-        <input type="tel" id="cf-tel" name="電話番号" inputmode="tel" autocomplete="tel" required placeholder="例: 090-1234-5678">
-      </div>
-      <div class="cf-row">
-        <label for="cf-plan">ご興味のある内容</label>
-        <select id="cf-plan" name="ご興味のある内容">
-          <option>10日間無料トライアルを試したい</option>
-          <option>スタンダードプランについて聞きたい</option>
-          <option>プロプラン（複数ブランド運用）を相談したい</option>
-          <option>まずは話を聞いてみたい</option>
-        </select>
-      </div>
-      <div class="cf-row">
-        <label for="cf-message">ご質問・ご要望 <small>任意</small></label>
-        <textarea id="cf-message" name="お問い合わせ内容" placeholder="業種やSNS運用の現状など、お気軽にお書きください"></textarea>
-      </div>
-      <button type="submit" class="btn btn-primary cf-submit">送信する →</button>
-      <p class="cf-note">通常1営業日以内に、メールでご返信いたします。</p>
-    </form>
+    <ol class="line-steps">
+      <li><span class="ls-n">1</span><span class="ls-t"><b>友だち追加</b>下のボタンから、5秒で完了します。</span></li>
+      <li><span class="ls-n">2</span><span class="ls-t"><b>「おためし希望」と送信</b>業種とSNSアカウントを教えてください。</span></li>
+      <li><span class="ls-n">3</span><span class="ls-t"><b>最短翌日スタート</b>初期設定はこちらで行い、投稿案をお届けします。</span></li>
+    </ol>
+
+    <a class="btn btn-line" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener">LINEで10日間おためしを申し込む</a>
+    <p class="cta-note">初期費用0円／クレジットカード登録不要／合わなければそのまま終了でOK。</p>
+    <p class="cta-note sub">メールがよろしい方は <a href="mailto:info@imadoki.co.jp">info@imadoki.co.jp</a> までお気軽にどうぞ。</p>
   </div>
 </section>
 
@@ -998,7 +1088,7 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
 <footer>
   <div class="foot-inner">
     <span class="logo">
-      <span class="logo-mark"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+      <span class="logo-mark"><svg width="24" height="24" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M17 33.5 L27.5 44 L47 21" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
       マカセル by IMADOKI
     </span>
     <p>© 2026 株式会社IMADOKI. All rights reserved.</p>
@@ -1010,54 +1100,46 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
 </footer>
 
 <script>
-// ── お問い合わせフォーム: AJAX送信 + 確実なサンクスページ遷移 ──
+// ── 料金の数字を、画面に入ったタイミングで一度だけカウントアップ ──
 (function(){
-  var form = document.getElementById('contactForm');
-  if (!form) return;
-  form.addEventListener('submit', function(e){
-    e.preventDefault();
-    var btn = form.querySelector('.cf-submit');
-    var original = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = '送信中...';
-
-    // 件名に会社名・お名前を入れて一目で分かるようにする
-    var company = (form.querySelector('#cf-company') || {}).value || '';
-    var name    = (form.querySelector('#cf-name') || {}).value || '';
-    var email   = (form.querySelector('#cf-email') || {}).value || '';
-    var subj = form.querySelector('#cf-subject');
-    if (subj) subj.value = '【マカセル お問い合わせ】' + company + '（' + name + '様）';
-    // 返信先を問い合わせ者のメールに設定（メールソフトで「返信」を押すと相手に届く）
-    var rep = form.querySelector('#cf-replyto');
-    if (rep) rep.value = email;
-
-    fetch('https://formsubmit.co/ajax/saito.kato@imadoki.co.jp', {
-      method: 'POST',
-      headers: { 'Accept': 'application/json' },
-      body: new FormData(form)
-    }).then(function(res){
-      if (res.ok) {
-        window.location.href = 'thanks.html';
-      } else {
-        // AJAXが拒否された場合は通常送信にフォールバック
-        // （ネイティブsubmitはこのイベントを再発火しない）
-        HTMLFormElement.prototype.submit.call(form);
-      }
-    }).catch(function(){
-      // ネットワークエラー時も通常送信にフォールバック
-      HTMLFormElement.prototype.submit.call(form);
-    }).finally(function(){
-      btn.disabled = false;
-      btn.textContent = original;
-    });
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var prices = Array.prototype.filter.call(document.querySelectorAll('.price'), function(el){
+    return el.firstChild && el.firstChild.nodeType === 3 && /[0-9]/.test(el.firstChild.nodeValue);
   });
-})();
+  if (!prices.length || !('IntersectionObserver' in window)) return;
 
+  function run(el){
+    var node = el.firstChild;
+    var raw = node.nodeValue;                       // 例: "¥19,800"
+    var target = parseInt(raw.replace(/[^0-9]/g, ''), 10);
+    var prefix = raw.slice(0, raw.search(/[0-9]/));
+    var start = null, dur = 900;
+    function step(ts){
+      if (start === null) start = ts;
+      var t = Math.min((ts - start) / dur, 1);
+      var eased = 1 - Math.pow(1 - t, 3);           // ease-out
+      node.nodeValue = prefix + Math.round(target * eased).toLocaleString('ja-JP');
+      if (t < 1) requestAnimationFrame(step);
+      else node.nodeValue = raw;                    // 最後は元の表記に戻す
+    }
+    requestAnimationFrame(step);
+  }
+
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (e.isIntersecting) { run(e.target); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.6 });
+  prices.forEach(function(el){ io.observe(el); });
+})();
+</script>
+
+<script>
 (function(){
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   var targets = document.querySelectorAll(
     '.card,.ind-card,.voice-card,.plan,.shot,.ba,details,.notion-mock,' +
-    '.dark-note,.gallery-note,.sns-grid > div,.hero-visual'
+    '.dark-note,.gallery-note,.sns-grid > div'
   );
   targets.forEach(function(el){ el.classList.add('reveal'); });
   // 兄弟要素は少しずつ遅らせて順番に出す（視線の流れをつくる）

@@ -277,6 +277,53 @@ footer{border-top:1px solid var(--line);padding:38px 0;font-size:13.5px;color:va
 .reveal.visible{opacity:1;transform:none;}
 @media(prefers-reduced-motion:reduce){.reveal{transition:none;opacity:1;transform:none;}}
 
+/* ── 読み込み時のオープニング（ファーストビューを順に立ち上げる）── */
+@keyframes heroIn{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:none;}}
+.hero .badge,.hero .camp,.hero h1,.hero .hero-sub,.hero .cta-row,
+.hero .trust,.hero .cta-note,.hero .hero-visual{
+  animation:heroIn .75s cubic-bezier(.2,.7,.3,1) both;}
+.hero .badge{animation-delay:.06s;}
+.hero .camp{animation-delay:.14s;}
+.hero h1{animation-delay:.22s;}
+.hero .hero-sub{animation-delay:.34s;}
+.hero .cta-row{animation-delay:.44s;}
+.hero .trust{animation-delay:.52s;}
+.hero .cta-note{animation-delay:.58s;}
+.hero .hero-visual{animation-delay:.64s;}
+
+/* ロゴのチェックマークが描かれる（初回のみ） */
+@keyframes markPop{from{transform:scale(.7);opacity:0;}to{transform:scale(1);opacity:1;}}
+@keyframes drawCheck{from{stroke-dashoffset:46;}to{stroke-dashoffset:0;}}
+nav .logo-mark{animation:markPop .45s cubic-bezier(.2,1.4,.5,1) both;}
+nav .logo-mark svg path{stroke-dasharray:46;animation:drawCheck .7s .3s cubic-bezier(.4,0,.2,1) both;}
+
+/* ホバー時の持ち上がり（マウス環境のみ） */
+@media(hover:hover){
+  .card,.ind-card,.voice-card,.plan{transition:transform .22s ease,box-shadow .22s ease;}
+  .card:hover,.ind-card:hover,.voice-card:hover{transform:translateY(-3px);
+    box-shadow:0 14px 32px rgba(15,23,42,.09);}
+  .plan:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(15,23,42,.10);}
+  .btn-primary:hover{box-shadow:0 12px 26px rgba(245,130,31,.36);}
+  .nav-links a{position:relative;}
+  .nav-links a::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:2px;
+    background:var(--indigo);border-radius:2px;transform:scaleX(0);transform-origin:left;
+    transition:transform .22s ease;}
+  .nav-links a:hover::after{transform:scaleX(1);}
+}
+
+/* 最終CTAのボタンをゆっくり呼吸させる */
+@keyframes ctaBreath{
+  0%,100%{box-shadow:0 12px 30px rgba(0,0,0,.16),0 0 0 0 rgba(255,255,255,.35);}
+  55%{box-shadow:0 14px 34px rgba(0,0,0,.20),0 0 0 10px rgba(255,255,255,0);}}
+.btn-line{animation:ctaBreath 3.4s ease-in-out 1.2s infinite;}
+
+@media(prefers-reduced-motion:reduce){
+  .hero .badge,.hero .camp,.hero h1,.hero .hero-sub,.hero .cta-row,
+  .hero .trust,.hero .cta-note,.hero .hero-visual,
+  nav .logo-mark,nav .logo-mark svg path,.btn-line{animation:none;}
+  nav .logo-mark svg path{stroke-dasharray:none;}
+}
+
 /* ステップ間の矢印（1→2→3） */
 .steps-flow{gap:30px;}
 .steps-flow .step:not(:last-child)::after{
@@ -1053,11 +1100,46 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
 </footer>
 
 <script>
+// ── 料金の数字を、画面に入ったタイミングで一度だけカウントアップ ──
+(function(){
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var prices = Array.prototype.filter.call(document.querySelectorAll('.price'), function(el){
+    return el.firstChild && el.firstChild.nodeType === 3 && /[0-9]/.test(el.firstChild.nodeValue);
+  });
+  if (!prices.length || !('IntersectionObserver' in window)) return;
+
+  function run(el){
+    var node = el.firstChild;
+    var raw = node.nodeValue;                       // 例: "¥19,800"
+    var target = parseInt(raw.replace(/[^0-9]/g, ''), 10);
+    var prefix = raw.slice(0, raw.search(/[0-9]/));
+    var start = null, dur = 900;
+    function step(ts){
+      if (start === null) start = ts;
+      var t = Math.min((ts - start) / dur, 1);
+      var eased = 1 - Math.pow(1 - t, 3);           // ease-out
+      node.nodeValue = prefix + Math.round(target * eased).toLocaleString('ja-JP');
+      if (t < 1) requestAnimationFrame(step);
+      else node.nodeValue = raw;                    // 最後は元の表記に戻す
+    }
+    requestAnimationFrame(step);
+  }
+
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if (e.isIntersecting) { run(e.target); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.6 });
+  prices.forEach(function(el){ io.observe(el); });
+})();
+</script>
+
+<script>
 (function(){
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   var targets = document.querySelectorAll(
     '.card,.ind-card,.voice-card,.plan,.shot,.ba,details,.notion-mock,' +
-    '.dark-note,.gallery-note,.sns-grid > div,.hero-visual'
+    '.dark-note,.gallery-note,.sns-grid > div'
   );
   targets.forEach(function(el){ el.classList.add('reveal'); });
   // 兄弟要素は少しずつ遅らせて順番に出す（視線の流れをつくる）

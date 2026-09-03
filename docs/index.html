@@ -335,6 +335,70 @@ table.cmp thead .col-pp{background:var(--indigo);color:#fff;font-size:15px;}
 .flow-arrow svg{animation:bounce 2s infinite;color:var(--indigo);}
 @keyframes bounce{0%,20%,50%,80%,100%{transform:translateY(0);}40%{transform:translateY(8px);}60%{transform:translateY(4px);}}
 @media(prefers-reduced-motion:reduce){.flow-arrow svg{animation:none;}}
+
+/* ══ スマホ表示の文字サイズ・余白調整 ══════════════════════ */
+@media(max-width:600px){
+  /* 日本語は文節で改行させる（対応ブラウザのみ／未対応でも従来どおり） */
+  h1,h2,h3,.lead,.hero-sub,.dark-note,.auto-head h3,.ba-t,.sec-lead,
+  summary,details p,.card p,.voice-card p{word-break:auto-phrase;}
+
+  section{padding:62px 0;}
+  .wrap,.wrap-narrow{padding:0 20px;}
+
+  h1{font-size:31px;line-height:1.38;letter-spacing:-.02em;margin-bottom:18px;}
+  h2{font-size:23px;line-height:1.45;}
+  .eyebrow{font-size:11.5px;letter-spacing:.14em;margin-bottom:10px;}
+  .lead{font-size:14.5px;line-height:1.85;margin-top:12px;}
+  .hero-sub{font-size:15px;line-height:1.85;margin-bottom:28px;}
+  .badge{font-size:12px;padding:7px 14px;line-height:1.5;}
+  .btn{font-size:15.5px;padding:15px 26px;}
+  .cta-note{font-size:12.5px;}
+
+  .card{padding:22px;}
+  .card h3{font-size:17px;}
+  .card p{font-size:14px;line-height:1.85;}
+  .step-tag{left:20px;font-size:11.5px;}
+  .dark-note{font-size:16px;padding:22px 20px;line-height:1.75;}
+  .auto-head h3{font-size:19px;line-height:1.5;}
+  .mb-12{margin-bottom:34px;}
+
+  .plan{padding:24px 22px;}
+  .price{font-size:34px;}
+  .plan ul li{font-size:13.5px;}
+  .btn-plan{font-size:14px;padding:14px;}
+
+  summary{font-size:14.5px;gap:14px;}
+  details p{font-size:13.5px;line-height:1.9;}
+  .sns-body{font-size:14px;}
+  .foot-inner{font-size:13px;}
+}
+@media(max-width:390px){
+  h1{font-size:28px;}
+  h2{font-size:21.5px;}
+  .price{font-size:31px;}
+}
+
+/* 比較表：スマホでは横スクロールをやめ、項目ごとのカードに積み替える */
+@media(max-width:600px){
+  .cmp-wrap{overflow:visible;margin-top:28px;}
+  table.cmp,table.cmp tbody,table.cmp tr,table.cmp th,table.cmp td{display:block;width:auto;}
+  table.cmp{min-width:0;border:none;background:transparent;box-shadow:none;border-radius:0;}
+  table.cmp thead{display:none;}
+  table.cmp tbody tr{background:#fff;border:1px solid var(--line);border-radius:16px;
+    box-shadow:0 6px 18px rgba(15,23,42,.05);margin-bottom:14px;overflow:hidden;}
+  table.cmp tbody th{width:auto;text-align:left;font-size:15px;padding:12px 16px;
+    background:var(--soft2);border-bottom:1px solid var(--line);}
+  table.cmp td{display:grid;grid-template-columns:74px 20px 1fr;align-items:start;gap:10px;
+    text-align:left;font-size:13.5px;line-height:1.7;padding:11px 16px;
+    border-bottom:1px solid var(--soft2);}
+  table.cmp tbody tr td:last-child{border-bottom:none;}
+  table.cmp td::before{content:attr(data-label);font-size:12px;font-weight:700;
+    color:var(--muted);line-height:1.7;}
+  table.cmp td.col-pp{background:var(--indigo-50);}
+  table.cmp td.col-pp::before{color:var(--indigo-dark);}
+  table.cmp .mk{margin:0;font-size:16px;line-height:1.5;text-align:center;}
+  .cmp-note{font-size:11.5px;text-align:left;}
+}
 </style>
 <!-- Meta Pixel Code -->
 <script>
@@ -376,7 +440,7 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
     <div class="badge"><span class="dot"></span>AIが運用しながら学習する、自動企画投稿システム</div>
     <div class="camp"><span class="camp-l">初期費用0円</span><span class="camp-r">10日間の無料トライアル実施中</span></div>
     <h1>SNS運用、あなたの仕事は<br>「<span class="hl">1日2分の承認</span>」だけ。</h1>
-    <p class="hero-sub">ネタ探しから投稿文・図解画像づくり、X / Threadsへの投稿、効果分析まで。面倒なことは、ぜんぶAIが自動で回します。</p>
+    <p class="hero-sub">ネタ探しから投稿文・図解画像づくり、<span style="white-space:nowrap">X / Threads</span>への投稿、効果分析まで。面倒なことは、ぜんぶAIが自動で回します。</p>
     <div class="cta-row">
       <a class="btn btn-primary" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener">LINEで10日間無料おためし →</a>
       <a class="btn btn-ghost" href="#proof">実例を見る</a>
@@ -794,45 +858,45 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
         <tbody>
           <tr>
             <th>月額コスト</th>
-            <td><span class="mk so">△</span>人件費（月60時間分の工数）</td>
-            <td><span class="mk no">✕</span>月10〜30万円が相場</td>
-            <td class="col-pp"><span class="mk best">◎</span>月9,800円〜</td>
+            <td data-label="自分で運用"><span class="mk so">△</span>人件費（月60時間分の工数）</td>
+            <td data-label="SNS運用代行"><span class="mk no">✕</span>月10〜30万円が相場</td>
+            <td class="col-pp" data-label="マカセル"><span class="mk best">◎</span>月9,800円〜</td>
           </tr>
           <tr>
             <th>投稿文の作成</th>
-            <td><span class="mk no">✕</span>自分で書く</td>
-            <td><span class="mk ok">○</span>代行が作成（原稿の往復確認あり）</td>
-            <td class="col-pp"><span class="mk best">◎</span>AIが毎朝5案を自動生成</td>
+            <td data-label="自分で運用"><span class="mk no">✕</span>自分で書く</td>
+            <td data-label="SNS運用代行"><span class="mk ok">○</span>代行が作成（原稿の往復確認あり）</td>
+            <td class="col-pp" data-label="マカセル"><span class="mk best">◎</span>AIが毎朝5案を自動生成</td>
           </tr>
           <tr>
             <th>図解画像</th>
-            <td><span class="mk no">✕</span>自作するか外注</td>
-            <td><span class="mk so">△</span>オプション扱い（追加費用）が多い</td>
-            <td class="col-pp"><span class="mk best">◎</span>標準機能で毎日自動生成</td>
+            <td data-label="自分で運用"><span class="mk no">✕</span>自作するか外注</td>
+            <td data-label="SNS運用代行"><span class="mk so">△</span>オプション扱い（追加費用）が多い</td>
+            <td class="col-pp" data-label="マカセル"><span class="mk best">◎</span>標準機能で毎日自動生成</td>
           </tr>
           <tr>
             <th>投稿頻度</th>
-            <td><span class="mk so">△</span>忙しくなると止まりがち</td>
-            <td><span class="mk ok">○</span>週2〜3回のプランが多い</td>
-            <td class="col-pp"><span class="mk best">◎</span>毎日（承認した分だけ）</td>
+            <td data-label="自分で運用"><span class="mk so">△</span>忙しくなると止まりがち</td>
+            <td data-label="SNS運用代行"><span class="mk ok">○</span>週2〜3回のプランが多い</td>
+            <td class="col-pp" data-label="マカセル"><span class="mk best">◎</span>毎日（承認した分だけ）</td>
           </tr>
           <tr>
             <th>効果分析と改善</th>
-            <td><span class="mk no">✕</span>手が回らない</td>
-            <td><span class="mk so">△</span>月次レポート・改善は担当者次第</td>
-            <td class="col-pp"><span class="mk best">◎</span>毎日自動計測＋週次・月次レポート自動配信＋AIが伸びた型を学習</td>
+            <td data-label="自分で運用"><span class="mk no">✕</span>手が回らない</td>
+            <td data-label="SNS運用代行"><span class="mk so">△</span>月次レポート・改善は担当者次第</td>
+            <td class="col-pp" data-label="マカセル"><span class="mk best">◎</span>毎日自動計測＋週次・月次レポート自動配信＋AIが伸びた型を学習</td>
           </tr>
           <tr>
             <th>あなたの作業</th>
-            <td><span class="mk no">✕</span>すべて（1投稿 約60分）</td>
-            <td><span class="mk so">△</span>定例MTG・原稿確認のやりとり</td>
-            <td class="col-pp"><span class="mk best">◎</span>1日2分の承認だけ</td>
+            <td data-label="自分で運用"><span class="mk no">✕</span>すべて（1投稿 約60分）</td>
+            <td data-label="SNS運用代行"><span class="mk so">△</span>定例MTG・原稿確認のやりとり</td>
+            <td class="col-pp" data-label="マカセル"><span class="mk best">◎</span>1日2分の承認だけ</td>
           </tr>
           <tr>
             <th>開始までの期間</th>
-            <td><span class="mk ok">○</span>すぐ（続けば…）</td>
-            <td><span class="mk so">△</span>契約・打ち合わせで数週間〜1ヶ月</td>
-            <td class="col-pp"><span class="mk best">◎</span>最短翌日スタート</td>
+            <td data-label="自分で運用"><span class="mk ok">○</span>すぐ（続けば…）</td>
+            <td data-label="SNS運用代行"><span class="mk so">△</span>契約・打ち合わせで数週間〜1ヶ月</td>
+            <td class="col-pp" data-label="マカセル"><span class="mk best">◎</span>最短翌日スタート</td>
           </tr>
         </tbody>
       </table>

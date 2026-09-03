@@ -32,9 +32,13 @@ BAD = "#d92d20"
 BAD_BG = "#fef3f2"
 BAD_LINE = "#fbd2cd"
 
+# ロゴマーク（吹き出し＋チェック）。tools/logo/make_logos.py の B案と同じパス。
 LOGO_SVG = (
-    '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">'
-    '<polygon points="13.5 4 6 14 11.2 14 10.5 20 18 10 12.8 10 13.5 4" fill="white"/>'
+    '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">'
+    '<path d="M16 11 H48 A9 9 0 0 1 57 20 V38 A9 9 0 0 1 48 47 H32 '
+    'L21 55.5 V47 H16 A9 9 0 0 1 7 38 V20 A9 9 0 0 1 16 11 Z" fill="#fff"/>'
+    '<path d="M20 28.5 L28 36.5 L44 20.5" fill="none" stroke="' + GREEN + '" '
+    'stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>'
     "</svg>"
 )
 
@@ -56,7 +60,7 @@ body{{
   width:56px;height:56px;border-radius:16px;background:{GREEN};
   display:flex;align-items:center;justify-content:center;
 }}
-.brand .mark svg{{width:34px;height:34px;}}
+.brand .mark svg{{width:100%;height:100%;}}
 .brand .name{{font-size:38px;font-weight:900;letter-spacing:.01em;}}
 h1{{
   margin-top:34px;text-align:center;font-size:56px;font-weight:900;

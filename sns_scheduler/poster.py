@@ -5,6 +5,7 @@ Notionデータベースから「未投稿」レコードを取得し、
 """
 
 import os
+import re
 import sys
 import io
 import time
@@ -70,6 +71,7 @@ PROP_STATUS       = _cfg("notion", "properties", "status",       default="ステ
 PROP_IMAGE_URL    = _cfg("notion", "properties", "image_url",    default="画像URL")
 PROP_IMAGE_URLS   = _cfg("notion", "properties", "image_urls",   default="画像URL一覧")
 PROP_TWEET_ID     = _cfg("notion", "properties", "tweet_id",     default="X投稿ID")
+PROP_REPLY_TO     = _cfg("notion", "properties", "reply_to",     default="返信先URL")
 PROP_THREADS_ID   = _cfg("notion", "properties", "threads_post_id", default="Threads投稿ID")
 
 STATUS_PENDING = "未投稿"
@@ -127,6 +129,28 @@ def extract_reply_text(page: dict) -> str:
     if prop.get("type") == "rich_text":
         return "".join(p["plain_text"] for p in prop.get("rich_text", [])).strip()
     return ""
+
+
+def split_reply_segments(text: str) -> list[str]:
+    """リプライ文面を連投スレッドの各投稿に分割する。
+    「---」だけの行が区切り。区切りがなければ従来どおり1件のリプライとして扱う。"""
+    if not text:
+        return []
+    parts = [p.strip() for p in re.split(r"^\s*-{3,}\s*$", text, flags=re.MULTILINE)]
+    return [p for p in parts if p]
+
+
+def extract_reply_to_id(page: dict) -> str:
+    """返信先URL（他アカウントの投稿へのリプ周り用）からツイートIDを取り出す。
+    未設定なら空文字列＝通常の新規投稿として扱う。"""
+    prop = page["properties"].get(PROP_REPLY_TO, {})
+    url  = ""
+    if prop.get("type") == "url":
+        url = prop.get("url") or ""
+    elif prop.get("type") == "rich_text":
+        url = "".join(p["plain_text"] for p in prop.get("rich_text", []))
+    m = re.search(r"/status/(\d+)", url or "")
+    return m.group(1) if m else ""
 
 
 def extract_platform(page: dict) -> str:
@@ -288,8 +312,8 @@ def post_to_x(text: str, image_urls: list[str] | None = None) -> str:
     return ""
 
 
-def post_x_reply(tweet_id: str, text: str) -> bool:
-    """投稿済みツイートに自分でリプライをぶら下げる（スレッド化）"""
+def post_x_reply(tweet_id: str, text: str) -> str:
+    """指定ツイートにリプライをぶら下げる。成功で新しいツイートIDを返す"""
     client = tweepy.Client(
         consumer_key=os.environ["X_API_KEY"],
         consumer_secret=os.environ["X_API_KEY_SECRET"],
@@ -297,7 +321,28 @@ def post_x_reply(tweet_id: str, text: str) -> bool:
         access_token_secret=os.environ["X_ACCESS_TOKEN_SECRET"],
     )
     response = client.create_tweet(text=text, in_reply_to_tweet_id=tweet_id)
-    return response.data is not None
+    return str(response.data["id"]) if response.data else ""
+
+
+def post_x_thread(tweet_id: str, segments: list[str]) -> int:
+    """連投スレッドを順にぶら下げる。直前の投稿に繋げていくことで1本の流れにする。
+    途中で失敗したらそこで打ち切り、成功した件数を返す（本文は投稿済みのため巻き戻さない）"""
+    parent = tweet_id
+    posted = 0
+    for i, seg in enumerate(segments, start=1):
+        try:
+            time.sleep(3)
+            new_id = post_x_reply(parent, _trim_for_x(seg))
+            if not new_id:
+                print(f"  X スレッド{i}: ✗ 投稿失敗（ここで打ち切り）")
+                break
+            parent  = new_id
+            posted += 1
+            print(f"  X スレッド{i}: ✓ 投稿成功")
+        except Exception as e:
+            print(f"  X スレッド{i}: ✗ エラー（ここで打ち切り）: {e}")
+            break
+    return posted
 
 
 # ── Telegraph アップロード ────────────────────────────────
@@ -431,14 +476,20 @@ def run():
         text         = _trim_for_x(extract_text(page))
         threads_text = _trim_for_threads(extract_threads_text(page)
                                          or extract_text(page))  # 未設定ならX文面を使用
-        reply_text   = _trim_for_x(extract_reply_text(page))
+        segments     = split_reply_segments(extract_reply_text(page))
+        reply_to_id  = extract_reply_to_id(page)
         platform     = extract_platform(page)
         sched_dt     = extract_datetime(page)
         img_urls     = extract_image_urls(page)
 
+        # 返信先URLがある＝他アカウントへのリプライ（リプ周り）。
+        # Threadsには出さず、X上で対象投稿への返信としてのみ配信する
+        if reply_to_id:
+            platform = PLATFORM_X
+
         label = text[:30] + ("..." if len(text) > 30 else "")
         print(f"\n  投稿文  : {label}")
-        print(f"  媒体    : {platform}")
+        print(f"  媒体    : {platform}" + ("（リプ周り）" if reply_to_id else ""))
         print(f"  予定日時: {sched_dt}")
         print(f"  画像    : {str(len(img_urls)) + '枚' if img_urls else '（なし）'}")
         if threads_text != text:
@@ -456,19 +507,18 @@ def run():
 
         try:
             if platform in (PLATFORM_X, PLATFORM_BOTH):
-                tweet_id = post_to_x(text, img_urls)
-                print(f"  X       : {'✓ 投稿成功 ID=' + tweet_id if tweet_id else '✗ 投稿失敗'}")
+                if reply_to_id:
+                    tweet_id = post_x_reply(reply_to_id, text)
+                    print(f"  X 返信  : {'✓ 投稿成功 ID=' + tweet_id if tweet_id else '✗ 投稿失敗'}")
+                else:
+                    tweet_id = post_to_x(text, img_urls)
+                    print(f"  X       : {'✓ 投稿成功 ID=' + tweet_id if tweet_id else '✗ 投稿失敗'}")
 
-                # セルフリプライ（失敗しても投稿自体は成功扱い）
-                if tweet_id and reply_text:
-                    try:
-                        time.sleep(3)
-                        if post_x_reply(tweet_id, reply_text):
-                            print("  X リプライ: ✓ 投稿成功")
-                        else:
-                            print("  X リプライ: ✗ 投稿失敗（本文は投稿済み）")
-                    except Exception as re_err:
-                        print(f"  X リプライ: ✗ エラー（本文は投稿済み）: {re_err}")
+                # セルフリプライ／連投スレッド（失敗しても本文は成功扱い）
+                if tweet_id and segments:
+                    posted = post_x_thread(tweet_id, segments)
+                    if posted < len(segments):
+                        print(f"  ※ スレッド {posted}/{len(segments)} 件のみ投稿されました")
 
             if platform in (PLATFORM_THREADS, PLATFORM_BOTH):
                 threads_id = post_to_threads(threads_text, img_urls)

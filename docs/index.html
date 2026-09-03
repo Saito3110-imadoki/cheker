@@ -308,19 +308,27 @@ table.cmp thead .col-pp{background:var(--indigo);color:#fff;font-size:15px;}
 .mk.no{color:#cbd5e1;}
 .cmp-note{text-align:center;font-size:12px;color:var(--faint);margin-top:16px;}
 
-/* お問い合わせフォーム */
-.contact-form{background:#fff;border-radius:18px;padding:32px;max-width:560px;margin:36px auto 0;text-align:left;box-shadow:0 24px 60px rgba(0,0,0,.18);}
-.cf-row{margin-bottom:16px;}
-.cf-row label{display:block;font-size:13px;font-weight:700;color:var(--ink);margin-bottom:6px;}
-.cf-row label small{font-weight:500;color:var(--faint);margin-left:6px;}
-.cf-row input,.cf-row select,.cf-row textarea{
-  width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:12px 14px;
-  font-size:14.5px;font-family:inherit;color:var(--ink);background:#fff;}
-.cf-row input:focus,.cf-row select:focus,.cf-row textarea:focus{
-  outline:2px solid var(--indigo);outline-offset:0;border-color:var(--indigo);}
-.cf-row textarea{min-height:110px;resize:vertical;}
-.cf-submit{width:100%;border:none;cursor:pointer;font-family:inherit;}
-.cf-note{font-size:12.5px;color:var(--muted);text-align:center;margin-top:14px;}
+/* 最終CTA: 公式LINE導線 */
+.btn-line{background:#fff;color:var(--indigo-dark);margin-top:8px;box-shadow:0 12px 30px rgba(0,0,0,.16);font-size:18px;padding:18px 40px;}
+.btn-line:hover{background:var(--indigo-50);transform:translateY(-1px);}
+.line-steps{list-style:none;max-width:520px;margin:30px auto 26px;padding:0;text-align:left;}
+.line-steps li{display:flex;align-items:flex-start;gap:14px;padding:13px 18px;margin-bottom:10px;
+  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);border-radius:14px;}
+.ls-n{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:#fff;color:var(--indigo-dark);
+  font-size:13px;font-weight:900;display:flex;align-items:center;justify-content:center;margin-top:2px;}
+.ls-t{font-size:14.5px;line-height:1.7;color:var(--indigo-100);}
+.ls-t b{display:block;color:#fff;font-size:15.5px;}
+.final .cta-note.sub{font-size:13px;margin-top:8px;}
+.final .cta-note.sub a{color:#fff;text-decoration:underline;}
+@media(max-width:600px){
+  .btn-line{font-size:15.5px;padding:16px 22px;width:100%;}
+  .line-steps li{padding:12px 14px;}
+  .ls-t{font-size:13.5px;}
+}
+@media(max-width:420px){
+  nav .btn-sm{padding:9px 14px;font-size:13px;}
+  .logo small{display:none;}
+}
 
 /* 下向き誘導矢印（セクション間ブリッジ） */
 .flow-arrow{display:flex;justify-content:center;margin-top:34px;}
@@ -358,7 +366,7 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
     <div class="nav-links">
       <a href="#solution">使い方</a><a href="#proof">実例</a><a href="#pricing">料金</a><a href="#faq">FAQ</a>
     </div>
-    <a class="btn btn-primary btn-sm" href="#contact">無料で始める</a>
+    <a class="btn btn-primary btn-sm" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener">LINEで相談</a>
   </div>
 </nav>
 
@@ -370,7 +378,7 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
     <h1>SNS運用、あなたの仕事は<br>「<span class="hl">1日2分の承認</span>」だけ。</h1>
     <p class="hero-sub">ネタ探しから投稿文・図解画像づくり、X / Threadsへの投稿、効果分析まで。面倒なことは、ぜんぶAIが自動で回します。</p>
     <div class="cta-row">
-      <a class="btn btn-primary" href="#contact">10日間無料で試す →</a>
+      <a class="btn btn-primary" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener">LINEで10日間無料おためし →</a>
       <a class="btn btn-ghost" href="#proof">実例を見る</a>
     </div>
     <ul class="trust">
@@ -853,7 +861,7 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
           <li>Notion承認フロー・LINE通知</li>
           <li class="no">図解画像・Threads・効果測定</li>
         </ul>
-        <a class="btn-plan gray" href="#contact">無料で試す</a>
+        <a class="btn-plan gray" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener">LINEで無料おためし</a>
       </div>
       <div class="plan hot">
         <span class="hot-tag">いちばん選ばれています</span>
@@ -869,7 +877,7 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
           <li>ブランドカラー・会社名入り画像</li>
           <li>メールサポート</li>
         </ul>
-        <a class="btn-plan indigo" href="#contact">無料で試す →</a>
+        <a class="btn-plan indigo" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener">LINEで無料おためし →</a>
       </div>
       <div class="plan pro">
         <p class="tier" style="color:var(--amber);">プロ</p>
@@ -883,7 +891,7 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
           <li>ロゴ入り画像・カスタムRSS無制限</li>
           <li>専任サポート（Slack / Zoom）</li>
         </ul>
-        <a class="btn-plan amber" href="#contact">まず相談する</a>
+        <a class="btn-plan amber" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener">LINEで相談する</a>
       </div>
     </div>
     <div class="auto-opt">
@@ -947,52 +955,21 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
   </div>
 </section>
 
-<!-- 最終CTA（お問い合わせフォーム） -->
+<!-- 最終CTA（公式LINE導線） -->
 <section class="final" id="contact">
   <div class="wrap-narrow">
     <h2>まずは10日間、<br>AIに任せてみてください。</h2>
-    <p class="lead">トライアル期間中の費用はかかりません。合わなければそのまま終了でOK。<br>下のフォームから、1分でお申し込みいただけます。</p>
+    <p class="lead">お申し込み・ご相談は<b>公式LINE</b>にまとめました。<br>友だち追加してメッセージを送るだけ、1分で完了します。</p>
 
-    <form class="contact-form" id="contactForm" action="https://formsubmit.co/saito.kato@imadoki.co.jp" method="POST">
-      <input type="hidden" name="_subject" id="cf-subject" value="【マカセル】LPからのお問い合わせ">
-      <input type="hidden" name="_replyto" id="cf-replyto" value="">
-      <input type="hidden" name="_captcha" value="false">
-      <input type="hidden" name="_template" value="table">
-      <input type="hidden" name="_next" value="https://social-post-pilot.com/thanks.html">
-      <input type="hidden" name="_autoresponse" value="お問い合わせありがとうございます。送信が正常に完了いたしました。内容を確認の上、2営業日以内に担当者よりメールまたはお電話にてご連絡いたします。今しばらくお待ちいただけますようお願い申し上げます。（本メールは自動返信です）株式会社IMADOKI / マカセル">
-      <input type="text" name="_honey" style="display:none">
-      <div class="cf-row">
-        <label for="cf-company">会社名・屋号</label>
-        <input type="text" id="cf-company" name="会社名" required placeholder="例: 株式会社〇〇">
-      </div>
-      <div class="cf-row">
-        <label for="cf-name">お名前</label>
-        <input type="text" id="cf-name" name="お名前" required placeholder="例: 山田 太郎">
-      </div>
-      <div class="cf-row">
-        <label for="cf-email">メールアドレス</label>
-        <input type="email" id="cf-email" name="メールアドレス" required placeholder="例: yamada@example.com">
-      </div>
-      <div class="cf-row">
-        <label for="cf-tel">電話番号</label>
-        <input type="tel" id="cf-tel" name="電話番号" inputmode="tel" autocomplete="tel" required placeholder="例: 090-1234-5678">
-      </div>
-      <div class="cf-row">
-        <label for="cf-plan">ご興味のある内容</label>
-        <select id="cf-plan" name="ご興味のある内容">
-          <option>10日間無料トライアルを試したい</option>
-          <option>スタンダードプランについて聞きたい</option>
-          <option>プロプラン（複数ブランド運用）を相談したい</option>
-          <option>まずは話を聞いてみたい</option>
-        </select>
-      </div>
-      <div class="cf-row">
-        <label for="cf-message">ご質問・ご要望 <small>任意</small></label>
-        <textarea id="cf-message" name="お問い合わせ内容" placeholder="業種やSNS運用の現状など、お気軽にお書きください"></textarea>
-      </div>
-      <button type="submit" class="btn btn-primary cf-submit">送信する →</button>
-      <p class="cf-note">通常1営業日以内に、メールでご返信いたします。</p>
-    </form>
+    <ol class="line-steps">
+      <li><span class="ls-n">1</span><span class="ls-t"><b>友だち追加</b>下のボタンから、5秒で完了します。</span></li>
+      <li><span class="ls-n">2</span><span class="ls-t"><b>「おためし希望」と送信</b>業種とSNSアカウントを教えてください。</span></li>
+      <li><span class="ls-n">3</span><span class="ls-t"><b>最短翌日スタート</b>初期設定はこちらで行い、投稿案をお届けします。</span></li>
+    </ol>
+
+    <a class="btn btn-line" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener">LINEで10日間おためしを申し込む</a>
+    <p class="cta-note">初期費用0円／クレジットカード登録不要／合わなければそのまま終了でOK。</p>
+    <p class="cta-note sub">メールがよろしい方は <a href="mailto:info@imadoki.co.jp">info@imadoki.co.jp</a> までお気軽にどうぞ。</p>
   </div>
 </section>
 
@@ -1012,49 +989,6 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
 </footer>
 
 <script>
-// ── お問い合わせフォーム: AJAX送信 + 確実なサンクスページ遷移 ──
-(function(){
-  var form = document.getElementById('contactForm');
-  if (!form) return;
-  form.addEventListener('submit', function(e){
-    e.preventDefault();
-    var btn = form.querySelector('.cf-submit');
-    var original = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = '送信中...';
-
-    // 件名に会社名・お名前を入れて一目で分かるようにする
-    var company = (form.querySelector('#cf-company') || {}).value || '';
-    var name    = (form.querySelector('#cf-name') || {}).value || '';
-    var email   = (form.querySelector('#cf-email') || {}).value || '';
-    var subj = form.querySelector('#cf-subject');
-    if (subj) subj.value = '【マカセル お問い合わせ】' + company + '（' + name + '様）';
-    // 返信先を問い合わせ者のメールに設定（メールソフトで「返信」を押すと相手に届く）
-    var rep = form.querySelector('#cf-replyto');
-    if (rep) rep.value = email;
-
-    fetch('https://formsubmit.co/ajax/saito.kato@imadoki.co.jp', {
-      method: 'POST',
-      headers: { 'Accept': 'application/json' },
-      body: new FormData(form)
-    }).then(function(res){
-      if (res.ok) {
-        window.location.href = 'thanks.html';
-      } else {
-        // AJAXが拒否された場合は通常送信にフォールバック
-        // （ネイティブsubmitはこのイベントを再発火しない）
-        HTMLFormElement.prototype.submit.call(form);
-      }
-    }).catch(function(){
-      // ネットワークエラー時も通常送信にフォールバック
-      HTMLFormElement.prototype.submit.call(form);
-    }).finally(function(){
-      btn.disabled = false;
-      btn.textContent = original;
-    });
-  });
-})();
-
 (function(){
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   var targets = document.querySelectorAll(

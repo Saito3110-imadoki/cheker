@@ -70,8 +70,9 @@ PROP_THREADS_VIEWS = _cfg("notion", "properties", "threads_views", default="Thre
 PROP_POST_TYPE     = _cfg("notion", "properties", "post_type",     default="投稿タイプ")
 STATUS_DONE        = _cfg("notion", "status", "done", default="投稿済")
 COMPANY            = _cfg("company", "name", default="")
-PRIMARY            = _cfg("branding", "primary_color", default="#4f46e5")
-ACCENT             = _cfg("branding", "accent_color",  default="#ea580c")
+PRIMARY            = _cfg("branding", "primary_color", default="#00a37a")
+ACCENT             = _cfg("branding", "accent_color",  default="#e2740f")
+SERVICE            = _cfg("branding", "service_name",  default="マカセル")
 # 月間KPI目標（config.yamlの report.monthly_goal_impressions。0なら非表示）
 GOAL_IMP           = int(_cfg("report", "monthly_goal_impressions", default=0) or 0)
 
@@ -584,7 +585,7 @@ background:#eef0fd;border-radius:999px;padding:1px 8px;}}
   <div class="head">
     <div><div class="t1">SNS AUTO-PILOT REPORT</div><h1>📊 {title}</h1>
       <div class="period">{data["period_label"]}</div></div>
-    <div class="corp">{COMPANY}<small>Powered by PostPilot</small></div>
+    <div class="corp">{COMPANY}<small>Powered by {SERVICE}</small></div>
   </div>
 
   <h2>サマリー</h2>
@@ -611,7 +612,7 @@ background:#eef0fd;border-radius:999px;padding:1px 8px;}}
   <div class="head">
     <div><div class="t1">AUDIENCE & INSIGHTS</div><h1>オーディエンス と 分析</h1>
       <div class="period">{data["period_label"]}</div></div>
-    <div class="corp">{COMPANY}<small>Powered by PostPilot</small></div>
+    <div class="corp">{COMPANY}<small>Powered by {SERVICE}</small></div>
   </div>
 
   <h2>フォロワー属性</h2>

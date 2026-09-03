@@ -45,7 +45,8 @@ schedule:
     - "22:00"
 
 branding:
-  primary_color: "#4f46e5"   # indigo-600（白背景向けIMadokiカラー）
-  accent_color: "#d97706"    # amber-600（白背景でも読めるハイライト）
+  primary_color: "#00a37a"   # マカセルのブランドグリーン（LPと共通）
+  accent_color: "#e2740f"    # マカセルのCTAオレンジ（白背景でも読める濃さ）
+  service_name: "マカセル"
   logo_url: ""
   company_name: "株式会社IMADOKI"

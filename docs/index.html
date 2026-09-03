@@ -383,6 +383,32 @@ table.cmp thead .col-pp{background:var(--indigo);color:#fff;font-size:15px;}
 @keyframes bounce{0%,20%,50%,80%,100%{transform:translateY(0);}40%{transform:translateY(8px);}60%{transform:translateY(4px);}}
 @media(prefers-reduced-motion:reduce){.flow-arrow svg{animation:none;}}
 
+/* ── LINEボタン（LINEブランドカラー＋吹き出しアイコン）── */
+.line-ico{width:1.2em;height:1.2em;flex-shrink:0;}
+.btn-line-cta{background:#06c755;color:#fff;box-shadow:0 8px 20px rgba(6,199,85,.30);}
+.btn-line-cta:hover{background:#05b04b;transform:translateY(-1px);
+  box-shadow:0 12px 26px rgba(6,199,85,.38);}
+.btn-plan.line{background:#06c755;color:#fff;display:inline-flex;width:100%;
+  align-items:center;justify-content:center;gap:8px;}
+.btn-plan.line:hover{background:#05b04b;}
+.btn-plan.line .line-ico{width:17px;height:17px;}
+.btn-line .line-ico{color:#06c755;}
+
+/* スマホ用: 画面下に追従するLINEボタン */
+.line-float{display:none;}
+@media(max-width:767px){
+  .line-float{
+    display:flex;align-items:center;justify-content:center;gap:9px;
+    position:fixed;left:14px;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));
+    z-index:60;background:#06c755;color:#fff;font-weight:800;font-size:16px;
+    padding:15px 18px;border-radius:999px;box-shadow:0 10px 28px rgba(6,199,85,.42);
+    transition:opacity .25s ease,transform .25s ease;}
+  .line-float .line-ico{width:21px;height:21px;}
+  .line-float.is-hidden{opacity:0;transform:translateY(130%);pointer-events:none;}
+  footer{padding-bottom:96px;}
+}
+
+
 /* ══ スマホ表示の文字サイズ・余白調整 ══════════════════════ */
 @media(max-width:600px){
   /* 日本語は文節で改行させる（対応ブラウザのみ／未対応でも従来どおり） */
@@ -446,6 +472,26 @@ table.cmp thead .col-pp{background:var(--indigo);color:#fff;font-size:15px;}
   table.cmp .mk{margin:0;font-size:16px;line-height:1.5;text-align:center;}
   .cmp-note{font-size:11.5px;text-align:left;}
 }
+/* ── スマホでは横スワイプにして、縦の長さを抑える ── */
+.swipe-hint{display:none;}
+@media(max-width:860px){
+  .ind-grid{display:flex;grid-template-columns:none;gap:14px;align-items:stretch;
+    overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
+    margin:24px -20px 0;padding:4px 20px 16px;scrollbar-width:none;}
+  .ind-grid::-webkit-scrollbar{display:none;}
+  .ind-card{flex:0 0 84%;scroll-snap-align:center;}
+  .swipe-hint{display:flex;align-items:center;justify-content:center;gap:8px;
+    font-size:12.5px;font-weight:700;color:var(--muted);margin-top:2px;}
+  .swipe-hint::before,.swipe-hint::after{content:"";width:22px;height:1px;background:var(--line);}
+}
+@media(max-width:600px){
+  table.cmp tbody{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch;margin:0 -20px;padding:4px 20px 16px;scrollbar-width:none;}
+  table.cmp tbody::-webkit-scrollbar{display:none;}
+  table.cmp tbody tr{flex:0 0 84%;scroll-snap-align:center;margin-bottom:0;
+    display:flex;flex-direction:column;}
+  table.cmp tbody tr td:last-child{border-bottom:none;flex:1;}
+}
 </style>
 <!-- Meta Pixel Code -->
 <script>
@@ -477,7 +523,7 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
     <div class="nav-links">
       <a href="#solution">使い方</a><a href="#proof">実例</a><a href="#pricing">料金</a><a href="#faq">FAQ</a>
     </div>
-    <a class="btn btn-primary btn-sm" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener">LINEで相談</a>
+    <a class="btn btn-line-cta btn-sm" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener"><svg class="line-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3.2C6.8 3.2 2.6 6.6 2.6 10.8c0 3.8 3.3 6.9 7.8 7.5.3 0 .7.2.8.5.1.2.1.6 0 .9 l-.1.8c0 .2-.2.9.8.5 1-.4 5.4-3.2 7.4-5.5 1.3-1.5 2-3 2-4.7 0-4.2-4.2-7.6-9.3-7.6z"/></svg>LINEで相談</a>
   </div>
 </nav>
 
@@ -489,7 +535,7 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
     <h1>SNS運用、あなたの仕事は<br>「<span class="hl">1日2分の承認</span>」だけ。</h1>
     <p class="hero-sub">ネタ探しから投稿文・図解画像づくり、<span style="white-space:nowrap">X / Threads</span>への投稿、効果分析まで。面倒なことは、ぜんぶAIが自動で回します。</p>
     <div class="cta-row">
-      <a class="btn btn-primary" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener">LINEで10日間無料おためし →</a>
+      <a class="btn btn-line-cta" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener"><svg class="line-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3.2C6.8 3.2 2.6 6.6 2.6 10.8c0 3.8 3.3 6.9 7.8 7.5.3 0 .7.2.8.5.1.2.1.6 0 .9 l-.1.8c0 .2-.2.9.8.5 1-.4 5.4-3.2 7.4-5.5 1.3-1.5 2-3 2-4.7 0-4.2-4.2-7.6-9.3-7.6z"/></svg>LINEで10日間無料おためし</a>
       <a class="btn btn-ghost" href="#proof">実例を見る</a>
     </div>
     <ul class="trust">
@@ -784,6 +830,7 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
         <div class="ind-tags"><span class="ind-tag">実利・専門知識の翻訳</span><span class="ind-tag">顧問契約のきっかけ</span></div>
       </div>
     </div>
+      <p class="swipe-hint">横にスワイプで他の業種も見られます</p>
     <p class="nm-caption">業種・ターゲット・文体・参照するニュース源まで、<b>すべて貴社専用にチューニング</b>してお渡しします。</p>
   </div>
 </section>
@@ -948,6 +995,7 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
         </tbody>
       </table>
     </div>
+    <p class="swipe-hint">横にスワイプで比較できます</p>
     <p class="cmp-note">※ 運用代行の内容・料金は一般的な例です。サービスにより異なります。</p>
   </div>
 </section>
@@ -972,7 +1020,7 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
           <li>Notion承認フロー・LINE通知</li>
           <li class="no">図解画像・Threads・効果測定</li>
         </ul>
-        <a class="btn-plan gray" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener">LINEで無料おためし</a>
+        <a class="btn-plan line" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener"><svg class="line-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3.2C6.8 3.2 2.6 6.6 2.6 10.8c0 3.8 3.3 6.9 7.8 7.5.3 0 .7.2.8.5.1.2.1.6 0 .9 l-.1.8c0 .2-.2.9.8.5 1-.4 5.4-3.2 7.4-5.5 1.3-1.5 2-3 2-4.7 0-4.2-4.2-7.6-9.3-7.6z"/></svg>LINEで無料おためし</a>
       </div>
       <div class="plan hot">
         <span class="hot-tag">いちばん選ばれています</span>
@@ -988,7 +1036,7 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
           <li>ブランドカラー・会社名入り画像</li>
           <li>メールサポート</li>
         </ul>
-        <a class="btn-plan indigo" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener">LINEで無料おためし →</a>
+        <a class="btn-plan line" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener"><svg class="line-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3.2C6.8 3.2 2.6 6.6 2.6 10.8c0 3.8 3.3 6.9 7.8 7.5.3 0 .7.2.8.5.1.2.1.6 0 .9 l-.1.8c0 .2-.2.9.8.5 1-.4 5.4-3.2 7.4-5.5 1.3-1.5 2-3 2-4.7 0-4.2-4.2-7.6-9.3-7.6z"/></svg>LINEで無料おためし</a>
       </div>
       <div class="plan pro">
         <p class="tier" style="color:var(--amber);">プロ</p>
@@ -1002,7 +1050,7 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
           <li>ロゴ入り画像・カスタムRSS無制限</li>
           <li>専任サポート（Slack / Zoom）</li>
         </ul>
-        <a class="btn-plan amber" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener">LINEで相談する</a>
+        <a class="btn-plan line" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener"><svg class="line-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3.2C6.8 3.2 2.6 6.6 2.6 10.8c0 3.8 3.3 6.9 7.8 7.5.3 0 .7.2.8.5.1.2.1.6 0 .9 l-.1.8c0 .2-.2.9.8.5 1-.4 5.4-3.2 7.4-5.5 1.3-1.5 2-3 2-4.7 0-4.2-4.2-7.6-9.3-7.6z"/></svg>LINEで相談する</a>
       </div>
     </div>
     <div class="auto-opt">
@@ -1078,11 +1126,16 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
       <li><span class="ls-n">3</span><span class="ls-t"><b>最短翌日スタート</b>初期設定はこちらで行い、投稿案をお届けします。</span></li>
     </ol>
 
-    <a class="btn btn-line" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener">LINEで10日間おためしを申し込む</a>
+    <a class="btn btn-line" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener"><svg class="line-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3.2C6.8 3.2 2.6 6.6 2.6 10.8c0 3.8 3.3 6.9 7.8 7.5.3 0 .7.2.8.5.1.2.1.6 0 .9 l-.1.8c0 .2-.2.9.8.5 1-.4 5.4-3.2 7.4-5.5 1.3-1.5 2-3 2-4.7 0-4.2-4.2-7.6-9.3-7.6z"/></svg>LINEで10日間おためしを申し込む</a>
     <p class="cta-note">初期費用0円／クレジットカード登録不要／合わなければそのまま終了でOK。</p>
     <p class="cta-note sub">メールがよろしい方は <a href="mailto:info@imadoki.co.jp">info@imadoki.co.jp</a> までお気軽にどうぞ。</p>
   </div>
 </section>
+
+<!-- スマホ用: 画面下に追従するLINEボタン -->
+<a class="line-float" id="lineFloat" href="https://lin.ee/Ngu1hNN" target="_blank" rel="noopener" aria-label="LINEで10日間おためしを申し込む">
+  <svg class="line-ico" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3.2C6.8 3.2 2.6 6.6 2.6 10.8c0 3.8 3.3 6.9 7.8 7.5.3 0 .7.2.8.5.1.2.1.6 0 .9 l-.1.8c0 .2-.2.9.8.5 1-.4 5.4-3.2 7.4-5.5 1.3-1.5 2-3 2-4.7 0-4.2-4.2-7.6-9.3-7.6z"/></svg><span>LINEで10日間おためし</span>
+</a>
 
 <!-- フッター -->
 <footer>
@@ -1098,6 +1151,33 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
     </div>
   </div>
 </footer>
+
+<script>
+// ── スマホ用: 追従LINEボタンの出し入れ ──
+// 少しスクロールしたら出し、最終CTAが見えている間は重ならないよう隠す
+(function(){
+  var el = document.getElementById('lineFloat');
+  if (!el) return;
+  var contact = document.getElementById('contact');
+  var atContact = false;
+
+  function update(){
+    var scrolled = window.scrollY > 420;
+    el.classList.toggle('is-hidden', !scrolled || atContact);
+  }
+
+  if (contact && 'IntersectionObserver' in window) {
+    new IntersectionObserver(function(entries){
+      atContact = entries[0].isIntersecting;
+      update();
+    }, { threshold: 0 }).observe(contact);
+  }
+
+  el.classList.add('is-hidden');
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+})();
+</script>
 
 <script>
 // ── 料金の数字を、画面に入ったタイミングで一度だけカウントアップ ──

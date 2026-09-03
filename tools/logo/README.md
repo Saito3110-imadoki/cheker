@@ -2,9 +2,10 @@
 
 マカセルのロゴを SVG で定義し、playwright（Chromium）で PNG に書き出します。
 
-## 採用案：B案「吹き出し＋チェック」
+## 採用案：A案「承認チェック」
 
-SNS投稿（吹き出し）を承認（チェック）する、というサービスの中身をそのまま図案化したもの。
+「あなたの仕事は1日2分の承認だけ」というサービスの価値を、チェックマーク1本で表現したもの。
+小サイズでも形が潰れず、ファビコンやSNSのプロフィール画像でも視認できる。
 ブランドカラーは LP（`docs/index.html`）と共通の グリーン `#00a37a`、書体は Noto Sans JP 900。
 
 検討時の3案の比較は `logo_concepts.png` を参照（A案：承認チェック／B案：吹き出し＋チェック／C案：オートパイロット）。
@@ -16,15 +17,15 @@ pip install playwright && playwright install chromium
 # 既存の Chromium を使う場合は CHROME_PATH=/path/to/chrome を指定
 
 python3 tools/logo/make_logos.py --sheet      # 3案の比較シート（tools/logo/logo_concepts.png）
-python3 tools/logo/make_logos.py --final b    # ロゴ一式（docs/assets/logo/）
-python3 tools/logo/make_logos.py --ogp b      # OGP画像（docs/assets/ogp.png）
+python3 tools/logo/make_logos.py --final a    # ロゴ一式（docs/assets/logo/）
+python3 tools/logo/make_logos.py --ogp a      # OGP画像（docs/assets/ogp.png）
 ```
 
 ## 書き出されるファイル
 
 | ファイル | 用途 |
 | --- | --- |
-| `docs/assets/logo/logo_mark.svg` | ロゴマーク（グリーンタイル＋白吹き出し）。印刷・拡大用の原本 |
+| `docs/assets/logo/logo_mark.svg` | ロゴマーク（グリーンタイル＋白チェック）。印刷・拡大用の原本 |
 | `docs/assets/logo/logo_mark_green.svg` | 白地に置く単色版 |
 | `docs/assets/logo/logo_mark_white.svg` | グリーン地・写真の上に置く白版 |
 | `docs/assets/logo/favicon.svg` | ファビコン |
@@ -43,5 +44,5 @@ python3 tools/logo/make_logos.py --ogp b      # OGP画像（docs/assets/ogp.png�
 ## LP側の埋め込み
 
 `docs/index.html` / `docs/thanks.html` のヘッダー・フッターは、同じパスを inline SVG で直書きしています
-（`.logo-mark` のグリーン地に白い吹き出し）。マークの形を変えたときは、この inline SVG と
+（`.logo-mark` のグリーン地に白いチェック）。マークの形を変えたときは、この inline SVG と
 `data:image/svg+xml` のファビコン、`tools/banner/make_banners.py` の `LOGO_SVG` も併せて更新してください。

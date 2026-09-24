@@ -172,7 +172,6 @@ SNS運用をまるごと自動化するサービスです。
 実際の投稿・図解画像・週次レポートのサンプルはLPで公開しています。
 
 ・AIが自動生成した投稿と図解画像 → https://social-post-pilot.com/#proof
-・業種別の投稿例（不動産・飲食・美容・人材・士業など9業種） → https://social-post-pilot.com/#industries
 ・毎週届く効果レポート → https://social-post-pilot.com/#report
 
 「自分の業種だとどんな投稿になるか見たい」というご要望も多いので、

@@ -24,7 +24,8 @@ branding:
   logo_url: ""
 
   # 画像右下に表示する会社名（logo_url が空のときに使用）
-  company_name: "株式会社IMADOKI"
+  # 空文字にすると右下には何も表示しません
+  company_name: ""
 
 # ── 投稿スタイル ──────────────────────────────────────────
 content:

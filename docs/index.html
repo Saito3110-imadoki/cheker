@@ -511,6 +511,16 @@ fbq('track', 'PageView');
 src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
 /></noscript>
 <!-- End Meta Pixel Code -->
+
+<!-- Microsoft Clarity（ヒートマップ・録画） -->
+<script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "yn6o0376ar");
+</script>
+<!-- End Microsoft Clarity -->
 </head>
 <body>
 
@@ -1154,23 +1164,34 @@ src="https://www.facebook.com/tr?id=1569890048126179&ev=PageView&noscript=1"
 </footer>
 
 <script>
-// ── Metaピクセル: LINEボタンのクリックを計測 ──
+// ── LINEボタンのクリックを計測（Metaピクセル / Microsoft Clarity）──
 // LINEは別タブで開くためページ遷移で失われず、クリック時点で確実に送信される。
-//   Lead        … 広告の最適化・レポート用の標準イベント（LINE友だち追加への遷移＝リード獲得）
-//   LineClick   … どのボタンが押されたかの内訳を見るためのカスタムイベント
+//   Meta    Lead      … 広告の最適化・レポート用の標準イベント（LINEへの遷移＝リード獲得）
+//   Meta    LineClick … どのボタンが押されたかの内訳を見るためのカスタムイベント
+//   Clarity line_click … このイベントで録画を絞り込める（cta タグに押された場所が入る）
 (function(){
   document.addEventListener('click', function(e){
     var a = e.target.closest && e.target.closest('a[href*="lin.ee"]');
-    if (!a || typeof window.fbq !== 'function') return;
+    if (!a) return;
 
     var where = a.getAttribute('data-cta') || 'other';
-    window.fbq('track', 'Lead', {
-      content_name: 'LINE友だち追加',
-      content_category: where,
-      value: 0,
-      currency: 'JPY'
-    });
-    window.fbq('trackCustom', 'LineClick', { location: where });
+
+    if (typeof window.fbq === 'function') {
+      window.fbq('track', 'Lead', {
+        content_name: 'LINE友だち追加',
+        content_category: where,
+        value: 0,
+        currency: 'JPY'
+      });
+      window.fbq('trackCustom', 'LineClick', { location: where });
+    }
+
+    if (typeof window.clarity === 'function') {
+      window.clarity('set', 'cta', where);
+      window.clarity('event', 'line_click');
+      // このセッションの録画を優先的に残す（あとで必ず見返せるように）
+      window.clarity('upgrade', 'line_click');
+    }
   }, true);
 })();
 </script>
